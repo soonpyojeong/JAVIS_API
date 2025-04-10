@@ -44,6 +44,7 @@ export default {
 
     return { navigateTo, menuItems, selectedMenu }
   }
+
 }
 </script>
 
