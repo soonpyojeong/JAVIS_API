@@ -174,7 +174,7 @@ export default {
 
     const fetchDbData = async (instanceName) => {
       try {
-        const response = await axios.get(`/api/dailychk/${instanceName}/oradata`);
+        const response = await axios.get(`http://10.90.4.60:8813/api/dailychk/${instanceName}/oradata`);
         dbData.value = response.data;
       } catch (error) {
         console.error("ORACLE DB 데이터를 불러오는 데 실패했습니다.", error);
