@@ -13,7 +13,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://10.90.4.60:8081") // Vue의 개발 서버 URL
+                        .allowedOrigins("http://10.90.4.60:8812") // Vue의 개발 서버 URL
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowCredentials(true);

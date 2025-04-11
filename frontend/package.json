@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
+    "serve": "vue-cli-service serve --port 8812",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
@@ -45,5 +45,9 @@
     "last 2 versions",
     "not dead",
     "not ie 11"
-  ]
+  ],
+  "scripts": {
+    "build": "vue-cli-service build && mv dist/* ../src/main/resources/static/",
+    "serve": "vue-cli-service serve"
+  }
 }
