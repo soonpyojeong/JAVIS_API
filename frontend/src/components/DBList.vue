@@ -162,7 +162,7 @@ export default {
         const newStatus = this.currentDb[this.currentField] === 'Y' ? 'N' : 'Y';
         this.currentDb[this.currentField] = newStatus;
         axios
-          .put(`http://10.90.4.60:8080/api/db-list/update/${this.currentDb.id}`, { [this.currentField]: newStatus })
+          .put(`/api/db-list/update/${this.currentDb.id}`, { [this.currentField]: newStatus })
           .then(() => {
             this.isModalVisible = false;
           })
@@ -184,7 +184,7 @@ export default {
       // 현재 상태가 "N"이면 해제(null), 아니면 "N"으로 업데이트
       const newStatus = this.allChkStatus === 'N' ? null : 'N';
       axios
-        .put("http://10.90.4.60:8080/api/db-list/update-allchk", { status: newStatus })
+        .put("/api/db-list/update-allchk", { status: newStatus })
         .then(() => {
           this.allChkStatus = newStatus;
           this.isAllChkModalVisible = false;
@@ -200,7 +200,7 @@ export default {
   },
   mounted() {
     axios
-      .get("http://10.90.4.60:8080/api/db-list/all")
+      .get("/api/db-list/all")
       .then((response) => {
         this.dbList = response.data;
       })
@@ -209,7 +209,7 @@ export default {
       });
     // 전체관제 상태 초기값을 가져오기 (GET /allchk)
     axios
-      .get("http://10.90.4.60:8080/api/db-list/allchk")
+      .get("/api/db-list/allchk")
       .then((response) => {
         this.allChkStatus = response.data;
       })

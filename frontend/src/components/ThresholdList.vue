@@ -132,7 +132,7 @@ export default {
 
       // 서버에 PUT 요청
       axios
-        .put(`http://10.90.4.60:8080/api/threshold/${updatedThreshold.id}`, updatedThreshold)
+        .put(`/api/threshold/${updatedThreshold.id}`, updatedThreshold)
         .then((response) => {
           if (response.data) {
             // 로컬 데이터 업데이트 및 편집 종료
@@ -183,7 +183,7 @@ export default {
   mounted() {
     // API 호출
     axios
-      .get("http://10.90.4.60:8080/api/threshold/all")
+      .get("/api/threshold/all")
       .then((response) => {
         this.thresholds = response.data.map((threshold) => ({
           ...threshold,

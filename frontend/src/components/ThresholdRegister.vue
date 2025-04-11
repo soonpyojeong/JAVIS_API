@@ -45,7 +45,7 @@ export default {
     // 임계치 등록
     registerThreshold() {
       axios
-        .post("http://10.90.4.60:8080/api/threshold", this.threshold)
+        .post("/api/threshold", this.threshold)
         .then((response) => {
           if (response.status === 200) {
             alert("등록 완료!");
