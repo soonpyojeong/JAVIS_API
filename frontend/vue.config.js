@@ -1,17 +1,16 @@
-const { defineConfig } = require('@vue/cli-service')
-module.exports = defineConfig({
-  transpileDependencies: true
-})
+const { defineConfig } = require('@vue/cli-service');
 
-module.exports = {
+module.exports = defineConfig({
+  transpileDependencies: true,
+  publicPath: '/',
   outputDir: '../src/main/resources/static',
   devServer: {
-    port: 8812, // 개발 서버 포트 변경
+    port: process.env.VUE_APP_DEV_SERVER_PORT, // 개발 서버 포트를 환경 변수로 설정
     proxy: {
-      '/api': {
-        target: 'http://10.90.4.60:8813', // Spring Boot 서버 URL
+      '/': {
+        target: process.env.VUE_APP_API_URL, // Spring Boot 서버 URL을 환경 변수로 설정
         changeOrigin: true,
       },
     },
   },
-};
+});

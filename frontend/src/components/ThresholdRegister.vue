@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/api"; // 공통 axios 인스턴스 가져오기
 
 export default {
   data() {
@@ -44,8 +44,7 @@ export default {
   methods: {
     // 임계치 등록
     registerThreshold() {
-      axios
-        .post("/api/threshold", this.threshold)
+      api.post("/api/threshold", this.threshold)
         .then((response) => {
           if (response.status === 200) {
             alert("등록 완료!");

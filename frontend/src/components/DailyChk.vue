@@ -80,8 +80,9 @@
 
 <script>
 import { ref, nextTick, onMounted } from 'vue';
-import axios from 'axios';
 import Chart from 'chart.js/auto';
+import api from "@/api"; // 공통 axios 인스턴스 가져오기
+
 
 export default {
   setup() {
@@ -138,7 +139,7 @@ export default {
 
     const fetchDbList = async () => {
       try {
-        const response = await axios.get('/api/dailychk/db-list');
+        const response = await api.get('/api/dailychk/db-list');
         const dbList = response.data;
         oracleDBList.value = dbList.ORACLE || [];
         tiberoDBList.value = dbList.TIBERO || [];
@@ -174,7 +175,7 @@ export default {
 
     const fetchDbData = async (instanceName) => {
       try {
-        const response = await axios.get(`http://10.90.4.60:8813/api/dailychk/${instanceName}/oradata`);
+        const response = await api.get(`/api/dailychk/${instanceName}/oradata`);
         dbData.value = response.data;
       } catch (error) {
         console.error("ORACLE DB 데이터를 불러오는 데 실패했습니다.", error);
@@ -183,7 +184,7 @@ export default {
 
     const fetchTbDbData = async (instanceName) => {
       try {
-        const response = await axios.get(`/api/dailychk/${instanceName}/tbdata`);
+        const response = await api.get(`/api/dailychk/${instanceName}/tbdata`);
         tbdbData.value = response.data;
       } catch (error) {
         console.error("TIBERO DB 데이터를 불러오는 데 실패했습니다.", error);

@@ -45,9 +45,5 @@
     "last 2 versions",
     "not dead",
     "not ie 11"
-  ],
-  "scripts": {
-    "build": "vue-cli-service build && mv dist/* ../src/main/resources/static/",
-    "serve": "vue-cli-service serve"
-  }
+  ]
 }

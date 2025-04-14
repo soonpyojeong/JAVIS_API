@@ -81,7 +81,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/api"; // 공통 axios 인스턴스 가져오기
 
 export default {
   data() {
@@ -131,8 +131,7 @@ export default {
       };
 
       // 서버에 PUT 요청
-      axios
-        .put(`/api/threshold/${updatedThreshold.id}`, updatedThreshold)
+      api.put(`/api/threshold/${updatedThreshold.id}`, updatedThreshold)
         .then((response) => {
           if (response.data) {
             // 로컬 데이터 업데이트 및 편집 종료
@@ -182,8 +181,7 @@ export default {
   },
   mounted() {
     // API 호출
-    axios
-      .get("/api/threshold/all")
+    api.get("/api/threshold/all")
       .then((response) => {
         this.thresholds = response.data.map((threshold) => ({
           ...threshold,

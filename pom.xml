@@ -97,12 +97,6 @@
 				<version>1.12.0</version>
 				<executions>
 					<execution>
-						<id>install-node-and-npm</id>
-						<goals>
-							<goal>install-node-and-npm</goal>
-						</goals>
-					</execution>
-					<execution>
 						<id>npm-install</id>
 						<goals>
 							<goal>npm</goal>
@@ -112,10 +106,20 @@
 							<workingDirectory>${project.basedir}/frontend</workingDirectory>
 						</configuration>
 					</execution>
+					<execution>
+						<id>npm-build</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>run build </arguments>
+							<workingDirectory>${project.basedir}/frontend</workingDirectory>
+						</configuration>
+					</execution>
 				</executions>
 				<configuration>
-					<nodeVersion>v16.13.2</nodeVersion>
-					<npmVersion>8.18.0</npmVersion>
+					<nodeVersion>v22.14.0</nodeVersion>
+					<npmVersion>10.9.2</npmVersion>
 				</configuration>
 			</plugin>
 		</plugins>

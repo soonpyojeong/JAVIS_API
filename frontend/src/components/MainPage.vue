@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from "@/api"; // 공통 axios 인스턴스 가져오기
 
 export default {
   data() {
@@ -96,7 +96,7 @@ export default {
   methods: {
     async fetchTablespaceMonitoringData(index) {
       try {
-        const response = await axios.get(`http://10.90.4.60:8813/api/tbsChkmon/all`);
+        const response = await api.get(`http://10.90.4.60:8813/api/tbsChkmon/all`);
         const events = response.data.map(item => {
           const formattedUsedSize = new Intl.NumberFormat().format(item.usedSize);
           const formattedFreeSize = new Intl.NumberFormat().format(item.freeSize);
@@ -114,7 +114,7 @@ export default {
 
     async fetchLiveMonitoringData(index) {
       try {
-        const response = await axios.get(`http://10.90.4.60:8813/api/LiveChkmon/all`);
+        const response = await api.get(`http://10.90.4.60:8813/api/LiveChkmon/all`);
         const events = response.data.map(item => ({
           id: item.id,
           message: `${item.dbDesc} 서버 상태: 오류 발생 점검 바람`,

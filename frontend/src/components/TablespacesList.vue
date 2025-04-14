@@ -50,9 +50,10 @@
 
 
 <script>
-import axios from "axios";
 import Chart from "chart.js/auto"; // Chart.js 자동 로드
 import ChartDataLabels from 'chartjs-plugin-datalabels'; // 플러그인 import
+
+import api from "@/api"; // 공통 axios 인스턴스 가져오기
 
 export default {
   data() {
@@ -75,8 +76,7 @@ export default {
       return number.toLocaleString(); // 천 단위 구분 기호 추가
     },
     fetchDbList() {
-      axios
-        .get("/api/tb/list")
+      api.get("/api/tb/list")
         .then((res) => {
           this.tbList = res.data;
           if (this.tbList.length > 0) {
@@ -89,8 +89,7 @@ export default {
         });
     },
     fetchTablespaces(dbName) {
-      axios
-        .get(`/api/tb/${dbName}/tablespaces`)
+      api.get(`/api/tb/${dbName}/tablespaces`)
         .then((res) => {
           // 변경이 없으면 업데이트하지 않음
           if (JSON.stringify(this.tablespaces) === JSON.stringify(res.data)) return;

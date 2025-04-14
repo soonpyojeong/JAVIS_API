@@ -102,7 +102,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/api"; // 공통 axios 인스턴스 가져오기
 
 export default {
   data() {
@@ -161,8 +161,7 @@ export default {
       if (this.currentDb && this.currentField) {
         const newStatus = this.currentDb[this.currentField] === 'Y' ? 'N' : 'Y';
         this.currentDb[this.currentField] = newStatus;
-        axios
-          .put(`/api/db-list/update/${this.currentDb.id}`, { [this.currentField]: newStatus })
+        api.put(`/api/db-list/update/${this.currentDb.id}`, { [this.currentField]: newStatus })
           .then(() => {
             this.isModalVisible = false;
           })
@@ -183,8 +182,7 @@ export default {
     confirmAllChkUpdate() {
       // 현재 상태가 "N"이면 해제(null), 아니면 "N"으로 업데이트
       const newStatus = this.allChkStatus === 'N' ? null : 'N';
-      axios
-        .put("/api/db-list/update-allchk", { status: newStatus })
+      api.put("/api/db-list/update-allchk", { status: newStatus })
         .then(() => {
           this.allChkStatus = newStatus;
           this.isAllChkModalVisible = false;
@@ -199,8 +197,7 @@ export default {
     }
   },
   mounted() {
-    axios
-      .get("/api/db-list/all")
+    api.get("/api/db-list/all")
       .then((response) => {
         this.dbList = response.data;
       })
@@ -208,8 +205,7 @@ export default {
         console.error("API 호출 오류:", error);
       });
     // 전체관제 상태 초기값을 가져오기 (GET /allchk)
-    axios
-      .get("/api/db-list/allchk")
+    api.get("/api/db-list/allchk")
       .then((response) => {
         this.allChkStatus = response.data;
       })

@@ -9,15 +9,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
-
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("*")  // 또는 클라이언트 도메인
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
+                .allowedOrigins(
+                        "http://10.90.4.60:8813", // 개발 서버
+                        "http://172.31.1.176:8813" // 가동계 서버
+                )
+                .allowedMethods("GET", "POST", "PUT", "DELETE");
     }
-}
 
+}
 /*
 @Configuration
 public class CorsConfig {

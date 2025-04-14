@@ -60,7 +60,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from "@/api"; // 공통 axios 인스턴스 가져오기
 
 export default {
   data() {
@@ -81,7 +81,7 @@ export default {
       console.log("조회할 일수(day) 값:", this.day);
 
       if (this.day && this.day > 0) {  // day 값이 1 이상일 때만 API 요청
-        axios.get(`/api/sms/all?day=${this.day}`)
+        api.get(`/api/sms/all?day=${this.day}`)
           .then(response => {
             console.log("API 응답:", response);
 
@@ -120,7 +120,7 @@ export default {
 
     // 대량 메시지 전송 처리
     updateAllSmsHistories() {
-      axios.put('/api/sms/updateall')
+      api.put('/api/sms/updateall')
         .then(response => {
           const updatedCount = response.data?.updatedCount || 0;
           this.updateMessage = `전체 메시지 전송 처리가 완료되었습니다. (총 ${updatedCount}건)`;
