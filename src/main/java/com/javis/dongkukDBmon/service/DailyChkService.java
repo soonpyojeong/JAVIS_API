@@ -42,29 +42,16 @@ public class DailyChkService {
         // 중복된 DB 이름을 제거
         dbTypeMap.replaceAll((dbType, instanceNames) -> instanceNames.stream().distinct().collect(Collectors.toList()));
 
-        // 리턴 전에 출력
-        System.out.println("DB 목록 by dbType: " + dbTypeMap);
-
         return dbTypeMap;
     }
 
     // DB 이름에 따른 두 날의 DB 데이터를 조회하는 메소드
     public List<Dailychk> getDailyChkData(String instanceName) {
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
-
-        // 디버깅용 콘솔 출력 (옵션)
-        System.out.println("instanceName: " + instanceName);
-
-
         return dailyChkRepository.findById_DbNameAndId_ChkDateBetween(instanceName);
     }
     // DB 이름에 따른 두 날의 DB 데이터를 조회하는 메소드
     public List<TbDailychk> getTbDailyChkData(String instanceName) {
-
-        // 디버깅용 콘솔 출력 (옵션)
-        System.out.println("instanceName: " + instanceName);
-
-
         return dailyChkRepository.findById_TbDbNameAndId_ChkDateBetween(instanceName);
     }
 

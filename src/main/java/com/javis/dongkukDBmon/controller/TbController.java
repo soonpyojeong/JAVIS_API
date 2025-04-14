@@ -33,13 +33,6 @@ public class TbController {
     public ResponseEntity<List<TiberoCap_Check_Mg>> getTablespaces(
             @PathVariable String dbName) {
         List<TiberoCap_Check_Mg> tablespaces = tbService.getTablespaces(dbName);
-        // 디버깅 로그 추가
-        System.out.println("tablespaces size: " + tablespaces.size()); // 결과 크기 출력
-        for (TiberoCap_Check_Mg ts : tablespaces) {
-            System.out.println(ts); // 각 테이블스페이스의 데이터 출력
-        }
-
-
         return ResponseEntity.ok(tablespaces);
     }
 

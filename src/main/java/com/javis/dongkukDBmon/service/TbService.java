@@ -45,28 +45,14 @@ public class TbService {
         // "yyyy/MM/dd HH:mm:ss" 형식으로 변환
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         String formattedTimeLimit = now.format(formatter);
-
-        // 디버그용 로그
-        System.out.println("dbName: " + dbName);
-        System.out.println("timeLimit (formattedTimeLimit): " + formattedTimeLimit);
-
         // 쿼리 실행
-
         List<TiberoCap_Check_Mg> results = tbRepository.findTablespacesByDbName(dbName, formattedTimeLimit);
-
-
-        // 결과 로그
-        System.out.println("Filtered tablespaces:");
         results.forEach(System.out::println);
 
         return results;
     }
     @Transactional
     public List<TiberoCap_Check_Mg> getRecentTablespaceDataForChat(String dbName, String tsName) {
-        // 디버그용 로그
-        System.out.println("getRecentTablespaceDataForChat dbName: " + dbName);
-        System.out.println("getRecentTablespaceDataForChat tsName : " + tsName);
-
         return tbRepository.findRecentDataForChat(dbName, tsName);
     }
 

@@ -30,7 +30,6 @@ public class DailyChkController {
     public ResponseEntity<?> getDbchkList() {
         try {
             Map<String, List<String>> dbListMap = dailyChkService.getDbListForDailyChkByType();
-            System.out.println("DB List Map: " + dbListMap);  // 로그 추가
             return ResponseEntity.ok(dbListMap);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버 오류 발생");
@@ -40,11 +39,7 @@ public class DailyChkController {
     // DB 이름에 따른 두 날의 DB 데이터를 가져오는 API
     @GetMapping("/{instanceName}/oradata")
     public List<Dailychk> getDbDataForChart(@PathVariable String instanceName) {
-        List<Dailychk> data = dailyChkService.getDailyChkData(instanceName);
-
-        // 📌 서버 콘솔에 로그 출력
-        System.out.println("📌 [DEBUG] 조회된 데이터: " + data);
-
+        List<Dailychk>data = dailyChkService.getDailyChkData(instanceName);
         return data;
     }
 
@@ -52,10 +47,6 @@ public class DailyChkController {
     @GetMapping("/{instanceName}/tbdata")
     public List<TbDailychk> getTbDbDataForChart(@PathVariable String instanceName) {
         List<TbDailychk> data = dailyChkService.getTbDailyChkData(instanceName);
-
-        // 📌 서버 콘솔에 로그 출력
-        System.out.println("📌 [DEBUG] 조회된 데이터: " + data);
-
         return data;
     }
 }
