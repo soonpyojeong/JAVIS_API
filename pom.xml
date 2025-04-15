@@ -31,8 +31,8 @@
 	</developers>
 
 	<scm>
-		<connection>scm:git:git://github.com/javis/dongkukDBmon.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com:javis/dongkukDBmon.git</developerConnection>
+		<connection>scm:git:git://github.com/soonpyojeong/JAVIS_API.git </connection>
+		<developerConnection>scm:git:ssh://git@github.com:soonpyojeong/JAVIS_API.git </developerConnection>
 		<url>https://github.com/javis/dongkukDBmon</url>
 	  <tag>1.0.1</tag>
   </scm>
