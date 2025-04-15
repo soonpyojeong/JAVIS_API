@@ -1,16 +1,15 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.4.3</version>
-		<relativePath/>
+		<relativePath />
 	</parent>
 
 	<groupId>com.javis</groupId>
 	<artifactId>dongkukDBmon</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.1</version>
 	<name>dongkukDBmon</name>
 	<description>dongkuk database monitoring</description>
 	<url>https://github.com/javis/dongkukDBmon</url>
@@ -35,7 +34,8 @@
 		<connection>scm:git:git://github.com/javis/dongkukDBmon.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com:javis/dongkukDBmon.git</developerConnection>
 		<url>https://github.com/javis/dongkukDBmon</url>
-	</scm>
+	  <tag>1.0.1</tag>
+  </scm>
 	<properties>
 		<java.version>17</java.version>
 	</properties>
