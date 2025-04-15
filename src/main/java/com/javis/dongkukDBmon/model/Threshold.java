@@ -14,7 +14,8 @@ import lombok.Setter;
 public class Threshold {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_DB_TBS_THRESHOLD_GEN")
+    @SequenceGenerator(name = "SEQ_DB_TBS_THRESHOLD_GEN", sequenceName = "SEQ_DB_TBS_THRESHOLD", allocationSize = 1)
     private Long id;
 
     @NotNull(message = "Database type cannot be null")

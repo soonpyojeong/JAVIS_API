@@ -13,10 +13,9 @@ public interface TbRepository extends JpaRepository<TiberoCap_Check_Mg, TiberoCa
 
     // DB 이름과 날짜로 최신 테이블스페이스 데이터를 가져오기
     @Query(value = "SELECT * " +
-            "FROM TB_DB_CAP_CHECK_MG " +
+            "FROM VW_DB_CAP_CHECK_MG " +
             "WHERE DB_NAME = :dbName " +
             "AND CREATE_TIMESTAMP >= TO_DATE(TO_CHAR(TO_DATE(:formattedTimeLimit, 'yyyy/mm/dd HH24:MI:SS'), 'yyyy/mm/dd HH24') || ':00:00', 'yyyy/mm/dd HH24:MI:SS') " +
-            "AND TS_NAME != 'SYSTEM'" +
             "order by USED_RATE desc",
             nativeQuery = true)
     List<TiberoCap_Check_Mg> findTablespacesByDbName(
@@ -24,11 +23,10 @@ public interface TbRepository extends JpaRepository<TiberoCap_Check_Mg, TiberoCa
             @Param("formattedTimeLimit") String formattedTimeLimit);
 
     @Query(value = "SELECT * " +
-            "FROM TB_DB_CAP_CHECK_MG " +
+            "FROM VW_DB_CAP_CHECK_MG " +
             "WHERE DB_NAME = :dbName " +
             "AND TS_NAME = :tsName " +
             "AND CREATE_TIMESTAMP >= SYSDATE - 1 " +
-            "AND TS_NAME != 'SYSTEM' " +
             "ORDER BY CREATE_TIMESTAMP DESC",
             nativeQuery = true)
     List<TiberoCap_Check_Mg> findRecentDataForChat(

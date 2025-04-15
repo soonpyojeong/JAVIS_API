@@ -8,13 +8,15 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
-
+  /*
 @EnableWebSocket
 @Configuration
 public class WebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+
+
         registry.addHandler(new WebSocketHandler() {
             @Override
             public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -43,4 +45,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
             }
         }, "/ws").setAllowedOrigins("*");
     }
+
+
 }
+ */

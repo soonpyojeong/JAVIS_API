@@ -1,7 +1,6 @@
 // TbService.java
 package com.javis.dongkukDBmon.service;
 
-import com.javis.dongkukDBmon.model.Threshold;
 import com.javis.dongkukDBmon.model.TiberoCap_Check_Mg;
 import com.javis.dongkukDBmon.Compositekey.TiberoCapCheckMgId;
 import com.javis.dongkukDBmon.repository.TbRepository;

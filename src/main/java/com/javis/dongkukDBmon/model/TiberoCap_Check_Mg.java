@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "TB_DB_CAP_CHECK_MG")
+@Table(name = "VW_DB_CAP_CHECK_MG")
 public class TiberoCap_Check_Mg {
 
     @EmbeddedId
@@ -37,6 +37,14 @@ public class TiberoCap_Check_Mg {
     @Column(name = "DB_TYPE")
     private String dbType;
 
+    @Column(name = "THRES_MB")
+    private String thresMb;
+
+    @Column(name = "CHK_FLAG")
+    private String chkFlag;
+
+
+
     @Override
     public String toString() {
         return "TiberoCap_Check_Mg{" +
@@ -50,6 +58,8 @@ public class TiberoCap_Check_Mg {
                 ", maxMbBytes=" + maxMbBytes +
                 ", createTimestamp=" + createTimestamp +
                 ", dbType=" + dbType +
+                ", thresMb=" + thresMb +
+                ", chkFlag=" + chkFlag +
                 '}';
     }
 

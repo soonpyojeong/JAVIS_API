@@ -1,7 +1,6 @@
 // TbController.java
 
 package com.javis.dongkukDBmon.controller;
-import com.javis.dongkukDBmon.service.ThresholdService;
 import com.javis.dongkukDBmon.model.TiberoCap_Check_Mg;
 import com.javis.dongkukDBmon.service.TbService;
 import org.springframework.beans.factory.annotation.Autowired;

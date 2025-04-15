@@ -5,7 +5,7 @@
     <!-- DB 목록 -->
     <div class="select-container">
       <select v-model="selectedDb" @change="fetchTablespaces(selectedDb)">
-        <option disabled value="DB조회중">DB조회중</option>
+        <option value="DB 선택" disabled>DB 선택</option>
         <option v-for="(db, index) in tbList" :key="index" :value="db">
           {{ db }}
         </option>
@@ -21,30 +21,76 @@
           <th>USED(MB)</th>
           <th>사용률 (%)</th>
           <th>FREE(MB)</th>
+          <th>DB TYPE</th>
+          <th>임계치</th>
         </tr>
       </thead>
       <tbody>
         <tr
           v-for="ts in filteredTablespaces"
           :key="ts.id.tsName"
-          @dblclick="fetchRecentData(selectedDb, ts.id.tsName)"
         >
           <td class="ts-name">{{ ts.id.tsName }}</td>
           <td class="used-size">{{ formatNumber(ts.totalSize) }}</td>
           <td class="used-size">{{ formatNumber(ts.usedSize) }}</td>
           <td class="used-rate">
-            <!-- 사용률 차트 -->
             <div class="used-rate-container">
               <canvas :id="'chart-' + ts.id.tsName" class="rate-chart" width="200" height="100"></canvas>
             </div>
           </td>
-          <td class="free-size">{{ formatNumber(ts.freeSize) }}</td>
+          <td class="ts-name">{{ formatNumber(ts.freeSize) }}</td>
+          <td class="free-size">{{ formatNumber(ts.dbType) }}</td>
+          <td class="free-size">
+            <template v-if="ts.thresMb != null">
+              {{ formatNumber(ts.thresMb) }}
+            </template>
+            <template v-else>
+              <button @click="handleAddThreshold(ts)" class="add-threshold-button">+</button>
+            </template>
+          </td>
         </tr>
+
       </tbody>
     </table>
 
     <p v-if="filteredTablespaces.length === 0">검색 결과가 없습니다.</p>
-
+ <!-- 모달 팝업 -->
+    <div v-if="isModalVisible" class="modal-overlay">
+      <div class="modal">
+        <h3>임계치 추가 설정</h3>
+        <form @submit.prevent="saveThreshold">
+          <div class="form-group">
+            <label for="dbName">DB 이름:</label>
+            <input type="text" id="dbName" v-model="modalData.dbName" readonly />
+          </div>
+          <div class="form-group">
+            <label for="tsName">Tablespace 이름:</label>
+            <input type="text" id="tsName" v-model="modalData.tablespaceName" readonly />
+          </div>
+          <div class="form-group">
+            <label for="dbType">DB 타입:</label>
+            <input type="text" id="dbType" v-model="modalData.dbType" readonly />
+          </div>
+          <div class="form-group">
+            <label for="thresMb">Threshold MB:</label>
+            <input type="number" id="thresMb" v-model="modalData.thresMb" required />
+          </div>
+          <div class="form-group">
+            <label for="chkFlag">체크 플래그:</label>
+            <select id="chkFlag" v-model="modalData.chkFlag">
+              <option value="Y">Y</option>
+              <option value="N">N</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="commt">코멘트:</label>
+            <textarea id="commt" v-model="modalData.commt"></textarea>
+          </div>
+          <button type="submit">저장</button>
+          <button type="button" @click="closeModal">닫기</button>
+        </form>
+      </div>
+    </div>
     </div>
 </template>
 
@@ -62,6 +108,8 @@ export default {
       tbList: [],
       tablespaces: [],
       searchQuery: "",
+      isModalVisible: false, // 팝업 초기 상태
+      modalData: {chkFlag: 'Y',}, // 모달에 필요한 데이터 초기화
     };
   },
   computed: {
@@ -72,17 +120,42 @@ export default {
     },
   },
   methods: {
+      handleAddThreshold(ts) {
+            console.log("handleAddThreshold 호출 시 this:", ts.dbType); // this 확인
+            this.modalData = {
+              dbType: ts.dbType,
+              dbName: ts.id.dbName,
+              tablespaceName: ts.id.tsName,
+              thresMb: ts.freeSize,
+              chkFlag: "Y",
+              commt: "",
+            };
+            this.isModalVisible = true;
+      },
+      closeModal() {
+      this.isModalVisible = false;
+      },
+      saveThreshold() {
+            console.log("saveThreshold 호출 시 this.modalData:", this.modalData); // this 확인
+            api.post("/api/threshold/save", this.modalData)
+              .then(() => {
+                alert("Threshold 설정이 저장되었습니다.");
+                this.closeModal();
+                this.fetchTablespaces(this.selectedDb); // 데이터 새로 고침
+              })
+              .catch((error) => {
+                console.error("Error saving threshold:", error);
+                alert("Threshold 설정 저장 실패!");
+              });
+      },
     formatNumber(number) {
       return number.toLocaleString(); // 천 단위 구분 기호 추가
     },
     fetchDbList() {
       api.get("/api/tb/list")
         .then((res) => {
-          this.tbList = res.data;
-          if (this.tbList.length > 0) {
-            this.selectedDb = this.tbList[0];
-            this.fetchTablespaces(this.selectedDb);
-          }
+          this.tbList = res.data.sort((a, b) => a.localeCompare(b)); // DB 목록 알파벳 순 정렬
+          this.selectedDb = "DB 선택"; // 기본값 설정
         })
         .catch((error) => {
           console.error("Error fetching DB list:", error);
@@ -91,9 +164,8 @@ export default {
     fetchTablespaces(dbName) {
       api.get(`/api/tb/${dbName}/tablespaces`)
         .then((res) => {
-          // 변경이 없으면 업데이트하지 않음
+          console.log("전체 응답 데이터:", res.data); // 전체 응답 데이터 출력
           if (JSON.stringify(this.tablespaces) === JSON.stringify(res.data)) return;
-
           this.tablespaces = res.data || [];
           this.$nextTick(() => {
             this.tablespaces.forEach((ts) => {
@@ -362,5 +434,85 @@ button:focus {
     font-size: 14px;
     padding: 10px 18px;
   }
+}
+.add-threshold-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.add-threshold-button:hover {
+  background-color: #388e3c;
+}
+
+.add-threshold-button:focus {
+  outline: none;
+  box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  max-width: 90%;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+input, textarea {
+  width: 50%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button[type="submit"] {
+  background: #4caf50;
+  color: white;
+}
+
+button[type="button"] {
+  background: #f44336;
+  color: white;
+}
+
+button:hover {
+  opacity: 0.9;
 }
 </style>

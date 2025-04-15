@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.Optional;
 import java.util.List;
 
@@ -34,8 +37,18 @@ public class ThresholdService {
     public void save(Threshold threshold) {
         thresholdRepository.findById(threshold.getId()).ifPresent(existingThreshold -> {
             existingThreshold.setThresMb(threshold.getThresMb());
+            threshold.setLastUpdateDate(Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()));
             thresholdRepository.save(existingThreshold);
         });
+    }
+
+    @Transactional
+    public Threshold saveThreshold(Threshold threshold) {
+        if (threshold.getId() == null) {
+            threshold.setCreateDate(Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()));
+        }
+        threshold.setLastUpdateDate(Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()));
+        return thresholdRepository.save(threshold);
     }
 }
 

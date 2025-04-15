@@ -13,8 +13,8 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins(
-                        "http://10.90.4.60:8813", // 개발 서버
-                        "http://172.31.1.176:8813" // 가동계 서버
+                        "http://10.90.4.60:8812", // 개발 서버
+                        "http://172.31.1.176:8812" // 가동계 서버
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE");
     }
