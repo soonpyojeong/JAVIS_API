@@ -38,8 +38,8 @@
               <canvas :id="'chart-' + ts.id.tsName" class="rate-chart" width="200" height="100"></canvas>
             </div>
           </td>
-          <td class="ts-name">{{ formatNumber(ts.freeSize) }}</td>
-          <td class="free-size">{{ formatNumber(ts.dbType) }}</td>
+          <td class="free-size">{{ formatNumber(ts.freeSize) }}</td>
+          <td class="ts-name">{{ formatNumber(ts.dbType) }}</td>
           <td class="free-size">
             <template v-if="ts.thresMb != null">
               {{ formatNumber(ts.thresMb) }}
