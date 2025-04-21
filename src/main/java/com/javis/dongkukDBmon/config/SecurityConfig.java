@@ -47,9 +47,4 @@ public class SecurityConfig implements WebMvcConfigurer {
         return source;
     }
 
-    // index.html로 라우팅 처리
-    @Override
-    public void addViewControllers(ViewControllerRegistry registry) {
-        registry.addViewController("/").setViewName("forward:/index.html");
-    }
 }

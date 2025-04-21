@@ -1,4 +1,3 @@
-// router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../components/MainPage';
 import DBList from '../components/DBList';
@@ -7,6 +6,7 @@ import ThresholdList from '../components/ThresholdList';
 import TablespacesList from '../components/TablespacesList';
 import DailyChkView from '../components/DailyChk';
 import LoginComponent from '../components/LoginComponent';
+import store from '../store';
 
 const routes = [
   { path: '/login', component: LoginComponent, meta: { title: 'Login', requiresAuth: false } },
@@ -24,7 +24,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const isLoggedIn = router.store.state.isLoggedIn; // 주입된 스토어 사용
+  const isLoggedIn = store.state.isLoggedIn || !!localStorage.getItem("accessToken");
   console.log("Router Guard - isLoggedIn:", isLoggedIn);
   console.log("Navigating to:", to.path);
 
@@ -34,6 +34,12 @@ router.beforeEach((to, from, next) => {
     next("/login");
   } else {
     next();
+  }
+});
+
+router.afterEach((to) => {
+  if (to.meta.title) {
+    document.title = to.meta.title;
   }
 });
 

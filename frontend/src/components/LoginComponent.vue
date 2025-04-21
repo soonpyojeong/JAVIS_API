@@ -86,20 +86,20 @@ export default {
     const login = async () => {
       try {
         const response = await api.post("http://10.90.4.60:8813/api/auth/login", loginForm.value);
-        const { user } = response.data;
+        const { user, accessToken, refreshToken } = response.data;
+        console.log("✅ 로그인 응답", response.data);
 
-        // 로컬스토리지에 토큰 저장 (선택)
-        localStorage.setItem("accessToken", user.token || "dummyToken");
-
-        // Vuex 상태 업데이트
+        // 1. Vuex에 사용자 저장
         store.dispatch("login", user);
 
-        console.log("로그인 성공, 사용자 정보:", user);
+        // 2. 로컬 스토리지에 토큰 저장
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
+
+        // 3. 홈으로 이동
         router.push("/");
       } catch (error) {
-        alert(
-          error.response?.data?.message || "로그인 중 문제가 발생했습니다."
-        );
+        alert(error.response?.data?.message || "로그인 중 문제가 발생했습니다.");
       }
     };
 
@@ -118,9 +118,7 @@ export default {
           alert("회원가입 실패: " + response.data.message);
         }
       } catch (error) {
-        alert(
-          error.response?.data?.message || "회원가입 중 문제가 발생했습니다."
-        );
+        alert(error.response?.data?.message || "회원가입 중 문제가 발생했습니다.");
       }
     };
 
@@ -135,6 +133,7 @@ export default {
   },
 };
 </script>
+
 
 
 <style scoped>

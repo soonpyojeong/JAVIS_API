@@ -12,33 +12,55 @@ import { computed, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import NavBar from "./components/NavBar.vue";
-import api from "@/api"; // 공통 axios 인스턴스 가져오기
+import api from "@/api";
 
 const store = useStore();
 const router = useRouter();
-
-// 로그인 상태 계산
 const isLoggedIn = computed(() => store.state.isLoggedIn);
 
-api.create({
-  baseURL: "http://10.90.4.60:8813/api",
-  withCredentials: true, // 쿠키를 전달
-});
-
-
-// 로그아웃 핸들러
 const handleLogout = () => {
   store.dispatch("logout");
   router.push("/login");
 };
 
-// 컴포넌트 마운트 후 로그인 상태 확인
-onMounted(() => {
-  if (!isLoggedIn.value && router.currentRoute.value.path !== "/login") {
+onMounted(async () => {
+  const accessToken = localStorage.getItem("accessToken");
+  const refreshToken = localStorage.getItem("refreshToken");
+  const userRaw = localStorage.getItem("user");
+
+  // ✅ 복원 처리 (user가 없으면 강제 로그아웃도 가능)
+  if (accessToken && !store.state.isLoggedIn) {
+    try {
+      const user = JSON.parse(userRaw);
+      store.commit("setUser", user);
+      store.commit("setLoggedIn", true);
+    } catch (e) {
+      console.warn("유저 정보 복원 실패", e);
+      store.dispatch("logout");
+    }
+  }
+
+  // ✅ accessToken 없고 refreshToken 있을 경우 → 자동 재발급
+  if (!accessToken && refreshToken) {
+    try {
+      const res = await api.post("/auth/refresh", { refreshToken });
+      const newToken = res.data.accessToken;
+      localStorage.setItem("accessToken", newToken);
+      store.commit("setLoggedIn", true);
+    } catch (err) {
+      console.warn("토큰 재발급 실패", err);
+      store.dispatch("logout");
+      router.push("/login");
+    }
+  }
+
+  // 둘 다 없고 로그인 페이지가 아니라면
+  if (!accessToken && !refreshToken && router.currentRoute.value.path !== "/login") {
     router.push("/login");
   }
 });
 </script>
+
 
 <style>
 .main-content {

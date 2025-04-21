@@ -1,11 +1,14 @@
 package com.javis.dongkukDBmon.service;
 
 import com.javis.dongkukDBmon.model.JavisLoginUser;
+import com.javis.dongkukDBmon.model.JavisUserToken;
 import com.javis.dongkukDBmon.repository.JavisLoginUserRepository;
+import com.javis.dongkukDBmon.repository.JavisUserTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -58,4 +61,8 @@ public class JavisLoginUserService {
 
         return Optional.empty();
     }
+    public Optional<JavisLoginUser> findByLoginId(String loginId) {
+        return userRepository.findByLoginId(loginId);
+    }
+
 }

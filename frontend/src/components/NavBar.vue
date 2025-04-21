@@ -9,7 +9,7 @@
       >
         {{ item.name }}
       </li>
-      <li @click="emitLogout" class="logout-btn">로그아웃</li>
+      <li @click="logout" class="logout-btn">로그아웃</li>
     </ul>
   </div>
 </template>
@@ -17,12 +17,13 @@
 <script>
 import { ref, onMounted, watchEffect } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useStore } from "vuex";
 
 export default {
-  emits: ["logout"],
-  setup(_, { emit }) {
+  setup() {
     const router = useRouter();
     const route = useRoute();
+    const store = useStore();
     const selectedMenu = ref(route.path);
 
     const menuItems = [
@@ -44,10 +45,25 @@ export default {
       });
     };
 
-    const emitLogout = () => {
-      localStorage.removeItem("selectedMenu");
-      emit("logout");
+    const logout = async () => {
+      const loginId = store.state.user?.loginId;
+      if (loginId) {
+        try {
+          await fetch("http://10.90.4.60:8813/api/auth/logout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ loginId }),
+          });
+        } catch (e) {
+          console.warn("서버 로그아웃 실패", e);
+        }
+      }
+
+      store.dispatch("logout");
+      router.push("/login").catch(() => {});
     };
+
+
 
     onMounted(() => {
       const storedMenu = localStorage.getItem("selectedMenu");
@@ -68,12 +84,11 @@ export default {
       menuItems,
       selectedMenu,
       navigateTo,
-      emitLogout,
+      logout,
     };
   },
 };
 </script>
-
 
 
 
