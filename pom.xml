@@ -25,15 +25,15 @@
 	<developers>
 		<developer>
 			<id>javis</id>
-			<name>Your Name</name>
-			<email>your.email@example.com</email>
+			<name>soonpyo,Jeong</name>
+			<email>jsp5247@gmail.com</email>
 		</developer>
 	</developers>
 
 	<scm>
 		<connection>scm:git:git://github.com/soonpyojeong/JAVIS_API.git </connection>
 		<developerConnection>scm:git:ssh://git@github.com:soonpyojeong/JAVIS_API.git </developerConnection>
-		<url>https://github.com/javis/dongkukDBmon</url>
+		<url>http://github.com/soonpyojeong/JAVIS_API</url>
 	  <tag>1.0.1</tag>
   </scm>
 	<properties>
@@ -52,7 +52,10 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>

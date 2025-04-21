@@ -7,5 +7,7 @@ const api = axios.create({
     "Content-Type": "application/json", // 공통 헤더 설정
   },
 });
+
+
 console.log("Axios baseURL 확인:", api.defaults.baseURL);
 export default api;

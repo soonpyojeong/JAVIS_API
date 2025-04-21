@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.0.1-SNAPSHOT",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "set-version": "node  ./setVersion.js",
@@ -13,9 +13,10 @@
     "chart.js": "^4.4.8",
     "chartjs-plugin-datalabels": "^2.2.0",
     "core-js": "^3.32.0",
+    "crypto-js": "^4.2.0",
     "pinia": "^3.0.1",
     "vue": "^3.3.4",
-    "vue-router": "^4.2.2",
+    "vue-router": "^4.5.0",
     "ws": "^8.18.1"
   },
   "devDependencies": {
