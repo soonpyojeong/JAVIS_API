@@ -34,8 +34,8 @@
           <input v-model="registerForm.email" id="register-email" type="email" placeholder="이메일을 입력하세요" required />
         </div>
         <div class="input-group">
-          <label for="register-user_role">권한</label>
-          <input v-model="registerForm.userRole" id="register-userRole" type="text" placeholder="권한을 입력하세요(DBA,DEV,VIEW)" required />
+          <label for="register-user_role">권한(DBA권한은 관리자에게 문의 하세요)</label>
+          <input readonly  v-model="registerForm.userRole" id="register-userRole" type="text"  required />
         </div>
         <div class="input-group">
           <label for="register-password">비밀 번호</label>
@@ -74,7 +74,7 @@ export default {
       loginId: "",
       username: "",
       email: "",
-      userRole: "",
+      userRole: "VIEW",
       password: "",
       confirmPassword: "",
     });

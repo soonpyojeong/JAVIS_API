@@ -2,11 +2,12 @@
   <div class="top-nav">
     <ul v-if="isLoggedIn">
       <li
-        v-for="item in menuItems"
+        v-for="item in filteredMenuItems"
         :key="item.path"
         :class="{ active: selectedMenu === item.path }"
         @click="navigateTo(item.path)"
-      >        {{ item.name }}
+      >
+        {{ item.name }}
       </li>
       <!-- 👤 유저 뱃지 및 프로필 카드 감싸기 -->
       <li v-if="user && user.username" class="user-info-wrapper">
@@ -78,13 +79,18 @@ watch(user, (newVal) => {
 });
 
 const menuItems = [
-  { name: "첫화면", path: "/" },
-  { name: "DB 전체 리스트", path: "/db-list" },
-  { name: "SMS 전송 내역", path: "/sms-history" },
-  { name: "임계치 리스트", path: "/threshold-list" },
-  { name: "테이블스페이스 리스트", path: "/tablespaces" },
-  { name: "일일 점검(hit율)", path: "/dailyChk" },
+  { name: "첫화면", path: "/", roles: ["DBA", "DEV", "VIEW"] },
+  { name: "DB 전체 리스트", path: "/db-list", roles: ["DBA"] },
+  { name: "SMS 전송 내역", path: "/sms-history", roles: ["DBA", "DEV", "VIEW"] },
+  { name: "임계치 리스트", path: "/threshold-list", roles: ["DBA"] },
+  { name: "테이블스페이스 리스트", path: "/tablespaces", roles: ["DBA"] },
+  { name: "일일 점검(hit율)", path: "/dailyChk", roles: ["DBA", "DEV", "VIEW"] },
 ];
+
+const filteredMenuItems = computed(() => {
+  const role = user.value?.userRole?.toUpperCase();
+  return menuItems.filter(item => item.roles.includes(role));
+});
 
 const navigateTo = (path) => {
   router.push(path);
@@ -92,6 +98,7 @@ const navigateTo = (path) => {
 
 const logout = () => {
   store.dispatch("logout");
+  showProfile.value = false;
   window.location.href = "/";
   router.push("/login");
 };
