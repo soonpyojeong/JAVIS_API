@@ -23,7 +23,7 @@ const store = createStore({
   },
   mutations: {
     setUser(state, user) {
-      console.log("🧩 Vuex setUser 호출됨:", user); // ✅ 추가
+      //console.log("🧩 Vuex setUser 호출됨:", user); // ✅ 추가
       state.user = user;
     },
     setLoggedIn(state, status) {

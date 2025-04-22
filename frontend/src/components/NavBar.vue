@@ -33,7 +33,7 @@
         </div>
       </li>
     </ul>
-    <div v-else style="color: white;">🙆 로그인 상태가 아니다</div>
+    <div v-else style="color: white;">🙆 로그인 상태가 아닙니다</div>
   </div>
 </template>
 
