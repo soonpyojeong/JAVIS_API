@@ -1,6 +1,7 @@
 <template>
   <div id="app">
-    <NavBar v-if="isLoggedIn" @logout="handleLogout" />
+    <!-- 로그인 상태 복원 후에만 NavBar 표시 -->
+    <NavBar v-if="isNavReady" @logout="handleLogout" />
     <div class="main-content">
       <router-view />
     </div>
@@ -8,7 +9,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import NavBar from "./components/NavBar.vue";
@@ -16,7 +17,8 @@ import api from "@/api";
 
 const store = useStore();
 const router = useRouter();
-const isLoggedIn = computed(() => store.state.isLoggedIn);
+
+const isNavReady = ref(false);
 
 const handleLogout = () => {
   store.dispatch("logout");
@@ -24,43 +26,50 @@ const handleLogout = () => {
 };
 
 onMounted(async () => {
+  await router.isReady();
+
   const accessToken = localStorage.getItem("accessToken");
   const refreshToken = localStorage.getItem("refreshToken");
   const userRaw = localStorage.getItem("user");
 
-  // ✅ 복원 처리 (user가 없으면 강제 로그아웃도 가능)
+  let sessionRestored = false;
+
   if (accessToken && !store.state.isLoggedIn) {
     try {
       const user = JSON.parse(userRaw);
       store.commit("setUser", user);
       store.commit("setLoggedIn", true);
-    } catch (e) {
-      console.warn("유저 정보 복원 실패", e);
+      sessionRestored = true;
+    } catch {
       store.dispatch("logout");
     }
   }
 
-  // ✅ accessToken 없고 refreshToken 있을 경우 → 자동 재발급
   if (!accessToken && refreshToken) {
     try {
       const res = await api.post("/auth/refresh", { refreshToken });
       const newToken = res.data.accessToken;
       localStorage.setItem("accessToken", newToken);
       store.commit("setLoggedIn", true);
-    } catch (err) {
-      console.warn("토큰 재발급 실패", err);
+      sessionRestored = true;
+    } catch {
       store.dispatch("logout");
       router.push("/login");
+      return;
     }
   }
 
-  // 둘 다 없고 로그인 페이지가 아니라면
   if (!accessToken && !refreshToken && router.currentRoute.value.path !== "/login") {
     router.push("/login");
   }
+
+  if (sessionRestored && router.currentRoute.value.path === "/login") {
+    router.replace("/");
+  }
+
+  isNavReady.value = true; // ✅ NavBar 렌더링 허용
 });
 </script>
-
 
 <style>
 .main-content {
@@ -68,3 +77,4 @@ onMounted(async () => {
   padding: 20px;
 }
 </style>
+

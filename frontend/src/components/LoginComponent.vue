@@ -74,7 +74,7 @@ export default {
       loginId: "",
       username: "",
       email: "",
-      userRole: "VIEW",
+      userRole: "",
       password: "",
       confirmPassword: "",
     });
@@ -85,12 +85,13 @@ export default {
 
     const login = async () => {
       try {
-        const response = await api.post("http://10.90.4.60:8813/api/auth/login", loginForm.value);
+        const response = await api.post("/api/auth/login", loginForm.value);
         const { user, accessToken, refreshToken } = response.data;
-        console.log("✅ 로그인 응답", response.data);
+
 
         // 1. Vuex에 사용자 저장
-        store.dispatch("login", user);
+        store.dispatch("login", { user, accessToken, refreshToken });
+        console.log("✅ 로그인 응답", response.data);
 
         // 2. 로컬 스토리지에 토큰 저장
         localStorage.setItem("accessToken", accessToken);
@@ -98,6 +99,7 @@ export default {
 
         // 3. 홈으로 이동
         router.push("/");
+        window.location.href = "/";
       } catch (error) {
         alert(error.response?.data?.message || "로그인 중 문제가 발생했습니다.");
       }
@@ -110,7 +112,7 @@ export default {
       }
 
       try {
-        const response = await api.post("http://10.90.4.60:8813/api/auth/register", registerForm.value);
+        const response = await api.post("/api/auth/register", registerForm.value);
         if (response.data.success) {
           alert("회원가입 성공! 로그인 해주세요.");
           navigateTo("login");

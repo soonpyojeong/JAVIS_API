@@ -1,8 +1,13 @@
 import { createStore } from 'vuex';
 
 function loadUserFromStorage() {
+  const userRaw = localStorage.getItem("user");
+  if (!userRaw || userRaw === "undefined") {
+    return null;
+  }
+
   try {
-    return JSON.parse(localStorage.getItem("user"));
+    return JSON.parse(userRaw);
   } catch (e) {
     console.warn("⛔ user JSON 파싱 실패", e);
     return null;
@@ -13,11 +18,12 @@ const store = createStore({
   state() {
     return {
       isLoggedIn: !!localStorage.getItem("accessToken"),
-      user: loadUserFromStorage(),
+      user: loadUserFromStorage() || {}, // ✅ null 대신 {}로 기본값 설정
     };
   },
   mutations: {
     setUser(state, user) {
+      console.log("🧩 Vuex setUser 호출됨:", user); // ✅ 추가
       state.user = user;
     },
     setLoggedIn(state, status) {
@@ -37,7 +43,7 @@ const store = createStore({
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
-      commit("setUser", null);
+      commit("setUser", {}); // ✅ 빈 객체로 초기화
       commit("setLoggedIn", false);
     },
   },

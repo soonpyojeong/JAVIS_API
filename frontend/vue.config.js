@@ -9,19 +9,22 @@ module.exports = {
     : 'dist',
 
   devServer: {
-    port: process.env.VUE_APP_DEV_SERVER_PORT || 8812, // Vue dev 서버  포트
+    port: process.env.VUE_APP_DEV_SERVER_PORT || 8812,
 
     proxy: {
-      // API 요청 프록시
       '/api': {
         target: process.env.VUE_APP_API_URL || 'http://localhost:8813',
         changeOrigin: true,
         secure: false,
-        pathRewrite: { '^/api': '/api' },
+        // 🔥 pathRewrite 필요 없음 → 동일한 경로일 경우 제거 가능
+        // pathRewrite: { '^/api': '/api' }, ← 불필요
       },
+    },
+
+    // ✅ client 설정은 devServer.client로 바르게 위치해야 함
     client: {
-        webSocketURL: false,
-      },
+      webSocketURL: 'ws://localhost:8812/ws',
+    },
   },
 
   productionSourceMap: false,
