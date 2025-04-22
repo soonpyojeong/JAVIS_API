@@ -62,10 +62,10 @@ public class JavisLoginUserController {
             response.put("accessToken", accessToken);
             response.put("refreshToken", refreshToken);
 
-            System.out.println("✅ 로그인 성공");
-            System.out.println("📦 accessToken: " + accessToken);
-            System.out.println("📦 refreshToken: " + refreshToken);
-            System.out.println("👤 사용자 정보: " + user);
+            //System.out.println("✅ 로그인 성공");
+            //System.out.println("📦 accessToken: " + accessToken);
+            //System.out.println("📦 refreshToken: " + refreshToken);
+            //System.out.println("👤 사용자 정보: " + user);
 
             return ResponseEntity.ok(response);
         } else {

@@ -136,7 +136,7 @@ export default {
       this.isModalVisible = false;
       },
       saveThreshold() {
-            console.log("saveThreshold 호출 시 this.modalData:", this.modalData); // this 확인
+            //console.log("saveThreshold 호출 시 this.modalData:", this.modalData); // this 확인
             api.post("/api/threshold/save", this.modalData)
               .then(() => {
                 alert("Threshold 설정이 저장되었습니다.");
@@ -164,7 +164,7 @@ export default {
     fetchTablespaces(dbName) {
       api.get(`/api/tb/${dbName}/tablespaces`)
         .then((res) => {
-          console.log("전체 응답 데이터:", res.data); // 전체 응답 데이터 출력
+          //console.log("전체 응답 데이터:", res.data); // 전체 응답 데이터 출력
           if (JSON.stringify(this.tablespaces) === JSON.stringify(res.data)) return;
           this.tablespaces = res.data || [];
           this.$nextTick(() => {

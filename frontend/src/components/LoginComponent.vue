@@ -91,7 +91,7 @@ export default {
 
         // 1. Vuex에 사용자 저장
         store.dispatch("login", { user, accessToken, refreshToken });
-        console.log("✅ 로그인 응답", response.data);
+        //console.log("✅ 로그인 응답", response.data);
 
         // 2. 로컬 스토리지에 토큰 저장
         localStorage.setItem("accessToken", accessToken);

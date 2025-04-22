@@ -61,9 +61,9 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
   document.addEventListener("click", handleClickOutside);
-  console.log("✅ NavBar 마우트 완료. 로그인 상태:", store.state.isLoggedIn);
-  console.log("🥉 사용자 정보 username:", user.value.username);
-  console.log("🥉 사용자 정보 userRole:", user.value.userRole);
+ // console.log("✅ NavBar 마우트 완료. 로그인 상태:", store.state.isLoggedIn);
+ // console.log("🥉 사용자 정보 username:", user.value.username);
+ // console.log("🥉 사용자 정보 userRole:", user.value.userRole);
 });
 
 onBeforeUnmount(() => {

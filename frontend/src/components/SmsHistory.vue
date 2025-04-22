@@ -83,8 +83,7 @@ export default {
       if (this.day && this.day > 0) {  // day 값이 1 이상일 때만 API 요청
         api.get(`/api/sms/all?day=${this.day}`)
           .then(response => {
-            console.log("API 응답:", response);
-
+            //console.log("API 응답:", response);
             if (Array.isArray(response.data)) {
               this.smsHistories = response.data;
 

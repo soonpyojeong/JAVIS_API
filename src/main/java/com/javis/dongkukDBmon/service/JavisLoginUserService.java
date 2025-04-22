@@ -31,8 +31,8 @@ public class JavisLoginUserService {
         String hashedPassword = passwordEncoder.encode(rawPassword);
 
         // 회원가입 시 암호화된 비밀번호를 출력
-        System.out.println("회원가입 - 평문 비밀번호: " + rawPassword);
-        System.out.println("회원가입 - 암호화된 비밀번호: " + hashedPassword);
+        //System.out.println("회원가입 - 평문 비밀번호: " + rawPassword);
+        //System.out.println("회원가입 - 암호화된 비밀번호: " + hashedPassword);
 
         newUser.setPassword(hashedPassword);
         return userRepository.save(newUser);
@@ -45,8 +45,8 @@ public class JavisLoginUserService {
         if (user.isPresent()) {
             String storedHashedPassword = user.get().getPassword();
 
-            System.out.println("로그인 - 입력된 평문 비밀번호: " + password);
-            System.out.println("로그인 - 저장된 암호화된 비밀번호: " + storedHashedPassword);
+            //System.out.println("로그인 - 입력된 평문 비밀번호: " + password);
+            //System.out.println("로그인 - 저장된 암호화된 비밀번호: " + storedHashedPassword);
 
             // 입력된 비밀번호와 저장된 암호화된 비밀번호 비교
             if (passwordEncoder.matches(password, storedHashedPassword)) {
