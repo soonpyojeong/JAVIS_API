@@ -25,8 +25,8 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const isLoggedIn = store.state.isLoggedIn || !!localStorage.getItem("accessToken");
-  console.log("Router Guard - isLoggedIn:", isLoggedIn);
-  console.log("Navigating to:", to.path);
+  //console.log("Router Guard - isLoggedIn:", isLoggedIn);
+  //console.log("Navigating to:", to.path);
 
   if (to.path === "/login" && isLoggedIn) {
     next("/");

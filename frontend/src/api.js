@@ -51,6 +51,6 @@ api.interceptors.response.use(
 
 
 
-console.log("Axios baseURL 확인:", api.defaults.baseURL);
+//console.log("Axios baseURL 확인:", api.defaults.baseURL);
 export default api;
 
