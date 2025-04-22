@@ -6,33 +6,38 @@
         :key="item.path"
         :class="{ active: selectedMenu === item.path }"
         @click="navigateTo(item.path)"
-      >
-        {{ item.name }}
+      >        {{ item.name }}
       </li>
-       <li v-if="user && user.username" class="user-info-badge" @click="showProfile = true">
-         <span class="emoji">{{ roleEmoji }}</span>
-         <span class="username">{{ user.username }}님</span>
-         <span class="role">({{ user.userRole }})</span>
-       </li>
-
-       <!-- ✅ 프로필 모달 -->
-       <div v-if="showProfile" class="modal-overlay" @click.self="showProfile = false">
-         <div class="modal-content">
-           <h3>😎 프로필 정보</h3>
-           <p><strong>이름:</strong> {{ user.username }}</p>
-           <p><strong>권한:</strong> {{ user.userRole }}</p>
-           <p><strong>이메일:</strong> {{ user.email || '이메일 없음' }}</p>
-           <button @click="showProfile = false" class="close-btn">닫기</button>
-         </div>
-       </div>
-       <li @click="logout" class="logout-btn">로그아웃</li>
+      <!-- 👤 유저 뱃지 및 프로필 카드 감싸기 -->
+      <li v-if="user && user.username" class="user-info-wrapper">
+        <div class="user-info-badge" @click="toggleProfile">
+          <span class="emoji">{{ roleEmoji }}</span>
+          <span class="username">{{ user.username }}님</span>
+          <span class="role">({{ user.userRole }})</span>
+        </div>
+        <!-- ✨ 프로필 카드: 유저 뱃지 아래에 위치 -->
+        <div v-if="showProfile" class="profile-card">
+          <div class="card-inner">
+            <div class="card-header">
+              <span class="emoji-big">{{ roleEmoji }}</span>
+              <div>
+                <div class="name">{{ user.username }}</div>
+                <div class="email">{{ user.email || "이메일 없음" }}</div>
+                <div class="role">🏷 {{ user.userRole }}</div>
+              </div>
+            </div>
+            <hr />
+            <button class="logout-card-btn" @click="logout">🚪 로그아웃</button>
+          </div>
+        </div>
+      </li>
     </ul>
-    <div v-else style="color: white;">🙋 로그인 상태가 아닙니다</div>
+    <div v-else style="color: white;">🙆 로그인 상태가 아니다</div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted } from "vue";
+import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { useStore } from "vuex";
 import { useRouter, useRoute } from "vue-router";
 
@@ -41,14 +46,35 @@ const router = useRouter();
 const route = useRoute();
 
 const isLoggedIn = computed(() => store.state.isLoggedIn);
-// ✅ 사용자 정보 가져오기
 const user = computed(() => store.state.user);
 const showProfile = ref(false);
+const toggleProfile = () => (showProfile.value = !showProfile.value);
+
+const handleClickOutside = (event) => {
+  const card = document.querySelector(".profile-card");
+  const badge = document.querySelector(".user-info-badge");
+  if (card && !card.contains(event.target) && badge && !badge.contains(event.target)) {
+    showProfile.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
+  console.log("✅ NavBar 마우트 완료. 로그인 상태:", store.state.isLoggedIn);
+  console.log("🥉 사용자 정보 username:", user.value.username);
+  console.log("🥉 사용자 정보 userRole:", user.value.userRole);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
 
 const selectedMenu = ref(route.path);
 
-watch(() => route.path, (newPath) => {
-  selectedMenu.value = newPath;
+watch(user, (newVal) => {
+  if (!newVal || !newVal.username) {
+    showProfile.value = false;
+  }
 });
 
 const menuItems = [
@@ -66,6 +92,7 @@ const navigateTo = (path) => {
 
 const logout = () => {
   store.dispatch("logout");
+  window.location.href = "/";
   router.push("/login");
 };
 
@@ -78,12 +105,6 @@ const roleEmoji = computed(() => {
     default: return "😊";
   }
 });
-
-onMounted(() => {
-  console.log("✅ NavBar 마운트 완료. 로그인 상태:", store.state.isLoggedIn);
-    console.log("🧩 사용자 정보 username:", user.value.username);
-    console.log("🧩 사용자 정보 userRole:", user.value.userRole);
-});
 </script>
 
 <style scoped>
@@ -92,48 +113,60 @@ onMounted(() => {
   top: 0;
   left: 0;
   width: 100%;
-  background: #4caf50;
-  padding: 10px 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  height: 60px;
+  background-color: #4caf50;
+  padding: 0 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   display: flex;
+  align-items: center;
   justify-content: center;
-  font-family: 'Arial', sans-serif;
+  font-family: 'Segoe UI', 'Pretendard', sans-serif;
+  white-space: nowrap;
 }
 
 .top-nav ul {
   list-style: none;
   display: flex;
+  align-items: center;
   margin: 0;
   padding: 0;
+  gap: 8px;
 }
 
 .top-nav li {
-  margin: 0 15px;
-  padding: 10px 15px;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  margin: 0;
   color: white;
-  font-weight: bold;
-  transition: background 0.3s ease, color 0.3s ease;
+  font-weight: 600;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border-radius: 20px;
+  position: relative;
 }
 
 .top-nav li:hover {
-  background: #3e8e41;
-  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
 }
 
 .top-nav li.active {
-  background: #2e7d32;
-  color: #ffffff;
-  border-radius: 5px;
+  background-color: #2e7d32;
+  color: #fff;
 }
 
 .logout-btn {
-  color: red;
-  cursor: pointer;
+  color: #ffdddd;
+  font-weight: bold;
 }
 
-/* ✅ 사용자 정보 스타일 */
+.logout-btn:hover {
+  background-color: rgba(255, 0, 0, 0.1);
+}
+
 .user-info-badge {
   background-color: rgba(255, 255, 255, 0.15);
   color: #fff;
@@ -167,62 +200,79 @@ onMounted(() => {
   opacity: 0.9;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
+.user-info-wrapper {
+  position: relative;
+  z-index: 10001;
+}
+
+.profile-card {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  z-index: 10002;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 260px;
+  animation: slideDown 0.2s ease-out;
+}
+
+.card-inner {
+  padding: 16px 20px;
+}
+
+.card-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 9999;
+  gap: 12px;
 }
 
-.modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 320px;
-  max-width: 90%;
-  text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  animation: pop-in 0.2s ease;
+.emoji-big {
+  font-size: 30px;
 }
 
-.modal-content h3 {
-  margin-bottom: 15px;
+.card-header .name {
+  font-weight: bold;
+  font-size: 16px;
 }
 
-.modal-content p {
-  margin: 10px 0;
-  font-size: 14px;
+.card-header .email {
+  font-size: 13px;
+  color: #666;
+  margin-top: 2px;
 }
 
-.close-btn {
-  margin-top: 15px;
-  background: #4caf50;
-  color: white;
+.card-header .role {
+  font-size: 12px;
+  color: #888;
+}
+
+.logout-card-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px;
   border: none;
-  padding: 10px 18px;
+  background: #f44336;
+  color: white;
+  font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
-.close-btn:hover {
-  background: #388e3c;
+.logout-card-btn:hover {
+  background: #d32f2f;
 }
 
-@keyframes pop-in {
+@keyframes slideDown {
   from {
-    transform: scale(0.95);
+    transform: translateY(-10px);
     opacity: 0;
   }
   to {
-    transform: scale(1);
+    transform: translateY(0);
     opacity: 1;
   }
 }
 </style>
+
