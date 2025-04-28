@@ -102,7 +102,8 @@
 </template>
 
 <script>
-import api from "@/api"; // 공통 axios 인스턴스 가져오기
+import api from "@/api";
+import { connectWebSocket, disconnectWebSocket } from "@/websocket";
 
 export default {
   data() {
@@ -112,16 +113,16 @@ export default {
       isModalVisible: false,
       currentDb: null,
       currentField: null,
-      allChkStatus: null, // 전체관제 상태 (backend에서 "N"이면 전체관제중지중)
-      isAllChkModalVisible: false, // 전체관제 상태 변경 모달 표시 여부
-      sortKey: "", // 현재 정렬 기준 열
-      sortAsc: true, // 정렬 방향 (true: 오름차순, false: 내림차순)
+      allChkStatus: null,
+      isAllChkModalVisible: false,
+      sortKey: "",
+      sortAsc: true,
     };
   },
   computed: {
     filteredDbList() {
       const query = this.searchQuery.toLowerCase();
-      return this.dbList.filter(db => {
+      return this.dbList.filter((db) => {
         return (
           (db.dbDescript && db.dbDescript.toLowerCase().includes(query)) ||
           (db.hostname && db.hostname.toLowerCase().includes(query)) ||
@@ -131,7 +132,7 @@ export default {
           (db.dbName && db.dbName.toLowerCase().includes(query))
         );
       });
-    }
+    },
   },
   methods: {
     sortTable(column) {
@@ -141,8 +142,6 @@ export default {
         this.sortKey = column;
         this.sortAsc = true;
       }
-
-      // 새로운 배열로 할당
       this.dbList = [...this.dbList].sort((a, b) => {
         const valA = a[column] ? a[column].toString().toLowerCase() : "";
         const valB = b[column] ? b[column].toString().toLowerCase() : "";
@@ -151,7 +150,6 @@ export default {
         return 0;
       });
     },
-    // 개별 수정 모달 관련
     showModal(db, field) {
       this.currentDb = db;
       this.currentField = field;
@@ -159,15 +157,23 @@ export default {
     },
     confirmUpdate() {
       if (this.currentDb && this.currentField) {
-        const newStatus = this.currentDb[this.currentField] === 'Y' ? 'N' : 'Y';
+        const newStatus = this.currentDb[this.currentField] === "Y" ? "N" : "Y";
         this.currentDb[this.currentField] = newStatus;
-        api.put(`/api/db-list/update/${this.currentDb.id}`, { [this.currentField]: newStatus })
+
+        // ✅ userId 가져오기 (store에서 꺼내오기)
+        const username = this.$store.state.user.username; // 또는 저장된 위치에 따라 다를 수 있음
+
+        api
+          .put(`/api/db-list/update/${this.currentDb.id}`, {
+            ...this.currentDb,
+            username: username, // 알람용으로 서버로 같이 보냄
+          })
           .then(() => {
             this.isModalVisible = false;
           })
           .catch((error) => {
             console.error(`${this.currentField} 업데이트 실패`, error);
-            this.currentDb[this.currentField] = this.currentDb[this.currentField] === 'Y' ? 'N' : 'Y';
+            this.currentDb[this.currentField] = newStatus === "Y" ? "N" : "Y";
             this.isModalVisible = false;
           });
       }
@@ -175,14 +181,13 @@ export default {
     cancelUpdate() {
       this.isModalVisible = false;
     },
-    // 전체관제 상태 변경 모달 관련
     showAllChkModal() {
       this.isAllChkModalVisible = true;
     },
     confirmAllChkUpdate() {
-      // 현재 상태가 "N"이면 해제(null), 아니면 "N"으로 업데이트
-      const newStatus = this.allChkStatus === 'N' ? null : 'N';
-      api.put("/api/db-list/update-allchk", { status: newStatus })
+      const newStatus = this.allChkStatus === "N" ? null : "N";
+      api
+        .put("/api/db-list/update-allchk", { status: newStatus })
         .then(() => {
           this.allChkStatus = newStatus;
           this.isAllChkModalVisible = false;
@@ -194,27 +199,43 @@ export default {
     },
     cancelAllChkUpdate() {
       this.isAllChkModalVisible = false;
-    }
+    },
+    handleWebSocketMessage(updatedDb) {
+      const index = this.dbList.findIndex((db) => db.id === updatedDb.id);
+      if (index !== -1) {
+        this.dbList.splice(index, 1, updatedDb);
+      }
+    },
   },
   mounted() {
-    api.get("/api/db-list/all")
+    api
+      .get("/api/db-list/all")
       .then((response) => {
         this.dbList = response.data;
       })
       .catch((error) => {
         console.error("API 호출 오류:", error);
       });
-    // 전체관제 상태 초기값을 가져오기 (GET /allchk)
-    api.get("/api/db-list/allchk")
+    api
+      .get("/api/db-list/allchk")
       .then((response) => {
         this.allChkStatus = response.data;
       })
       .catch((error) => {
         console.error("전체관제 상태 조회 실패", error);
       });
+
+    connectWebSocket({
+      onDbStatusMessage: this.handleWebSocketMessage,
+    });
+  },
+  beforeUnmount() {
+    disconnectWebSocket();
   },
 };
 </script>
+
+
 <style scoped>
 .db-list-container {
   font-family: 'Arial', sans-serif;

@@ -137,7 +137,11 @@ export default {
       },
       saveThreshold() {
             //console.log("saveThreshold 호출 시 this.modalData:", this.modalData); // this 확인
-            api.post("/api/threshold/save", this.modalData)
+            const username = this.$store.state.user.username; // Vuex에서 username 가져오기
+            api.post("/api/threshold/save", {
+                ...this.modalData,   // ✅ modalData 펼치고
+                username: username,  // ✅ username 추가해서 함께 보냄
+              })
               .then(() => {
                 alert("Threshold 설정이 저장되었습니다.");
                 this.closeModal();

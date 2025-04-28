@@ -13,6 +13,9 @@ public class DBListService {
     @Autowired
     private DBListRepository dbListRepository;
 
+    @Autowired
+    private AlertService alertService;
+
     // DB 리스트 모두 가져오기
     public List<DBList> getAllDBList() {
         return dbListRepository.findAll();
@@ -21,7 +24,9 @@ public class DBListService {
     // DB 리스트 저장
     public void saveDBList(DBList dbList) {
         dbListRepository.save(dbList);
+
     }
+
 
     // DB 리스트 삭제
     public void deleteDBList(Long id) {

@@ -31,7 +31,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers(
                                 "/", "/index.html",
                                 "/favicon.ico", "/static/**", "/assets/**",
-                                "/js/**", "/css/**","/api/**",
+                                "/js/**", "/css/**","/api/**","/ws/**","/api/alerts/**",
                                 "/api/auth/**"
                         ).permitAll()
                         .anyRequest().authenticated()

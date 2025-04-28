@@ -126,12 +126,12 @@ export default {
     },
 
     async fetchInvalidObjectsMonitoringData(index) {
-      console.log("Invalid Object 데이터 가져오기 - API 필요");
+      //console.log("Invalid Object 데이터 가져오기 - API 필요");
       this.monitoringItems[index].events = [];
     },
 
     async fetchLockListMonitoringData(index) {
-      console.log("Lock List 데이터 가져오기 - API 필요");
+      //console.log("Lock List 데이터 가져오기 - API 필요");
       this.monitoringItems[index].events = [];
     },
 

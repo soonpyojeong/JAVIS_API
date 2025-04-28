@@ -9,7 +9,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class JavisLoginUserService {
@@ -64,5 +66,10 @@ public class JavisLoginUserService {
     public Optional<JavisLoginUser> findByLoginId(String loginId) {
         return userRepository.findByLoginId(loginId);
     }
-
+    public List<String> getAllLoginIds() {
+        return userRepository.findAll()
+                .stream()
+                .map(user -> user.getLoginId())
+                .collect(Collectors.toList());
+    }
 }

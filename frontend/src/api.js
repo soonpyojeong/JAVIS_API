@@ -49,7 +49,13 @@ api.interceptors.response.use(
   }
 );
 
-
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 //console.log("Axios baseURL 확인:", api.defaults.baseURL);
 export default api;

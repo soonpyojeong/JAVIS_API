@@ -129,21 +129,26 @@ export default {
         id: threshold.id, // ID가 필요
         thresMb: threshold.editedValue,
       };
+    const username = this.$store.state.user.username; // Vuex에서 username 가져오기
 
-      // 서버에 PUT 요청
-      api.put(`/api/threshold/${updatedThreshold.id}`, updatedThreshold)
-        .then((response) => {
-          if (response.data) {
-            // 로컬 데이터 업데이트 및 편집 종료
-            threshold.thresMb = threshold.editedValue;
-            threshold.isEditing = false;
-          } else {
-            console.error("임계치 업데이트 실패");
-          }
-        })
-        .catch((error) => {
-          console.error("임계치 업데이트 오류:", error);
-        });
+    // 서버에 PUT 요청
+    api.put(`/api/threshold/${updatedThreshold.id}`, {
+      ...updatedThreshold,  // 원래 데이터 펼치고
+      username: username,   // 추가 데이터도 함께
+    })
+    .then((response) => {
+      if (response.data) {
+        // 로컬 데이터 업데이트 및 편집 종료
+        threshold.thresMb = threshold.editedValue;
+        threshold.isEditing = false;
+      } else {
+        console.error("임계치 업데이트 실패");
+      }
+    })
+    .catch((error) => {
+      console.error("임계치 업데이트 오류:", error);
+    });
+
     },
 
     // 테이블 정렬

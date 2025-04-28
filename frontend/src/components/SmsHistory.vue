@@ -78,7 +78,7 @@ export default {
   },
   methods: {
     fetchSmsHistories() {
-      console.log("조회할 일수(day) 값:", this.day);
+      //console.log("조회할 일수(day) 값:", this.day);
 
       if (this.day && this.day > 0) {  // day 값이 1 이상일 때만 API 요청
         api.get(`/api/sms/all?day=${this.day}`)
@@ -103,7 +103,7 @@ export default {
             console.error('Error fetching SMS histories:', error);
           });
       } else {
-        console.log('조회할 일수가 올바르지 않습니다.');
+        //console.log('조회할 일수가 올바르지 않습니다.');
         this.smsHistories = [];
         this.filteredSmsHistories = [];
       }

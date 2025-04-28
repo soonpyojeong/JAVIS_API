@@ -12,6 +12,11 @@ module.exports = {
     port: process.env.VUE_APP_DEV_SERVER_PORT || 8812,
 
     proxy: {
+      '/ws': {
+              target: 'http://localhost:8813',
+              ws: true,
+              changeOrigin: true
+            },
       '/api': {
         target: process.env.VUE_APP_API_URL || 'http://localhost:8813',
         changeOrigin: true,
@@ -23,7 +28,7 @@ module.exports = {
 
     // ✅ client 설정은 devServer.client로 바르게 위치해야 함
     client: {
-      webSocketURL: 'ws://localhost:8812/ws',
+      webSocketURL: 'ws://10.90.4.60:8812/ws',
     },
   },
 
