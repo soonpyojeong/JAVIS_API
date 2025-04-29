@@ -14,7 +14,8 @@ public interface DailyChkRepository extends JpaRepository<Dailychk, DailyCheckMg
 
     @Query(value = "SELECT  * FROM tb_db_daily_chk\n" +
                    "WHERE db_name = :instanceName\n" +
-                   "AND chk_date >= to_char(sysdate-2,'yyyy/mm/dd')\n", nativeQuery = true)
+                   "AND chk_date >= to_char(sysdate-2,'yyyy/mm/dd')\n"+
+                     "order by CHK_DATE", nativeQuery = true)
     List<Dailychk> findById_DbNameAndId_ChkDateBetween(
             @Param("instanceName") String instanceName
     );
@@ -22,7 +23,8 @@ public interface DailyChkRepository extends JpaRepository<Dailychk, DailyCheckMg
 
     @Query(value = "SELECT  * FROM TB_DB_TIBERO_DAILY_CHK\n" +
                    "WHERE db_name = :instanceName\n" +
-                   "AND chk_date >= to_char(sysdate-2,'yyyy/mm/dd')\n", nativeQuery = true)
+                   "AND chk_date >= to_char(sysdate-2,'yyyy/mm/dd')\n"+
+                   "order by CHK_DATE", nativeQuery = true)
     List<TbDailychk> findById_TbDbNameAndId_ChkDateBetween(
             @Param("instanceName") String instanceName
     );

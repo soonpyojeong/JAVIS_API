@@ -2,7 +2,7 @@
   <div class="db-list-container">
     <h2>DB 리스트</h2>
 
-    <!-- 상단 영역: 검색 박스와 전체관제 해제 버튼 같은 줄에 배치 -->
+    <!-- 상단 영역 -->
     <div class="top-container">
       <div class="search-box">
         <label for="search" class="search-label">검색:</label>
@@ -26,17 +26,18 @@
     <table v-if="filteredDbList.length > 0" class="db-table">
       <thead>
         <tr>
-          <th @click="sortTable('assets')">자산 <span v-if="sortKey === 'assets'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('dbDescript')">설명 <span v-if="sortKey === 'dbDescript'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('hostname')">호스트 <span v-if="sortKey === 'hostname'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('pubIp')">PubIP <span v-if="sortKey === 'pubIp'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('vip')">VIP <span v-if="sortKey === 'vip'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('dbName')">DB 이름 <span v-if="sortKey === 'dbName'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('liveChk')">LIVE <span v-if="sortKey === 'liveChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('sizeChk')">TBS <span v-if="sortKey === 'sizeChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('trnBakChk')">TRN <span v-if="sortKey === 'trnBakChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('objSegSizeChk')">OBJ <span v-if="sortKey === 'objSegSizeChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('dailyChk')">Daily <span v-if="sortKey === 'dailyChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('assets')">자산<span v-if="sortKey === 'assets'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('dbDescript')">설명<span v-if="sortKey === 'dbDescript'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('hostname')">호스트<span v-if="sortKey === 'hostname'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('pubIp')">PubIP<span v-if="sortKey === 'pubIp'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('vip')">VIP<span v-if="sortKey === 'vip'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('dbName')">DB 이름<span v-if="sortKey === 'dbName'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('liveChk')">LIVE<span v-if="sortKey === 'liveChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('sizeChk')">TBS<span v-if="sortKey === 'sizeChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('trnBakChk')">TRN<span v-if="sortKey === 'trnBakChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('objSegSizeChk')">OBJ<span v-if="sortKey === 'objSegSizeChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th @click="sortTable('dailyChk')">일일점검<span v-if="sortKey === 'dailyChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
+          <th>자사중지</th> <!-- 하나 행에 자사중지 버튼 -->
         </tr>
       </thead>
       <tbody>
@@ -48,36 +49,66 @@
           <td>{{ db.vip }}</td>
           <td>{{ db.dbName }}</td>
           <td>
-            <button :class="db.liveChk === 'Y' ? 'btn-on' : 'btn-off'" @click="showModal(db, 'liveChk')">
+            <button :class="[db.liveChk === 'Y' ? 'btn-on' : 'btn-off', !isButtonEnabled(db, 'liveChk') ? 'btn-disabled' : '']"
+              @click="showModal(db, 'liveChk')"
+              :disabled="!isButtonEnabled(db, 'liveChk')">
               {{ db.liveChk === 'Y' ? 'On' : 'Off' }}
             </button>
           </td>
           <td>
-            <button :class="db.sizeChk === 'Y' ? 'btn-on' : 'btn-off'" @click="showModal(db, 'sizeChk')">
+            <button :class="[db.sizeChk === 'Y' ? 'btn-on' : 'btn-off', !isButtonEnabled(db, 'sizeChk') ? 'btn-disabled' : '']"
+              @click="showModal(db, 'sizeChk')"
+              :disabled="!isButtonEnabled(db, 'sizeChk')">
               {{ db.sizeChk === 'Y' ? 'On' : 'Off' }}
             </button>
           </td>
           <td>
-            <button :class="db.trnBakChk === 'Y' ? 'btn-on' : 'btn-off'" @click="showModal(db, 'trnBakChk')">
+            <button :class="[db.trnBakChk === 'Y' ? 'btn-on' : 'btn-off', !isButtonEnabled(db, 'trnBakChk') ? 'btn-disabled' : '']"
+              @click="showModal(db, 'trnBakChk')"
+              :disabled="!isButtonEnabled(db, 'trnBakChk')">
               {{ db.trnBakChk === 'Y' ? 'On' : 'Off' }}
             </button>
           </td>
           <td>
-            <button :class="db.objSegSizeChk === 'Y' ? 'btn-on' : 'btn-off'" @click="showModal(db, 'objSegSizeChk')">
+            <button :class="[db.objSegSizeChk === 'Y' ? 'btn-on' : 'btn-off', !isButtonEnabled(db, 'objSegSizeChk') ? 'btn-disabled' : '']"
+              @click="showModal(db, 'objSegSizeChk')"
+              :disabled="!isButtonEnabled(db, 'objSegSizeChk')">
               {{ db.objSegSizeChk === 'Y' ? 'On' : 'Off' }}
             </button>
           </td>
           <td>
-            <button :class="db.dailyChk === 'Y' ? 'btn-on' : 'btn-off'" @click="showModal(db, 'dailyChk')">
+            <button :class="[db.dailyChk === 'Y' ? 'btn-on' : 'btn-off', !isButtonEnabled(db, 'dailyChk') ? 'btn-disabled' : '']"
+              @click="showModal(db, 'dailyChk')"
+              :disabled="!isButtonEnabled(db, 'dailyChk')">
               {{ db.dailyChk === 'Y' ? 'On' : 'Off' }}
             </button>
           </td>
+          <td>
+            <button
+              class="pause-btn"
+              :class="getAssetButtonClass(db)"
+              @click="showPauseModal(db)"
+            >
+              {{ getAssetButtonLabel(db) }}
+            </button>
+          </td>
+
         </tr>
       </tbody>
     </table>
-    <p v-else>데이터가 없습니다.</p>
 
-    <!-- 개별 수정 모달 (기존) -->
+    <p v-else>데이터가 없습니다.</p>
+    <!-- 자산중지 모달 -->
+    <div v-if="isPauseModalVisible" class="modal-overlay">
+      <div class="modal">
+        <h3>정말 자산을 {{ getAssetButtonLabel(targetPauseDb) }} 하시겠습니까?</h3>
+        <div class="modal-actions">
+          <button class="modal-btn" @click="confirmPauseAssets">확인</button>
+          <button class="modal-btn" @click="cancelPauseAssets">취소</button>
+        </div>
+      </div>
+    </div>
+    <!-- 개별 수정 모달 -->
     <div v-if="isModalVisible" class="modal-overlay">
       <div class="modal">
         <h3>정말 수정하시겠습니까?</h3>
@@ -105,6 +136,14 @@
 import api from "@/api";
 import { connectWebSocket, disconnectWebSocket } from "@/websocket";
 
+const buttonRules = {
+  liveChk: ['EDB', 'TIBERO', 'MSSQL', 'SYBASE', 'MARIADB', 'MYSQL', 'ORACLE'],
+  sizeChk: ['ORACLE', 'TIBERO'],
+  trnBakChk: ['SYBASE'],
+  objSegSizeChk: ['ORACLE', 'TIBERO'],
+  dailyChk: ['ORACLE', 'TIBERO'],
+};
+
 export default {
   data() {
     return {
@@ -115,14 +154,16 @@ export default {
       currentField: null,
       allChkStatus: null,
       isAllChkModalVisible: false,
-      sortKey: "",
-      sortAsc: true,
+      sortKey: "dbDescript", //  기본 정렬 키 설정
+      sortAsc: true,     //  기본 오름차순
+      isPauseModalVisible: false, //  자산중지 모달 추가
+      targetPauseDb: null,         //  자산중지 대상 DB 저장
     };
   },
   computed: {
     filteredDbList() {
       const query = this.searchQuery.toLowerCase();
-      return this.dbList.filter((db) => {
+      let result = this.dbList.filter((db) => {
         return (
           (db.dbDescript && db.dbDescript.toLowerCase().includes(query)) ||
           (db.hostname && db.hostname.toLowerCase().includes(query)) ||
@@ -132,9 +173,90 @@ export default {
           (db.dbName && db.dbName.toLowerCase().includes(query))
         );
       });
+
+      // 🔥 검색 후 정렬
+      if (this.sortKey) {
+        result = [...result].sort((a, b) => {
+          const valA = a[this.sortKey] ? a[this.sortKey].toString().toLowerCase() : "";
+          const valB = b[this.sortKey] ? b[this.sortKey].toString().toLowerCase() : "";
+          if (valA < valB) return this.sortAsc ? -1 : 1;
+          if (valA > valB) return this.sortAsc ? 1 : -1;
+          return 0;
+        });
+      }
+
+      return result;
     },
   },
   methods: {
+    // 🔥 자산중지 모달 열기
+      showPauseModal(db) {
+        this.targetPauseDb = db;
+        this.isPauseModalVisible = true;
+      },
+
+      // 🔥 자산중지 확정
+      confirmPauseAssets() {
+        const username = this.$store.state.user.username;
+        const db = this.targetPauseDb;
+        if (!db) return;
+
+        const targetFields = ['liveChk', 'sizeChk', 'trnBakChk', 'objSegSizeChk', 'dailyChk'];
+        const managedFields = targetFields.filter(field => {
+          return buttonRules[field]?.includes(db.dbType);
+        });
+
+        const hasAnyY = managedFields.some(field => db[field] === "Y");
+        const newStatus = hasAnyY ? "N" : "Y";
+
+        managedFields.forEach(field => {
+          if (field in db) {
+            db[field] = newStatus;
+          }
+        });
+
+        api.put(`/api/db-list/update/${db.id}`, {
+          ...db,
+          username: username,
+        })
+        .then(() => {
+          this.isPauseModalVisible = false;
+          this.targetPauseDb = null;
+        })
+        .catch((error) => {
+          console.error("자산중지 업데이트 실패", error);
+          this.isPauseModalVisible = false;
+          this.targetPauseDb = null;
+        });
+      },
+
+      // 🔥 자산중지 모달 취소
+      cancelPauseAssets() {
+        this.isPauseModalVisible = false;
+        this.targetPauseDb = null;
+      },
+
+      // 버튼 라벨
+      getAssetButtonLabel(db) {
+        if (!db) return '';
+        const targetFields = ['liveChk', 'sizeChk', 'trnBakChk', 'objSegSizeChk', 'dailyChk'];
+        const managedFields = targetFields.filter(field => buttonRules[field]?.includes(db.dbType));
+        const hasAnyY = managedFields.some(field => db[field] === "Y");
+        return hasAnyY ? "자산중지" : "관제활성";
+      },
+
+      // 버튼 색상
+      getAssetButtonClass(db) {
+        const targetFields = ['liveChk', 'sizeChk', 'trnBakChk', 'objSegSizeChk', 'dailyChk'];
+        const managedFields = targetFields.filter(field => buttonRules[field]?.includes(db.dbType));
+        const hasAnyY = managedFields.some(field => db[field] === "Y");
+        return hasAnyY ? 'btn-gray' : 'btn-off';
+      },
+    isButtonEnabled(db, field) {
+      const allowedDbTypes = buttonRules[field];
+      if (!allowedDbTypes) return false;
+      return allowedDbTypes.includes(db.dbType);
+    },
     sortTable(column) {
       if (this.sortKey === column) {
         this.sortAsc = !this.sortAsc;
@@ -142,13 +264,6 @@ export default {
         this.sortKey = column;
         this.sortAsc = true;
       }
-      this.dbList = [...this.dbList].sort((a, b) => {
-        const valA = a[column] ? a[column].toString().toLowerCase() : "";
-        const valB = b[column] ? b[column].toString().toLowerCase() : "";
-        if (valA < valB) return this.sortAsc ? -1 : 1;
-        if (valA > valB) return this.sortAsc ? 1 : -1;
-        return 0;
-      });
     },
     showModal(db, field) {
       this.currentDb = db;
@@ -160,14 +275,12 @@ export default {
         const newStatus = this.currentDb[this.currentField] === "Y" ? "N" : "Y";
         this.currentDb[this.currentField] = newStatus;
 
-        // ✅ userId 가져오기 (store에서 꺼내오기)
-        const username = this.$store.state.user.username; // 또는 저장된 위치에 따라 다를 수 있음
+        const username = this.$store.state.user.username;
 
-        api
-          .put(`/api/db-list/update/${this.currentDb.id}`, {
-            ...this.currentDb,
-            username: username, // 알람용으로 서버로 같이 보냄
-          })
+        api.put(`/api/db-list/update/${this.currentDb.id}`, {
+          ...this.currentDb,
+          username: username,
+        })
           .then(() => {
             this.isModalVisible = false;
           })
@@ -186,8 +299,7 @@ export default {
     },
     confirmAllChkUpdate() {
       const newStatus = this.allChkStatus === "N" ? null : "N";
-      api
-        .put("/api/db-list/update-allchk", { status: newStatus })
+      api.put("/api/db-list/update-allchk", { status: newStatus })
         .then(() => {
           this.allChkStatus = newStatus;
           this.isAllChkModalVisible = false;
@@ -208,16 +320,15 @@ export default {
     },
   },
   mounted() {
-    api
-      .get("/api/db-list/all")
+    api.get("/api/db-list/all")
       .then((response) => {
         this.dbList = response.data;
       })
       .catch((error) => {
         console.error("API 호출 오류:", error);
       });
-    api
-      .get("/api/db-list/allchk")
+
+    api.get("/api/db-list/allchk")
       .then((response) => {
         this.allChkStatus = response.data;
       })
@@ -234,6 +345,8 @@ export default {
   },
 };
 </script>
+
+
 
 
 <style scoped>
@@ -332,12 +445,33 @@ h2 {
 
 button {
   padding: 8px 15px;
+  min-width: 50px; /* ✅ 최소 너비 */
+  text-align: center;
+  overflow: visible; /* ✅ overflow 해제 */
+  text-overflow: unset; /* ✅ 말줄임 해제 */
+  white-space: nowrap; /* ✅ 줄바꿈 방지 (On/Off만 딱 표시) */
   border: none;
   border-radius: 3px;
   cursor: pointer;
   font-size: 0.8em;
   font-weight: bold;
   transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:disabled {
+  background-color: #dcdcdc !important;
+  color: #7f8c8d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button.btn-disabled {
+  background-color: #dcdcdc !important;
+  color: #7f8c8d !important;
+}
+
+.db-table td button {
+  width: 100%; /* ✅ 버튼이 td를 가득 채우게 한다 */
 }
 
 button:active {
@@ -448,9 +582,6 @@ p {
     align-items: flex-start;
   }
 
-  button {
-    font-size: 0.8em;
-  }
 
   .modal {
     width: 90%;
@@ -503,6 +634,28 @@ p {
 .db-table th:nth-child(11),
 .db-table td:nth-child(11) {
   width: 3%; /* DB 이름 열 너비 설정 */
+}
+.db-table td button {
+  width: 100%;
+  display: block;
+  text-align: center;
+}
+
+.db-table td {
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+.pause-btn {
+  padding: 5px 10px;
+  font-size: 0.75em;
+  min-width: auto;
+  width: auto;
+  max-width: 90px;
+}
+.db-table th:nth-child(12),
+.db-table td:nth-child(12) {
+  width: 5%; /* DB 이름 열 너비 설정 */
 }
 </style>
 

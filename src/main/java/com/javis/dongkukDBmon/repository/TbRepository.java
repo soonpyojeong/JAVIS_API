@@ -35,6 +35,7 @@ public interface TbRepository extends JpaRepository<TiberoCap_Check_Mg, TiberoCa
 
 
     // 모든 DB 이름 가져오기
-    @Query("SELECT DISTINCT t.id.dbName FROM TiberoCap_Check_Mg t")
+    @Query(value ="SELECT DB_NAME FROM TB_DB_CAP_LIST t",
+            nativeQuery = true)
     List<String>findAllDbNames();
 }

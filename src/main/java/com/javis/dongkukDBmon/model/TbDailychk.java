@@ -56,5 +56,6 @@ public class TbDailychk {
     private Double libHit;
     @Column(name="DICTIONARYCACHEHITRATIO")
     private Double dictHit;
-
+    @Column(name="DAILY_ARCH_CNT")
+    private Double dailyArchCht;
 }

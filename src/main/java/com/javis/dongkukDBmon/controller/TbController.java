@@ -26,6 +26,16 @@ public class TbController {
         List<String> tbList = tbService.getTbList();
         return ResponseEntity.ok(tbList);
     }
+    @PostMapping("/dbList/refresh")
+    public ResponseEntity<String> refreshDbList() {
+        try {
+            tbService.refreshDbList(); // 서비스 호출
+            return ResponseEntity.ok("DB List refreshed successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error refreshing DB List: " + e.getMessage());
+        }
+    }
+
 
     // 특정 DB와 테이블스페이스 이름에 해당하는 데이터를 가져오기
     @GetMapping("/{dbName}/tablespaces")
