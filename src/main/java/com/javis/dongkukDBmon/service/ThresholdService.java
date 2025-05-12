@@ -37,10 +37,19 @@ public class ThresholdService {
     public void save(Threshold threshold) {
         thresholdRepository.findById(threshold.getId()).ifPresent(existingThreshold -> {
             existingThreshold.setThresMb(threshold.getThresMb());
-            threshold.setLastUpdateDate(Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()));
+            existingThreshold.setImsiDel(threshold.getImsiDel());
+            existingThreshold.setLastUpdateDate(new Date()); // ✅ 여기서 설정
             thresholdRepository.save(existingThreshold);
         });
     }
+    @Transactional
+    public int restoreExpiredImsiDel() {
+        Date threeDaysAgo = Date.from(
+                LocalDateTime.now().minusDays(3).atZone(ZoneId.systemDefault()).toInstant()
+        );
+        return thresholdRepository.restoreExpiredImsiDel(threeDaysAgo);
+    }
+
 
     @Transactional
     public Threshold saveThreshold(Threshold threshold) {

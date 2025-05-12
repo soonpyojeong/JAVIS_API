@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,6 +66,29 @@ public class ThresholdController {
     }
 
 
+    @PutMapping("/{id}/release")
+    public ResponseEntity<Boolean> releaseThreshold(@PathVariable Long id) {
+        Optional<Threshold> optionalThreshold = thresholdService.getThresholdById(id);
+
+        if (optionalThreshold.isPresent()) {
+            Threshold threshold = optionalThreshold.get();
+
+            threshold.setImsiDel(new Date()); // 현재 시간으로 임시해제
+            thresholdService.save(threshold);
+
+            // 알림 발송
+            String message = String.format("%s DB의 %s 테이블스페이스 관제가 임시(3일) 해제되었습니다.",
+                    threshold.getDbName(), threshold.getTablespaceName());
+            Alert alert = alertService.createAlert("THRESHOLD_RELEASE", message);
+            List<String> allUserIds = javisLoginUserService.getAllLoginIds();
+            alertService.notifyUsers(alert, allUserIds);
+            alertService.sendAlertToUsers(message);
+
+            return ResponseEntity.ok(true);
+        }
+
+        return ResponseEntity.status(404).body(false);
+    }
 
     @PostMapping("/save")
     public ResponseEntity<Threshold> saveThreshold(@RequestBody Map<String, Object> requestMap) {
@@ -76,6 +100,7 @@ public class ThresholdController {
         String tablespaceName = (String) requestMap.get("tablespaceName");
         Integer thresMb = (Integer) requestMap.get("thresMb");
         String username = (String) requestMap.get("username");
+        String chkFlag = (String) requestMap.get("chkFlag");
 
         // Threshold 객체 생성
         Threshold threshold = new Threshold();
@@ -83,6 +108,7 @@ public class ThresholdController {
         threshold.setDbType(dbType);  // ✅ dbType도 꼭 세팅해야 함
         threshold.setTablespaceName(tablespaceName);
         threshold.setThresMb(thresMb);
+        threshold.setChkFlag(chkFlag);
 
         Threshold savedThreshold = thresholdService.saveThreshold(threshold);
 

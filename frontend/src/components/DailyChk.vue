@@ -232,17 +232,20 @@ export default {
           let suggestedMin;
           let suggestedMax;
           let stepSize;
+          let beginAtZero;
 
           if (fixed100Keys.includes(metric.key)) {
             // 퍼센트 차트
             suggestedMin = 0;
             suggestedMax = 100;
             stepSize = 10; // 눈금 10단위로
+            beginAtZero=true;
           } else {
             // 일반 차트
             suggestedMin = diff >= 5 ? Math.floor(minValue) - 5 : Math.floor(minValue);
             suggestedMax = diff >= 5 ? Math.ceil(maxValue) + 5 : Math.ceil(maxValue);
             stepSize = 1; // 눈금 1단위로
+            beginAtZero=false;
           }
 
           const hue = getRandomHue();
@@ -289,6 +292,7 @@ export default {
                   suggestedMax: suggestedMax,
                   ticks: {
                     stepSize: stepSize,
+                    beginAtZero: beginAtZero,
                     callback: function(value) {
                       return Math.floor(value); // 소수점 버리기
                     }

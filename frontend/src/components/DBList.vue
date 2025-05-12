@@ -37,7 +37,7 @@
           <th @click="sortTable('trnBakChk')">TRN<span v-if="sortKey === 'trnBakChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
           <th @click="sortTable('objSegSizeChk')">OBJ<span v-if="sortKey === 'objSegSizeChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
           <th @click="sortTable('dailyChk')">일일점검<span v-if="sortKey === 'dailyChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th>자사중지</th> <!-- 하나 행에 자사중지 버튼 -->
+          <th>자산중지</th> <!-- 하나 행에 자사중지 버튼 -->
         </tr>
       </thead>
       <tbody>

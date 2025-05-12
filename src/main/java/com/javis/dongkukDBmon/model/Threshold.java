@@ -39,6 +39,9 @@ public class Threshold {
     @Temporal(TemporalType.TIMESTAMP)
     private java.util.Date lastUpdateDate;
 
+    @Column(name = "IMSI_DEL")
+    private java.util.Date imsiDel;
+
     // @PreUpdate 어노테이션을 사용하여 업데이트 직전에 lastUpdateDate를 설정
     @PreUpdate
     public void updateLastUpdateDate() {

@@ -56,9 +56,9 @@
           <td>{{ ts.id.tsName }}</td>
           <td>{{ formatNumber(ts.totalSize) }}</td>
           <td>{{ formatNumber(ts.usedSize) }}</td>
-          <td>
+          <td class="used-rate-td">
             <div class="used-rate-container">
-              <canvas :id="'chart-' + ts.id.tsName" class="rate-chart" width="200" height="100"></canvas>
+              <canvas :id="'chart-' + ts.id.tsName" class="rate-chart" width="600" height="150"></canvas>
             </div>
           </td>
           <td>{{ formatNumber(ts.freeSize) }}</td>
@@ -257,7 +257,7 @@ export default {
 .container {
   font-family: 'Arial', sans-serif;
   padding: 30px;
-  max-width: 1000px;
+  max-width: 1250px;
   margin: 0 auto;
   background-color: #ffffff;
   border-radius: 12px;
@@ -420,19 +420,28 @@ button:focus {
 
 /* 차트 스타일 */
 .used-rate-container {
-  display: flex;
-  justify-content: left;
-  align-items: left;
   width: 100%;
-  height: 40px;
-  min-width: 100px; /* 최소 크기 설정 */
+  height: 42px;
+  display: flex;
+  justify-content: flex-start; /* ✅ 왼쪽 정렬 유지 */
+  align-items: center; /* ✅ 수직 정렬 정확히 */
+  padding-left:1px;  /* ✅ 좌측 여백 약간 줘서 답답함 방지 */
+  box-sizing: border-box;
 }
 
 .rate-chart {
-  max-width: 120px;
-  max-height: 90px;
-  width: 100%;
-  height: auto;
+  width: 90%;           /* ✅ 100% 대신 적당히 조절 가능 */
+  height: 28px;         /* ✅ 고정 높이로 안정된 시각 제공 */
+  max-width: 240px;     /* ✅ 너무 커지지 않게 제한 */
+  border-radius: 4px;   /* ✅ 부드러운 느낌 */
+}
+
+.used-rate-td {
+  width: 150px; /* ✅ td 너비를 원하는 크기로 지정 */
+  min-width: 180px; /* ✅ 최소 크기 설정 (선택) */
+  max-width: 220px; /* ✅ 최대 크기 제한 (선택) */
+  padding: 4px 8px; /* ✅ 패딩 여유 */
+  text-align: left; /* ✅ 안쪽 내용 왼쪽 정렬 */
 }
 
 /* 반응형 스타일 */

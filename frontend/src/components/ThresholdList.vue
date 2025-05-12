@@ -17,30 +17,16 @@
       <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
         <thead class="bg-gray-50">
           <tr>
-            <th
-              class="px-4 py-2 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-              @click="sortData('dbName')"
-            >
-              DB 이름
-            </th>
-            <th
-              class="px-4 py-2 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-              @click="sortData('tablespaceName')"
-            >
-              Tablespace
-            </th>
-            <th
-              class="px-4 py-2 text-right text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-              @click="sortData('thresMb')"
-            >
-              임계치 (MB)
-            </th>
-            <th
-              class="px-4 py-2 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-              @click="sortData('dbType')"
-            >
-              DB 타입
-            </th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
+              @click="sortData('dbName')" > DB 이름 </th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
+              @click="sortData('tablespaceName')">Tablespace</th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
+              @click="sortData('thresMb')"> 임계치 (MB) </th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
+              @click="sortData('dbType')" > DB 타입 </th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
+             @click="sortData('imsiDel')" > 임시해제(3일) </th>
           </tr>
         </thead>
         <tbody>
@@ -71,6 +57,22 @@
               />
             </td>
             <td class="px-4 py-2 text-sm text-gray-700">{{ threshold.dbType }}</td>
+            <td class="px-4 py-2 text-sm text-gray-700 text-center">
+              <template v-if="threshold.imsiDel">
+                <div class="text-center">
+                  {{ new Date(threshold.imsiDel).toLocaleDateString() }}
+                </div>
+              </template>
+              <template v-else>
+                <div class="flex justify-center">
+                  <button class="text-blue-500 hover:underline">
+                    해제
+                  </button>
+                </div>
+              </template>
+            </td>
+
+
           </tr>
         </tbody>
       </table>
@@ -79,101 +81,122 @@
     <p v-if="filteredData.length === 0" class="mt-4 text-sm text-gray-500">검색 결과가 없습니다.</p>
   </div>
 </template>
-
 <script>
 import api from "@/api"; // 공통 axios 인스턴스 가져오기
 
 export default {
   data() {
     return {
-      thresholds: [], // 원본 데이터
-      searchQuery: "", // 검색어 입력값
-      sortBy: "", // 정렬 기준
-      sortOrder: "asc", // 정렬 방향 (오름차순 또는 내림차순)
+      thresholds: [],
+      searchQuery: "",
+      sortBy: "",
+      sortOrder: "asc",
     };
   },
   computed: {
-    // 검색어에 따라 필터링된 데이터를 반환
     filteredData() {
       const query = this.searchQuery.toLowerCase();
-      const filtered = this.thresholds.filter((threshold) => {
+      const filtered = this.thresholds.filter((t) => {
         return (
-          threshold.dbName.toLowerCase().includes(query) ||
-          threshold.tablespaceName.toLowerCase().includes(query)
+          t.dbName.toLowerCase().includes(query) ||
+          t.tablespaceName.toLowerCase().includes(query)
         );
       });
-
-      // 정렬된 데이터를 반환
       return this.sortDataBy(filtered);
     },
   },
   methods: {
-    // 숫자 1000단위로 구분
-    formatNumber(number) {
-      return number.toLocaleString(); // 천 단위 구분 기호 추가
+    formatNumber(num) {
+      return num.toLocaleString();
     },
 
-    // 편집 시작
     startEditing(threshold) {
       threshold.isEditing = true;
-      threshold.editedValue = threshold.thresMb; // 원본 값 저장
+      threshold.editedValue = threshold.thresMb;
     },
-    // 편집 취소
+
     cancelEditing(threshold) {
       threshold.isEditing = false;
       threshold.editedValue = null;
     },
-    // 임계치 업데이트
+
     updateThreshold(threshold) {
+      const username = this.$store.state.user.username;
       const updatedThreshold = {
-        id: threshold.id, // ID가 필요
+        id: threshold.id,
         thresMb: threshold.editedValue,
+        username,
       };
-    const username = this.$store.state.user.username; // Vuex에서 username 가져오기
 
-    // 서버에 PUT 요청
-    api.put(`/api/threshold/${updatedThreshold.id}`, {
-      ...updatedThreshold,  // 원래 데이터 펼치고
-      username: username,   // 추가 데이터도 함께
-    })
-    .then((response) => {
-      if (response.data) {
-        // 로컬 데이터 업데이트 및 편집 종료
-        threshold.thresMb = threshold.editedValue;
-        threshold.isEditing = false;
-      } else {
-        console.error("임계치 업데이트 실패");
-      }
-    })
-    .catch((error) => {
-      console.error("임계치 업데이트 오류:", error);
-    });
-
+      api.put(`/api/threshold/${updatedThreshold.id}`, updatedThreshold)
+        .then((res) => {
+          if (res.data) {
+            threshold.thresMb = threshold.editedValue;
+            threshold.isEditing = false;
+          } else {
+            console.error("임계치 업데이트 실패");
+          }
+        })
+        .catch((err) => {
+          console.error("임계치 업데이트 오류:", err);
+        });
     },
 
-    // 테이블 정렬
+    releaseThreshold(id) {
+      api.put(`/api/threshold/${id}/release`)
+        .then((res) => {
+          if (res.data) {
+            alert("임시해제가 완료되었습니다.");
+            this.refreshThresholds();
+          }
+        })
+        .catch((err) => {
+          console.error("임시해제 실패:", err);
+        });
+    },
+
+    refreshThresholds() {
+      api.get("/api/threshold/all")
+        .then((res) => {
+          this.thresholds = res.data.map((t) => ({
+            ...t,
+            isEditing: false,
+            editedValue: null,
+          }));
+        })
+        .catch((err) => {
+          console.error("데이터 로딩 실패:", err);
+        });
+    },
+
     sortData(column) {
       if (this.sortBy === column) {
-        // 이미 같은 컬럼을 클릭했으면 정렬 방향을 바꿔줌
         this.sortOrder = this.sortOrder === "asc" ? "desc" : "asc";
       } else {
         this.sortBy = column;
-        this.sortOrder = "asc"; // 새 컬럼이 선택되면 오름차순으로 기본 설정
+        this.sortOrder = "asc";
       }
     },
 
-    // 데이터 정렬 로직
     sortDataBy(data) {
       return data.sort((a, b) => {
-        let valA = a[this.sortBy];
-        let valB = b[this.sortBy];
+        const valA = a[this.sortBy];
+        const valB = b[this.sortBy];
 
-        // 숫자 정렬인 경우
+        // 날짜 타입 (imsiDel 혼합) 정렬
+        if (this.sortBy === "imsiDel") {
+          const timeA = valA ? new Date(valA).getTime() : 0; // null일 경우 0 또는 Infinity로 바꿀 수 있음
+          const timeB = valB ? new Date(valB).getTime() : 0;
+
+          return this.sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+        }
+
+        // 숫자 정렬
         if (typeof valA === "number" && typeof valB === "number") {
           return this.sortOrder === "asc" ? valA - valB : valB - valA;
         }
 
-        // 문자열 정렬인 경우
+        // 문자열 정렬
         if (typeof valA === "string" && typeof valB === "string") {
           return this.sortOrder === "asc"
             ? valA.localeCompare(valB)
@@ -182,21 +205,12 @@ export default {
 
         return 0;
       });
-    },
+    }
+
+,
   },
   mounted() {
-    // API 호출
-    api.get("/api/threshold/all")
-      .then((response) => {
-        this.thresholds = response.data.map((threshold) => ({
-          ...threshold,
-          isEditing: false, // 각 데이터에 편집 상태 추가
-          editedValue: null, // 편집 상태 초기화
-        }));
-      })
-      .catch((error) => {
-        console.error("API 호출 오류:", error);
-      });
+    this.refreshThresholds();
   },
 };
 </script>
@@ -206,7 +220,7 @@ export default {
 .container {
   font-family: 'Arial', sans-serif;
   padding: 20px;
-  max-width: 1370px;
+  max-width: 1250px;
   margin: 0 auto;
   background: #ffffff; /* 흰색 배경 */
   border-radius: 10px;
@@ -260,7 +274,6 @@ th,
 td {
   padding: 14px;
   border: 1px solid #ddd;
-  text-align: left;
 }
 
 th {
