@@ -3,6 +3,7 @@ package com.javis.dongkukDBmon.controller;
 import com.javis.dongkukDBmon.model.Dailychk;
 import com.javis.dongkukDBmon.model.TbDailychk;
 import com.javis.dongkukDBmon.service.DailyChkService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +17,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-
+@Slf4j
 @RestController
 @RequestMapping("/api/dailychk")
 public class DailyChkController {
-    private static final Logger logger = LoggerFactory.getLogger(DailyChkController.class);
 
     @Autowired
     private DailyChkService dailyChkService;

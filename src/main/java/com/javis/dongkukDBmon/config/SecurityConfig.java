@@ -32,7 +32,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 "/", "/index.html",
                                 "/favicon.ico", "/static/**", "/assets/**",
                                 "/js/**", "/css/**","/api/**","/ws/**","/api/alerts/**",
-                                "/api/auth/**"
+                                "/api/auth/**","/api/sysinfo/**","/api/SysInfoDetail/**","/api/sysinfo/by-date/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

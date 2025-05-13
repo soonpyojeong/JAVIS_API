@@ -5,8 +5,7 @@ import com.javis.dongkukDBmon.model.Threshold;
 import com.javis.dongkukDBmon.service.AlertService;
 import com.javis.dongkukDBmon.service.JavisLoginUserService;
 import com.javis.dongkukDBmon.service.ThresholdService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,11 +14,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+@Slf4j
 @RestController
 @RequestMapping("/api/threshold")
 public class ThresholdController {
-    private static final Logger logger = LoggerFactory.getLogger(ThresholdController.class);
 
     private final ThresholdService thresholdService;
     private final AlertService alertService;
@@ -92,7 +90,7 @@ public class ThresholdController {
 
     @PostMapping("/save")
     public ResponseEntity<Threshold> saveThreshold(@RequestBody Map<String, Object> requestMap) {
-        logger.info("Received request to save threshold: {}", requestMap);
+        log.info("Received request to save threshold: {}", requestMap);
 
         // ✅ 값 꺼내기
         String dbName = (String) requestMap.get("dbName");
@@ -112,7 +110,7 @@ public class ThresholdController {
 
         Threshold savedThreshold = thresholdService.saveThreshold(threshold);
 
-        logger.info("Threshold successfully saved: {}", savedThreshold);
+        log.info("Threshold successfully saved: {}", savedThreshold);
 
         // ✅ 알람 메시지에 username 포함
         String message = String.format("%s DB의 %s 임계치가 %s 에 의해 새로 등록되었습니다. (설정 용량: %d MB)",

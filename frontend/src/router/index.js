@@ -6,6 +6,7 @@ import ThresholdList from '../components/ThresholdList';
 import TablespacesList from '../components/TablespacesList';
 import DailyChkView from '../components/DailyChk';
 import LoginComponent from '../components/LoginComponent';
+import SysInfoDetail from '../components/SysInfoDetail';
 import store from '../store';
 
 const routes = [
@@ -15,7 +16,8 @@ const routes = [
   { path: '/sms-history', name: 'SmsHistory', component: SmsHistory, meta: { title: 'SMS History', requiresAuth: true } },
   { path: '/threshold-list', name: 'ThresholdList', component: ThresholdList, meta: { title: 'Threshold List', requiresAuth: true } },
   { path: '/tablespaces', name: 'TablespacesList', component: TablespacesList, meta: { title: 'Tablespaces List', requiresAuth: true } },
-  { path: '/dailyChk', name: 'DailyChkView', component: DailyChkView, meta: { title: 'Daily Check View', requiresAuth: true } }
+  { path: '/dailyChk', name: 'DailyChkView', component: DailyChkView, meta: { title: 'Daily Check View', requiresAuth: true } },
+   { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: 'Sys Info Detail', requiresAuth: true } }
 ];
 
 const router = createRouter({

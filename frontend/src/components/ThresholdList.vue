@@ -26,7 +26,7 @@
             <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
               @click="sortData('dbType')" > DB 타입 </th>
             <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-             @click="sortData('imsiDel')" > 임시해제(3일) </th>
+             @click="sortData('imsiDel')" > 관제임시해제(3일) </th>
           </tr>
         </thead>
         <tbody>

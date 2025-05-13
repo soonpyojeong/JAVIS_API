@@ -4,6 +4,7 @@ import com.javis.dongkukDBmon.config.JwtTokenProvider;
 import com.javis.dongkukDBmon.model.JavisLoginUser;
 import com.javis.dongkukDBmon.service.JavisLoginUserService;
 import com.javis.dongkukDBmon.service.JavisUserTokenService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 public class JavisLoginUserController {

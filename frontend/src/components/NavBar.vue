@@ -170,6 +170,7 @@ const menuItems = [
   { name: "임계치 리스트", path: "/threshold-list", roles: ["DBA"] },
   { name: "테이블스페이스 리스트", path: "/tablespaces", roles: ["DBA"] },
   { name: "일일 점검(hit율)", path: "/dailyChk", roles: ["DBA", "DEV", "VIEW"] },
+  { name: "일일 점검(SYS)", path: "/SysInfoDetail", roles: ["DBA", "DEV", "VIEW"] },
 ];
 
 const filteredMenuItems = computed(() => {

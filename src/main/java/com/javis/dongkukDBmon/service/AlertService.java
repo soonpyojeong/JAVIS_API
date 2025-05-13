@@ -2,6 +2,7 @@ package com.javis.dongkukDBmon.service;
 
 import com.javis.dongkukDBmon.repository.UserAlertRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import com.javis.dongkukDBmon.model.Alert;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AlertService {
@@ -28,7 +30,7 @@ public class AlertService {
         alert.setCreatedAt(LocalDateTime.now());
 
         Alert saved = alertRepository.save(alert);
-        System.out.println("[DEBUG] 저장된 Alert ID: " + saved.getId()); // ✅ 로그 확인
+        log.info("[DEBUG] 저장된 Alert ID: {}", saved.getId()); // ✅ 로그 확인
         return saved;
     }
     public void notifyUsers(Alert alert, List<String> userIds) {
