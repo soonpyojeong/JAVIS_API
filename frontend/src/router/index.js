@@ -8,6 +8,7 @@ import TablespacesList from '../components/TablespacesList';
 import DailyChkView from '../components/DailyChk';
 import LoginComponent from '../components/LoginComponent';
 import SysInfoDetail from '../components/SysInfoDetail';
+import PWMng from '../components/PassWordMng';
 import store from '../store';
 
 const routes = [
@@ -18,7 +19,8 @@ const routes = [
   { path: '/threshold-list', name: 'ThresholdList', component: ThresholdList, meta: { title: 'Threshold List', requiresAuth: true } },
   { path: '/tablespaces', name: 'TablespacesList', component: TablespacesList, meta: { title: 'Tablespaces List', requiresAuth: true } },
   { path: '/dailyChk', name: 'DailyChkView', component: DailyChkView, meta: { title: 'Daily Check View', requiresAuth: true } },
-  { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: 'Sys Info Detail', requiresAuth: true } }
+  { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: '', requiresAuth: true } },
+  { path: '/Manager', name: 'PWMng', component: PWMng, meta: { title: '', requiresAuth: true } }
 ];
 
 const router = createRouter({
@@ -28,12 +30,12 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const accessToken = localStorage.getItem("accessToken");
-  const refreshToken = localStorage.getItem("refreshToken");
+  //const refreshToken = localStorage.getItem("refreshToken");
   const userRaw = localStorage.getItem("user");
 
   //console.groupCollapsed(`[🔁 라우터 이동] ${from.path} → ${to.path}`);
   //console.log("🪪 accessToken:", accessToken);
-  console.log("🪪 refreshToken:", refreshToken);
+  //console.log("🪪 refreshToken:", refreshToken);
   //console.log("🧑 userRaw:", userRaw);
   //console.log("📦 Vuex isLoggedIn:", store.state.isLoggedIn);
   console.groupEnd();
