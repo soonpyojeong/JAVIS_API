@@ -33,7 +33,7 @@ router.beforeEach((to, from, next) => {
 
   //console.groupCollapsed(`[🔁 라우터 이동] ${from.path} → ${to.path}`);
   //console.log("🪪 accessToken:", accessToken);
-  //console.log("🪪 refreshToken:", refreshToken);
+  console.log("🪪 refreshToken:", refreshToken);
   //console.log("🧑 userRaw:", userRaw);
   //console.log("📦 Vuex isLoggedIn:", store.state.isLoggedIn);
   console.groupEnd();
