@@ -20,7 +20,7 @@ public class ThresholdRestoreScheduler {
     private final AlertService alertService;
     private final JavisLoginUserService javisLoginUserService;
 
-    @Scheduled(cron = "0 16 12 * * *") // 매일 새벽 1시에 실행
+    @Scheduled(cron = "0 0 1 * * *") // 매일 새벽 1시에 실행
     public void autoRestoreImsiDel() {
         log.info("[== 🕐 임시해제 원복 스케줄러 시작 (매일 1시) ==]");
 
