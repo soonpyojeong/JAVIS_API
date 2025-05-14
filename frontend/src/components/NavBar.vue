@@ -194,7 +194,7 @@ const roleEmoji = computed(() => {
   if (!user.value || !user.value.userRole) return "🙂";
   switch (user.value.userRole.toUpperCase()) {
     case "DBA": return "👑";
-    case "DEV": return "🧑‍💻";
+    case "DEV": return "‍💻";
     case "VIEW": return "🐥";
     default: return "😊";
   }

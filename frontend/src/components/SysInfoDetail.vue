@@ -5,7 +5,7 @@
       <h3>DBMS 목록</h3>
       <ul>
         <li
-          v-for="item in hostList"
+          v-for="item in sortedHostList"
           :key="item.id"
           @click="selectHost(item.hostname)"
           class="host-item"
@@ -73,7 +73,7 @@
   </div>
 </template>
 <script setup>
-import { onMounted, ref, nextTick } from 'vue';
+import { computed,onMounted, ref, nextTick } from 'vue';
 import Chart from 'chart.js/auto';
 import api from '@/api';
 
@@ -81,11 +81,15 @@ import api from '@/api';
 const summary = ref({});
 const disks = ref([]);
 const logs = ref([]);
-const hostList = ref([]);
 const chartKey = ref(0);
 let chartInstance = null;
+const hostList = ref([]);
 
-
+const sortedHostList = computed(() => {
+  return Array.isArray(hostList.value)
+    ? [...hostList.value].sort((a, b) => a.hostname.localeCompare(b.hostname))
+    : [];
+});
 
 // ✅ 시스템 정보 조회 (기본 또는 hostname 기준)
 const fetchSysInfo = async (hostname = null) => {
