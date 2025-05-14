@@ -32,7 +32,9 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 "/", "/index.html",
                                 "/favicon.ico", "/static/**", "/assets/**",
                                 "/js/**", "/css/**","/api/**","/ws/**","/api/alerts/**",
-                                "/api/auth/**","/api/sysinfo/**","/api/SysInfoDetail/**","/api/sysinfo/by-date/**"
+                                "/api/auth/**","/api/sysinfo/**","/api/SysInfoDetail/**","/api/sysinfo/by-date/**",
+                                "/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk",
+                                "/SysInfoDetail"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
@@ -49,7 +51,7 @@ public class SecurityConfig implements WebMvcConfigurer {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(List.of(
                 "http://10.90.4.60:8812",
-                "http://172.31.1.176:8812"
+                "http://172.31.1.176:8813"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));

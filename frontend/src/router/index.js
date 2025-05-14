@@ -1,3 +1,4 @@
+// router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../components/MainPage';
 import DBList from '../components/DBList';
@@ -17,7 +18,7 @@ const routes = [
   { path: '/threshold-list', name: 'ThresholdList', component: ThresholdList, meta: { title: 'Threshold List', requiresAuth: true } },
   { path: '/tablespaces', name: 'TablespacesList', component: TablespacesList, meta: { title: 'Tablespaces List', requiresAuth: true } },
   { path: '/dailyChk', name: 'DailyChkView', component: DailyChkView, meta: { title: 'Daily Check View', requiresAuth: true } },
-   { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: 'Sys Info Detail', requiresAuth: true } }
+  { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: 'Sys Info Detail', requiresAuth: true } }
 ];
 
 const router = createRouter({
@@ -26,18 +27,42 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const isLoggedIn = store.state.isLoggedIn || !!localStorage.getItem("accessToken");
-  //console.log("Router Guard - isLoggedIn:", isLoggedIn);
-  //console.log("Navigating to:", to.path);
+  const accessToken = localStorage.getItem("accessToken");
+  const refreshToken = localStorage.getItem("refreshToken");
+  const userRaw = localStorage.getItem("user");
+
+  //console.groupCollapsed(`[🔁 라우터 이동] ${from.path} → ${to.path}`);
+  //console.log("🪪 accessToken:", accessToken);
+  //console.log("🪪 refreshToken:", refreshToken);
+  //console.log("🧑 userRaw:", userRaw);
+  //console.log("📦 Vuex isLoggedIn:", store.state.isLoggedIn);
+  console.groupEnd();
+
+  if (!store.state.isLoggedIn && accessToken && userRaw && userRaw !== "undefined") {
+    try {
+      const user = JSON.parse(userRaw);
+      store.commit("setUser", user);
+      store.commit("setLoggedIn", true);
+      //console.info("✅ 상태 복원 완료 (user, token)");
+    } catch (e) {
+      //console.warn("❌ user 복원 실패", e);
+      store.dispatch("logout");
+    }
+  }
+
+  const isLoggedIn = store.state.isLoggedIn;
 
   if (to.path === "/login" && isLoggedIn) {
+    //console.warn("⚠️ 로그인된 사용자가 로그인 페이지 접근 → / 리다이렉트");
     next("/");
   } else if (to.meta.requiresAuth && !isLoggedIn) {
+   // console.error("❌ 인증 필요 페이지 접근 → 로그인 페이지로 이동");
     next("/login");
   } else {
     next();
   }
 });
+
 
 router.afterEach((to) => {
   if (to.meta.title) {

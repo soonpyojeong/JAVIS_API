@@ -67,8 +67,9 @@ onMounted(async () => {
     router.replace("/");
   }
 
-  isNavReady.value = true; // ✅ NavBar 렌더링 허용
+  isNavReady.value = true;
 });
+
 </script>
 
 <style>

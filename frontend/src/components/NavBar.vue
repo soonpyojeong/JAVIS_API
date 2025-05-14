@@ -391,7 +391,7 @@ const roleEmoji = computed(() => {
   background-color: rgba(255, 107, 107, 0.15); /* 연한 배경 */
   box-shadow: 0 0 12px rgba(255, 107, 107, 0.5); /* 부드러운 글로우 */
   transition: all 0.3s ease;
-  animation: softPulse 1.8s infinite ease-in-out; /* 부드럽게 퍼지는 애니메이션 */
+  animation: softPulse 1.8s infinite ease-in-out; /* 부드럽게  퍼지는 애니메이션 */
 }
 
 @keyframes softPulse {
