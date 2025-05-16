@@ -220,9 +220,10 @@ const toggleVisible = (item) => {
 const copyToClipboard = (text) => {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text)
-      .then(() => alert('📋 복사되었습니다!'))
+      .then(() => showAlertModal('📋 복사되었습니다'))
       .catch(err => {
         console.error('클립보드 복사 실패:', err);
+        showAlertModal('📋 클립보드 복사 실패');
         fallbackCopy(text);
       });
   } else {
@@ -244,20 +245,24 @@ const fallbackCopy = (text) => {
     document.body.removeChild(textarea);
 
     if (result) {
-      alert('📋 복사되었습니다!');
+      showAlertModal('📋 복사되었습니다');
     } else {
-      alert('⚠️ 복사 실패 (지원 안 함)');
+      showAlertModal('⚠️ 복사 실패 (지원 안 함)');
     }
   } catch (e) {
     console.error('fallback 복사 에러:', e);
-    alert('⚠️ 복사 기능을 사용할 수 없습니다.');
-  }
+    showAlertModal('⚠️ 복사 기능을 사용할 수 없습니다.');
+    }
 };
 
 
 const deletePassword = (id) => {
   showConfirmModal('🗑️ 삭제 하시겠습니까?', async () => {
-    await api.delete(`/api/pass/${id}`);
+    const userId = user.value.username;
+    await api.post(`/api/pass/delete`, {
+          id,
+          username: userId
+        });
     showAlertModal('🗑️ 패스워드가 삭제되었습니다.');
     const currentPage = page.value;
     await searchList();

@@ -48,20 +48,20 @@ public class DbPasswordController {
         return ResponseEntity.ok(saved);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePassword(@PathVariable Long id) {
+    @PostMapping("/delete")
+    public ResponseEntity<Void> deletePasswordWithUser(@RequestBody Map<String, Object> body) {
+        Long id = Long.valueOf(body.get("id").toString());
+        String username = (String) body.get("username");
+
         Optional<DbPassword> optional = dbPasswordRepository.findById(id);
         if (optional.isPresent()) {
             DbPassword deleted = optional.get();
 
-            // ✅ 삭제 전에 메시지용 데이터 확보
-            String message = String.format("%s / %s 계정의 패스워드가 삭제되었습니다.",
-                    deleted.getDbName(), deleted.getUsername());
+            String message = String.format("%s / %s 계정의 패스워드가 %s에 의해 삭제되었습니다.",
+                    deleted.getDbName(), deleted.getUsername(), username);
 
-            // ✅ DB 삭제
             service.delete(id);
 
-            // ✅ 알람 생성 및 전송
             Alert alert = alertService.createAlert("PASSWD_DELETE", message);
             List<String> allUserIds = javisLoginUserService.getAllLoginIds();
             alertService.notifyUsers(alert, allUserIds);
@@ -70,6 +70,7 @@ public class DbPasswordController {
 
         return ResponseEntity.noContent().build();
     }
+
 
     @PostMapping("/search")
     public List<DbPassword> search(@RequestBody Map<String, String> body) {

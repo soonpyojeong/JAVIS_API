@@ -107,7 +107,9 @@ const groupedLogs = computed(() => {
 
 const sortedHostList = computed(() => {
   return Array.isArray(hostList.value)
-    ? [...hostList.value].sort((a, b) => a.hostname.localeCompare(b.hostname))
+    ? [...hostList.value]
+        .filter(item => item.hostname) // ✅ null/undefined 제거
+        .sort((a, b) => a.hostname.localeCompare(b.hostname))
     : [];
 });
 

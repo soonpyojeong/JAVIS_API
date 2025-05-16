@@ -19,8 +19,8 @@ const routes = [
   { path: '/threshold-list', name: 'ThresholdList', component: ThresholdList, meta: { title: 'Threshold List', requiresAuth: true } },
   { path: '/tablespaces', name: 'TablespacesList', component: TablespacesList, meta: { title: 'Tablespaces List', requiresAuth: true } },
   { path: '/dailyChk', name: 'DailyChkView', component: DailyChkView, meta: { title: 'Daily Check View', requiresAuth: true } },
-  { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: '', requiresAuth: true } },
-  { path: '/Manager', name: 'PWMng', component: PWMng, meta: { title: '', requiresAuth: true } }
+  { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: 'SysInfoDetail', requiresAuth: true } },
+  { path: '/Manager', name: 'PWMng', component: PWMng, meta: { title: 'Manager', requiresAuth: true } }
 ];
 
 const router = createRouter({
