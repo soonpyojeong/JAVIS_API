@@ -31,7 +31,7 @@
             <h2>{{ summary.hostname }}</h2>
           </div>
           <!-- 항상 표시되는 날짜 선택 박스 -->
-          <div class="date-picker-section">
+          <div class="date-picker-section">수집 날짜
             <input
               type="date"
               v-model="selectedDate"
