@@ -26,11 +26,11 @@
     <table v-if="filteredDbList.length > 0" class="db-table">
       <thead>
         <tr>
+          <th @click="sortTable('loc')">지역<span v-if="sortKey === 'loc'">{{ sortAsc ? '▲' : '▼' }}</span></th>
           <th @click="sortTable('assets')">자산<span v-if="sortKey === 'assets'">{{ sortAsc ? '▲' : '▼' }}</span></th>
           <th @click="sortTable('dbDescript')">설명<span v-if="sortKey === 'dbDescript'">{{ sortAsc ? '▲' : '▼' }}</span></th>
           <th @click="sortTable('hostname')">호스트<span v-if="sortKey === 'hostname'">{{ sortAsc ? '▲' : '▼' }}</span></th>
           <th @click="sortTable('pubIp')">PubIP<span v-if="sortKey === 'pubIp'">{{ sortAsc ? '▲' : '▼' }}</span></th>
-          <th @click="sortTable('vip')">VIP<span v-if="sortKey === 'vip'">{{ sortAsc ? '▲' : '▼' }}</span></th>
           <th @click="sortTable('dbName')">DB 이름<span v-if="sortKey === 'dbName'">{{ sortAsc ? '▲' : '▼' }}</span></th>
           <th @click="sortTable('liveChk')">LIVE<span v-if="sortKey === 'liveChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
           <th @click="sortTable('sizeChk')">TBS<span v-if="sortKey === 'sizeChk'">{{ sortAsc ? '▲' : '▼' }}</span></th>
@@ -42,11 +42,11 @@
       </thead>
       <tbody>
         <tr v-for="db in filteredDbList" :key="db.id">
+          <td>{{ db.loc }}</td>
           <td>{{ db.assets }}</td>
           <td>{{ db.dbDescript }}</td>
           <td>{{ db.hostname }}</td>
           <td>{{ db.pubIp }}</td>
-          <td>{{ db.vip }}</td>
           <td>{{ db.dbName }}</td>
           <td>
             <button :class="[db.liveChk === 'Y' ? 'btn-on' : 'btn-off', !isButtonEnabled(db, 'liveChk') ? 'btn-disabled' : '']"
@@ -590,16 +590,16 @@ p {
 
 .db-table th:nth-child(1),
 .db-table td:nth-child(1) {
-  width: 7%; /* 자산 열 너비 설정 */
+  width: 3%; /* 자산 열 너비 설정 */
 }
 .db-table th:nth-child(2),
 .db-table td:nth-child(2) {
-  width: 13%; /* 설명 열 너비 설정 */
+  width: 6%; /* 설명 열 너비 설정 */
 }
 
 .db-table th:nth-child(3),
 .db-table td:nth-child(3) {
-  width: 7%; /* 호스트 열 너비 설정 */
+  width: 13%; /* 호스트 열 너비 설정 */
 }
 .db-table th:nth-child(4),
 .db-table td:nth-child(4) {

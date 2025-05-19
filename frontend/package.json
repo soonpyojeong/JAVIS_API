@@ -16,9 +16,13 @@
     "core-js": "^3.32.0",
     "crypto-js": "^4.2.0",
     "pinia": "^3.0.1",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.3.4",
     "sockjs-client": "^1.6.1",
     "vue": "^3.3.4",
     "vue-router": "^4.5.0",
+    "vue3-tree-vue": "^2.0.13",
+    "vue3-treeselect": "^0.1.10",
     "ws": "^8.18.1"
   },
   "devDependencies": {

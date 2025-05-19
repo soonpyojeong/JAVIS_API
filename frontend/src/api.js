@@ -3,7 +3,7 @@ import store from "@/store";
 
 const api = axios.create({
   baseURL: process.env.VUE_APP_BASE_URL, // 예: http://10.90.4.60:8813
-  timeout: 5000,
+  timeout: 600000,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",

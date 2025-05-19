@@ -8,10 +8,10 @@ import com.javis.dongkukDBmon.repository.DailyChkRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,24 +26,27 @@ public class DailyChkService {
     private DailyChkRepository dailyChkRepository;
 
     // DBType이 ORACLE 또는 TIBERO이고 dailyChk가 'Y'인 DB 목록을 dbType별로 분리하여 반환
-    public Map<String, List<String>> getDbListForDailyChkByType() {
+    public Map<String, Map<String, List<String>>> getDbListForDailyChkByType() {
         List<DBList> dbList = dbListRepository.findAll();
 
-        // dbType별로 ORACLE, TIBERO를 필터링하고, dailyChk가 'Y'인 데이터만 반환
-        Map<String, List<String>> dbTypeMap = dbList.stream()
+        return dbList.stream()
                 .filter(db -> "Y".equals(db.getDailyChk()) &&
                         ("ORACLE".equals(db.getDbType()) || "TIBERO".equals(db.getDbType())))
                 .collect(Collectors.groupingBy(
-                        DBList::getDbType,  // dbType별로 분리
-                        Collectors.mapping(DBList::getInstanceName,
-                                Collectors.toList())  // 중복 제거 없이 List로 수집
+                        DBList::getLoc, // 1차: 지역(loc) 기준 그룹핑
+                        Collectors.groupingBy(
+                                DBList::getDbType, // 2차: dbType 기준 그룹핑
+                                Collectors.collectingAndThen(
+                                        Collectors.mapping(
+                                                DBList::getInstanceName,
+                                                Collectors.toCollection(LinkedHashSet::new) // 중복 제거 + 순서 유지
+                                        ),
+                                        set -> new ArrayList<>(set) // ✅ 여기를 Function으로 감싸야 오류 없음
+                                )
+                        )
                 ));
-
-        // 중복된 DB 이름을 제거
-        dbTypeMap.replaceAll((dbType, instanceNames) -> instanceNames.stream().distinct().collect(Collectors.toList()));
-
-        return dbTypeMap;
     }
+
 
     // DB 이름에 따른 두 날의 DB 데이터를 조회하는 메소드
     public List<Dailychk> getDailyChkData(String instanceName) {

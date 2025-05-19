@@ -3,33 +3,22 @@
     <!-- 왼쪽 DB 트리 구조 -->
     <div class="db-tree">
       <ul>
-        <li>
-          <span @click="toggleDBType('oracle')" class="tree-node">
-            <span class="toggle-icon">{{ expandedDBType.oracle ? '-' : '+' }}</span> ORACLE
+        <li v-for="(dbTypes, loc) in dbTreeData" :key="loc">
+          <span class="tree-node" @click="toggleLoc(loc)">
+            <span class="toggle-icon">{{ expandedLoc[loc] ? '-' : '+' }}</span> {{ loc }}
           </span>
-          <ul v-if="expandedDBType.oracle" class="sub-tree">
-            <li
-              v-for="instance in oracleDBList"
-              :key="instance"
-              class="db-item"
-              :class="{ selected: selectedDB === instance }"
-            >
-              <span @click="selectDB(instance, 'oracle')">{{ instance }}</span>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <span @click="toggleDBType('tibero')" class="tree-node">
-            <span class="toggle-icon">{{ expandedDBType.tibero ? '-' : '+' }}</span> TIBERO
-          </span>
-          <ul v-if="expandedDBType.tibero" class="sub-tree">
-            <li
-              v-for="instance in tiberoDBList"
-              :key="instance"
-              class="db-item"
-              :class="{ selected: selectedDB === instance }"
-            >
-              <span @click="selectDB(instance, 'tibero')">{{ instance }}</span>
+
+          <ul v-if="expandedLoc[loc]" class="sub-tree">
+            <li v-for="(instances, dbType) in dbTypes" :key="dbType">
+              <span class="tree-node" @click="toggleDBType(loc, dbType)">
+                <span class="toggle-icon">{{ expandedDBType[loc]?.[dbType] ? '-' : '+' }}</span> {{ dbType }}
+              </span>
+
+              <ul v-if="expandedDBType[loc]?.[dbType]" class="sub-tree">
+                <li v-for="instance in instances" :key="instance" class="db-item" :class="{ selected: selectedDB === instance }">
+                  <span @click="selectDB(instance, dbType)">{{ instance }}</span>
+                </li>
+              </ul>
             </li>
           </ul>
         </li>
@@ -38,24 +27,14 @@
 
     <!-- 차트 영역 -->
     <div class="chart-container">
-      <div class="charts-grid">
-        <template v-if="selectedDB && selectedDBType === 'oracle'">
+      <div class="charts-wrapper">
+        <template v-if="selectedDB && activeMetrics.length > 0">
           <div
-            v-for="(metric, index) in oracleMetrics"
-            :key="'oracle_' + index"
-            class="chart-box"
+            v-for="(metric, index) in activeMetrics"
+            :key="metric.key"
+            class="metric-chart"
           >
-            <canvas :id="'oracleChart_' + index"></canvas>
-          </div>
-        </template>
-
-        <template v-if="selectedDB && selectedDBType === 'tibero'">
-          <div
-            v-for="(metric, index) in randomMetrics"
-            :key="'tibero_' + index"
-            class="chart-box"
-          >
-            <canvas :id="'chartRef_' + index"></canvas>
+            <canvas :ref="setCanvasRef(index)"></canvas>
           </div>
         </template>
       </div>
@@ -63,24 +42,28 @@
   </div>
 </template>
 
-
 <script>
-import { ref, nextTick, onMounted } from 'vue';
+import { ref, nextTick, onMounted, computed } from 'vue';
 import Chart from 'chart.js/auto';
 import api from "@/api";
 
 export default {
   setup() {
     const expandedDBType = ref({ oracle: false, tibero: false });
+    const dbTreeData = ref({});
+    const expandedLoc = ref({});
     const selectedDB = ref(null);
     const selectedDBType = ref(null);
-
-    const oracleDBList = ref([]);
-    const tiberoDBList = ref([]);
+    const canvasRefs = [];
 
     const dbData = ref([]);
     const tbdbData = ref([]);
 
+    const setCanvasRef = (index) => (el) => {
+      if (el) canvasRefs[index] = el;
+    };
+
+    const chartInstances = [];
     const metrics = ref([
       { key: 'transaTions', label: 'Transactions' },
       { key: 'totalSess', label: 'Total Sessions' },
@@ -117,64 +100,56 @@ export default {
 
     ]);
 
-    const randomMetrics = ref([]);
-    const oracleMetrics = ref([]);
 
-    const chartInstances = [];
+    const activeMetrics = computed(() =>
+          selectedDBType.value === 'oracle' ? metrics.value : tbmetrics.value
+        );
 
-    const fetchDbList = async () => {
-      try {
-        const response = await api.get('/api/dailychk/db-list');
-        const dbList = response.data;
-        oracleDBList.value = dbList.ORACLE || [];
-        tiberoDBList.value = dbList.TIBERO || [];
-      } catch (error) {
-        console.error("DB 목록을 불러오는 데 실패했습니다.", error);
-      }
+    const toggleLoc = (loc) => {
+      expandedLoc.value[loc] = !expandedLoc.value[loc];
     };
 
-    const toggleDBType = (type) => {
-      expandedDBType.value[type] = !expandedDBType.value[type];
+    const toggleDBType = (loc, type) => {
+      if (!expandedDBType.value[loc]) expandedDBType.value[loc] = {};
+      expandedDBType.value[loc][type] = !expandedDBType.value[loc][type];
     };
 
     const selectDB = async (instanceName, dbType) => {
       selectedDB.value = instanceName;
-      selectedDBType.value = dbType;
+      selectedDBType.value = dbType.toLowerCase();
+      canvasRefs.length = 0;
+      await fetchData(instanceName, selectedDBType.value);
+      await renderCharts();
+    };
 
-      if (dbType === 'oracle') {
-        await fetchDbData(instanceName);
-        oracleMetrics.value = metrics.value;
-        randomMetrics.value = [];
+    const fetchDbList = async () => {
+      try {
+        const res = await api.get('/api/dailychk/db-list');
+        const rawData = res.data || {};
+
+        // ✅ 지역명(Loc) 가나다 순 정렬
+        const sorted = Object.keys(rawData)
+          .sort((a, b) => a.localeCompare(b, 'ko'))
+          .reduce((acc, loc) => {
+            acc[loc] = rawData[loc];
+            return acc;
+          }, {});
+
+        dbTreeData.value = sorted;
+      } catch (err) {
+        console.error('DB 목록 조회 실패', err);
+      }
+    };
+
+    const fetchData = async (name, type) => {
+      const endpoint = type === 'oracle' ? 'oradata' : 'tbdata';
+      const res = await api.get(`/api/dailychk/${name}/${endpoint}`);
+      if (type === 'oracle') {
+        dbData.value = res.data;
       } else {
-        await fetchTbDbData(instanceName);
-        randomMetrics.value = tbmetrics.value;
-        oracleMetrics.value = [];
-      }
-
-      nextTick(() => {
-        renderCharts();
-      });
-    };
-
-    const fetchDbData = async (instanceName) => {
-      try {
-        const response = await api.get(`/api/dailychk/${instanceName}/oradata`);
-        dbData.value = response.data;
-      } catch (error) {
-        console.error("ORACLE DB 데이터를 불러오는 데 실패했습니다.", error);
+        tbdbData.value = res.data;
       }
     };
-
-    const fetchTbDbData = async (instanceName) => {
-      try {
-        const response = await api.get(`/api/dailychk/${instanceName}/tbdata`);
-        tbdbData.value = response.data;
-      } catch (error) {
-        console.error("TIBERO DB 데이터를 불러오는 데 실패했습니다.", error);
-      }
-    };
-
-    const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
 
 
 
@@ -207,125 +182,130 @@ export default {
       });
     };
 
-    const renderCharts = () => {
-      chartInstances.forEach((chart) => chart.destroy());
-      chartInstances.length = 0;
+     const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
 
-      const targetMetrics = selectedDBType.value === 'oracle' ? oracleMetrics.value : randomMetrics.value;
-      const targetData = selectedDBType.value === 'oracle' ? dbData.value : tbdbData.value;
+     const renderCharts = async () => {
+       chartInstances.forEach((chart) => chart.destroy());
+       chartInstances.length = 0;
 
-      const fixed100Keys = ['buffHit', 'libHit', 'dictHit', 'bufferpct', 'reDoPct', 'buffHitPct', 'latchHitPct', 'libHitPct', 'softPct', 'executTopct', 'parseCpuElapsd'];
+       const targetMetrics = activeMetrics.value;
+       const targetData = selectedDBType.value === 'oracle' ? dbData.value : tbdbData.value;
 
-      nextTick(() => {
-        targetMetrics.forEach((metric, index) => {
-          const canvasId = selectedDBType.value === 'oracle' ? `oracleChart_${index}` : `chartRef_${index}`;
-          const canvas = document.getElementById(canvasId);
-          if (!canvas) return;
+       const fixed100Keys = ['buffHit', 'libHit', 'dictHit', 'bufferpct', 'reDoPct', 'buffHitPct', 'latchHitPct', 'libHitPct', 'softPct', 'executTopct', 'parseCpuElapsd'];
 
-          const { yesterdayData, todayData } = splitYesterdayTodayData(targetData, metric.key);
+       await nextTick();
 
-          const combinedData = [...todayData, ...yesterdayData].filter(val => val !== null && val !== undefined);
-          const minValue = combinedData.length > 0 ? Math.min(...combinedData) : 0;
-          const maxValue = combinedData.length > 0 ? Math.max(...combinedData) : 100;
-          const diff = maxValue - minValue;
+       targetMetrics.forEach((metric, index) => {
+         const canvas = canvasRefs[index];
+         if (!canvas || !canvas.getContext) return;
 
-          let suggestedMin;
-          let suggestedMax;
-          let stepSize;
-          let beginAtZero;
+         const existing = Chart.getChart(canvas);
+         if (existing) existing.destroy();
 
-          if (fixed100Keys.includes(metric.key)) {
-            // 퍼센트 차트
-            suggestedMin = 0;
-            suggestedMax = 100;
-            stepSize = 10; // 눈금 10단위로
-            beginAtZero=true;
-          } else {
-            // 일반 차트
-            suggestedMin = diff >= 5 ? Math.floor(minValue) - 5 : Math.floor(minValue);
-            suggestedMax = diff >= 5 ? Math.ceil(maxValue) + 5 : Math.ceil(maxValue);
-            stepSize = 1; // 눈금 1단위로
-            beginAtZero=false;
-          }
+         const { yesterdayData, todayData } = splitYesterdayTodayData(targetData, metric.key);
 
-          const hue = getRandomHue();
-          const todayFillColor = pastelColorByHue(hue, 0.8);
-          const yesterdayFillColor = pastelColorByHue(hue, 0.3);
-          const solidColor = pastelColorByHue(hue, 1);
+         const combinedData = [...todayData, ...yesterdayData].filter(val => val !== null && val !== undefined);
+         const minValue = combinedData.length > 0 ? Math.min(...combinedData) : 0;
+         const maxValue = combinedData.length > 0 ? Math.max(...combinedData) : 100;
+         const diff = maxValue - minValue;
 
-          const chart = new Chart(canvas.getContext('2d'), {
-            type: 'line',
-            data: {
-              labels: hours,
-              datasets: [
-                {
-                  label: `${metric.label} (오늘)`,
-                  data: todayData,
-                  backgroundColor: todayFillColor,
-                  borderColor: solidColor,
-                  fill: true,
-                  tension: 0.4,
-                  pointRadius: 2,
-                },
-                {
-                  label: `${metric.label} (어제)`,
-                  data: yesterdayData,
-                  backgroundColor: yesterdayFillColor,
-                  borderColor: 'transparent',
-                  fill: true,
-                  tension: 0.4,
-                  pointRadius: 0,
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              interaction: { mode: 'index', intersect: false, axis: 'x' },
-              scales: {
-                x: {
-                  title: { display: true, text: '시간 (00~23)' }
-                },
-                y: {
-                  title: { display: true, text: '값' },
-                  suggestedMin: suggestedMin,
-                  suggestedMax: suggestedMax,
-                  ticks: {
-                    stepSize: stepSize,
-                    beginAtZero: beginAtZero,
-                    callback: function(value) {
-                      return Math.floor(value); // 소수점 버리기
-                    }
-                  }
-                }
-              },
-              plugins: {
-                legend: { position: 'top' },
-              }
-            }
-          });
+         let suggestedMin;
+         let suggestedMax;
+         let stepSize;
+         let beginAtZero;
 
-          chart.canvas.addEventListener('mousemove', syncCharts);
-          chartInstances.push(chart);
-        });
-      });
-    };
+         if (fixed100Keys.includes(metric.key)) {
+           suggestedMin = 0;
+           suggestedMax = 100;
+           stepSize = 10;
+           beginAtZero = true;
+         } else {
+           suggestedMin = diff >= 5 ? Math.floor(minValue) - 5 : Math.floor(minValue);
+           suggestedMax = diff >= 5 ? Math.ceil(maxValue) + 5 : Math.ceil(maxValue);
+           // stepSize 제거됨, Chart.js가 자동 계산하도록 유도
+           beginAtZero = false;
+         }
+         const hue = getRandomHue();
+         const todayFillColor = pastelColorByHue(hue, 0.8);
+         const yesterdayFillColor = pastelColorByHue(hue, 0.3);
+         const solidColor = pastelColorByHue(hue, 1);
+
+         const chart = new Chart(canvas.getContext('2d'), {
+           type: 'line',
+           data: {
+             labels: hours,
+             datasets: [
+               {
+                 label: `${metric.label} (오늘)`,
+                 data: todayData,
+                 backgroundColor: todayFillColor,
+                 borderColor: solidColor,
+                 fill: true,
+                 tension: 0.4,
+                 pointRadius: 2,
+               },
+               {
+                 label: `${metric.label} (어제)`,
+                 data: yesterdayData,
+                 backgroundColor: yesterdayFillColor,
+                 borderColor: 'transparent',
+                 fill: true,
+                 tension: 0.4,
+                 pointRadius: 0,
+               }
+             ]
+           },
+           options: {
+             responsive: true,
+             maintainAspectRatio: false,
+             height: 200,
+             interaction: { mode: 'index', intersect: false, axis: 'x' },
+             layout: {
+               padding: 0
+             },
+             scales: {
+               x: {
+                 title: { display: true, text: '시간 (00~23)' }
+               },
+               y: {
+                 title: { display: true, text: '값' },
+                 suggestedMin,
+                 suggestedMax,
+                 ticks: {
+                   stepSize,
+                   beginAtZero,
+                   callback: (value) => Math.floor(value)
+                 }
+               }
+             },
+             plugins: {
+               legend: { position: 'top' },
+             }
+           }
+         });
+
+         chart.canvas.addEventListener('mousemove', syncCharts);
+         chartInstances.push(chart);
+       });
+     };
+
 function splitYesterdayTodayData(dataList, key) {
   const today = new Date();
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
 
-  const todayStr = today.toISOString().slice(0, 10).replace(/-/g, '/');     // '2025/04/29'
-  const yesterdayStr = yesterday.toISOString().slice(0, 10).replace(/-/g, '/'); // '2025/04/28'
+  const todayStr = today.toISOString().slice(0, 10).replace(/-/g, '/');
+  const yesterdayStr = yesterday.toISOString().slice(0, 10).replace(/-/g, '/');
 
   const todayData = new Array(24).fill(null);
   const yesterdayData = new Array(24).fill(null);
 
   dataList.forEach(item => {
-    const chkDateStr = item.id.chkDate; // VARCHAR2 형식: '2025/04/29 09:00:00'
+    const chkDateStr = item.id.chkDate; // '2025/04/29 09:00:00'
+    if (!chkDateStr) return;
 
-    const datePart = chkDateStr.slice(0, 10);         // '2025/04/29'
-    const hourPart = parseInt(chkDateStr.slice(11, 13), 10); // '09'
+    const datePart = chkDateStr.slice(0, 10);
+    const hourPart = parseInt(chkDateStr.slice(11, 13), 10);
 
     if (datePart === todayStr) {
       todayData[hourPart] = item[key] ?? null;
@@ -343,22 +323,22 @@ function splitYesterdayTodayData(dataList, key) {
 }
 
 
+
     onMounted(() => {
       fetchDbList();
     });
 
     return {
+      dbTreeData,
+      expandedLoc,
       expandedDBType,
       selectedDB,
       selectedDBType,
-      oracleDBList,
-      tiberoDBList,
-      dbData,
-      tbdbData,
-      randomMetrics,
-      oracleMetrics,
+      toggleLoc,
       toggleDBType,
       selectDB,
+      activeMetrics,
+      setCanvasRef
     };
   }
 }
@@ -424,6 +404,7 @@ function splitYesterdayTodayData(dataList, key) {
   background-color: #e9f1f7;
 }
 
+
 /* 차트 컨테이너 스타일 */
 .chart-container {
   flex-grow: 1;
@@ -435,7 +416,7 @@ function splitYesterdayTodayData(dataList, key) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-height: 100vh; /* 컨테이너가 최소 100vh 높이를 갖도록 설정 */
+  min-height: 20vh; /* 컨테이너가 최소 100vh 높이를 갖도록 설정 */
   /* height: 100vh; */
 }
 
@@ -452,7 +433,6 @@ function splitYesterdayTodayData(dataList, key) {
   height: 300px; /* 차트의 높이 설정 */
   margin-bottom: 20px;
 }
-
 /* 반응형 스타일 */
 @media (max-width: 768px) {
   .container {

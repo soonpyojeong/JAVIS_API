@@ -29,7 +29,7 @@ public class DailyChkController {
     @GetMapping("/db-list")
     public ResponseEntity<?> getDbchkList() {
         try {
-            Map<String, List<String>> dbListMap = dailyChkService.getDbListForDailyChkByType();
+            Map<String, Map<String, List<String>>> dbListMap = dailyChkService.getDbListForDailyChkByType();
             return ResponseEntity.ok(dbListMap);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버 오류 발생");
