@@ -29,12 +29,18 @@ public class LogSummarySchedulerService {
 
     @Transactional
     public List<SysInfoLogSummary> generateTodaySummary() {
-        SysInfoSummary latestSummary = summaryMainRepo.findLatestSummaryToday();
-        if (latestSummary == null) return Collections.emptyList();
+        // ✅ 수정: List<SysInfoSummary> 로 받기
+        List<SysInfoSummary> summaryList = (List<SysInfoSummary>) summaryMainRepo.findLatestSummaryToday();
 
-        Long summaryId = latestSummary.getId();
-        return generateSummaryBySummaryId(summaryId);
+        List<SysInfoLogSummary> result = new ArrayList<>();
+        for (SysInfoSummary summary : summaryList) {
+            result.addAll(generateSummaryBySummaryId(summary.getId()));
+        }
+
+        return result; // ✅ 빠뜨리면 안됨
     }
+
+
 
     @Transactional
     public List<SysInfoLogSummary> generateSummaryBySummaryId(Long summaryId) {

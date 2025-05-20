@@ -2,8 +2,10 @@ package com.javis.dongkukDBmon.controller;
 
 import com.javis.dongkukDBmon.Dto.SysInfoDTO;
 import com.javis.dongkukDBmon.model.SysInfoDisk;
+import com.javis.dongkukDBmon.model.SysInfoLog;
 import com.javis.dongkukDBmon.model.SysInfoSummary;
 import com.javis.dongkukDBmon.repository.SysInfoDiskRepository;
+import com.javis.dongkukDBmon.repository.SysInfoLogRepository;
 import com.javis.dongkukDBmon.repository.SysInfoSummaryRepository;
 import com.javis.dongkukDBmon.service.SysInfoService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -24,6 +27,7 @@ public class SysInfoTestController {
 
     private final SysInfoSummaryRepository summaryRepo;
     private final SysInfoDiskRepository diskRepo;
+    private final SysInfoLogRepository logRepo;
     private final SysInfoService sysInfoService;
 
     @PostMapping
@@ -36,7 +40,7 @@ public class SysInfoTestController {
         // 2. Disk 정보 저장
         dto.getDiskInfo().forEach(disk -> {
             SysInfoDisk entity = new SysInfoDisk();
-            entity.setSummaryId(summary.getId());
+            entity.setSummaryId(summary.getId());  // ❗ summary 객체가 아니라 ID만 저장해야 함
             entity.setFilesystem(disk.getFilesystem());
             entity.setDiskSize(disk.getSize());
             entity.setUsed(disk.getUsed());
@@ -44,6 +48,30 @@ public class SysInfoTestController {
             entity.setUsePercent(disk.getUsePercent());
             entity.setMountedOn(disk.getMountedOn());
             diskRepo.save(entity);
+        });
+
+        // 3. DB 에러 로그 저장
+        dto.getLogCheck().getDbLogErrors().forEach((dateStr, logs) -> {
+            logs.forEach(msg -> {
+                SysInfoLog logEntity = new SysInfoLog();
+                logEntity.setSummary(summary);
+                logEntity.setLogType("DB_ERROR");
+                logEntity.setLogDate(java.sql.Date.valueOf(dateStr));
+                logEntity.setMessage(msg);
+                logRepo.save(logEntity);
+            });
+        });
+
+        // 4. 로그인 실패 로그 저장
+        dto.getLogCheck().getAccountFailures().forEach((dateStr, logs) -> {
+            logs.forEach(msg -> {
+                SysInfoLog logEntity = new SysInfoLog();
+                logEntity.setSummary(summary);
+                logEntity.setLogType("LOGIN_FAIL");
+                logEntity.setLogDate(Date.valueOf(dateStr));
+                logEntity.setMessage(msg);
+                logRepo.save(logEntity);
+            });
         });
 
         return ResponseEntity.ok().build();

@@ -37,5 +37,5 @@ public interface SysInfoSummaryRepository extends JpaRepository<SysInfoSummary, 
 
     // ✅ 오늘 수집된 최신 Summary ID (정렬 기준: REG_TIME)
     @Query(value = "SELECT * FROM TB_SYSINFO_SUMMARY WHERE TRUNC(REG_TIME) = TRUNC(SYSDATE) ORDER BY REG_TIME DESC ", nativeQuery = true)
-    SysInfoSummary findLatestSummaryToday();
+    List<SysInfoSummary> findLatestSummaryToday();
 }
