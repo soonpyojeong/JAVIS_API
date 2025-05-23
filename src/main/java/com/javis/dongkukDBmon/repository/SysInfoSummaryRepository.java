@@ -3,6 +3,7 @@ package com.javis.dongkukDBmon.repository;
 import com.javis.dongkukDBmon.model.SysInfoSummary;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -38,4 +39,25 @@ public interface SysInfoSummaryRepository extends JpaRepository<SysInfoSummary, 
     // ✅ 오늘 수집된 최신 Summary ID (정렬 기준: REG_TIME)
     @Query(value = "SELECT * FROM TB_SYSINFO_SUMMARY WHERE TRUNC(REG_TIME) = TRUNC(SYSDATE) ORDER BY REG_TIME DESC ", nativeQuery = true)
     List<SysInfoSummary> findLatestSummaryToday();
+
+    @Query(value = "SELECT * FROM (" +
+            "  SELECT * FROM TB_SYSINFO_SUMMARY " +
+            "  WHERE HOSTNAME = :hostname " +
+            "    AND TO_CHAR(CHECK_DATE, 'YYYY-MM-DD') = :date " +
+            "  ORDER BY REG_TIME DESC" +
+            ") WHERE ROWNUM = 1",
+            nativeQuery = true)
+    SysInfoSummary findLatestByHostnameAndDate(
+            @Param("hostname") String hostname,
+            @Param("date") String date
+    );
+
+    @Query("SELECT DISTINCT TO_CHAR(s.checkDate, 'YYYY-MM-DD') " +
+            "FROM SysInfoSummary s " +
+            "WHERE s.hostname = :hostname AND s.checkDate BETWEEN :start AND :end")
+    List<String> findCollectedDatesBetween(@Param("hostname") String hostname,
+                                           @Param("start") LocalDate start,
+                                           @Param("end") LocalDate end);
+
+
 }

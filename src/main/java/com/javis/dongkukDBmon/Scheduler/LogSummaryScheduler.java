@@ -17,7 +17,7 @@ public class LogSummaryScheduler {
     private final LogSummarySchedulerService summaryService;
 
     // 매일 새벽 1시에 실행
-    @Scheduled(cron = "0 11 14 * * *")
+    @Scheduled(cron = "0 40 07 * * *")
     public void runDailySummary() {
         log.info("[🔄 LogSummaryScheduler] 시작");
 

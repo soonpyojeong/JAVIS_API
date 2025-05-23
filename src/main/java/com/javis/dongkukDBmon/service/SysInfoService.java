@@ -10,6 +10,7 @@ import com.javis.dongkukDBmon.repository.SysInfoSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,10 @@ public class SysInfoService {
         return result;
     }
 
-
+    public List<String> getCollectedDatesForMonth(String hostname, int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+        return summaryRepo.findCollectedDatesBetween(hostname, startDate, endDate);
+    }
 
 }

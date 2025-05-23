@@ -34,7 +34,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 "/js/**", "/css/**","/api/**","/ws/**","/api/alerts/**",
                                 "/api/auth/**","/api/sysinfo/**","/api/SysInfoDetail/**","/api/sysinfo/by-date/**",
                                 "/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk",
-                                "/SysInfoDetail","/api/pass/**","/api/sysinfo/log-summary/**"
+                                "/SysInfoDetail","/api/pass/**","/api/sysinfo/log-summary/**",
+                                "/api/sysinfo/collected-dates-by-month/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

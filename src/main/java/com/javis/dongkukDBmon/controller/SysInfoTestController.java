@@ -90,14 +90,41 @@ public class SysInfoTestController {
         if (latest == null) return ResponseEntity.noContent().build();
 
         List<SysInfoDisk> disks = diskRepo.findBySummaryId(latest.getId());
+        List<SysInfoLog> logs = logRepo.findBySummaryId(latest.getId());
+
+        Date sqlDate = new Date(latest.getCheckDate().getTime());
+        LocalDate checkDate = sqlDate.toLocalDate();
+
+        int year = checkDate.getYear();
+        int month = checkDate.getMonthValue();
+
+        List<String> collectedDates = summaryRepo.findCollectedDatesBetween(
+                hostname,
+                LocalDate.of(year, month, 1),
+                checkDate.withDayOfMonth(checkDate.lengthOfMonth())
+        );
 
         Map<String, Object> result = new HashMap<>();
         result.put("summary", latest);
         result.put("disks", disks);
+        result.put("logs", logs);
+        result.put("collectedDates", collectedDates);
 
         return ResponseEntity.ok(result);
     }
 
+
+
+
+    @GetMapping("/collected-dates-by-month")
+    public ResponseEntity<List<String>> getCollectedDatesByMonth(
+            @RequestParam String hostname,
+            @RequestParam int year,
+            @RequestParam int month
+    ) {
+        List<String> collectedDates = sysInfoService.getCollectedDatesForMonth(hostname, year, month);
+        return ResponseEntity.ok(collectedDates);
+    }
     @GetMapping("/hostnames")
     public ResponseEntity<List<Map<String, Object>>> getAllHostnames() {
         List<Object[]> hostRows = summaryRepo.findDistinctHostnames();
@@ -133,4 +160,25 @@ public class SysInfoTestController {
 
         return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/by-host-and-date")
+    public ResponseEntity<?> getByHostAndDate(
+            @RequestParam String hostname,
+            @RequestParam String date
+    ) {
+        SysInfoSummary summary = summaryRepo.findLatestByHostnameAndDate(hostname, date);
+        if (summary == null) return ResponseEntity.noContent().build();
+
+        List<SysInfoDisk> disks = diskRepo.findBySummaryId(summary.getId());
+        List<SysInfoLog> logs = logRepo.findBySummaryId(summary.getId());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("summary", summary);
+        result.put("disks", disks);
+        result.put("logs", logs);
+
+        return ResponseEntity.ok(result);
+    }
+
+
 }

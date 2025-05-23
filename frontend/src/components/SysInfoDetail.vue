@@ -1,6 +1,6 @@
 <template>
   <div class="container-wrapper">
-    <!-- 왼쪽 HOSTNAME 리스트 -->
+    <!-- HOSTNAME 리스트 -->
     <div class="db-tree">
       <h3>DBMS 목록</h3>
       <ul>
@@ -22,31 +22,31 @@
       </ul>
     </div>
 
-    <!-- 오른쪽 시스템 정보 전체 영역 -->
+    <!-- 시스템 정보 영역 -->
     <div class="sysinfo-detail">
       <div class="top-grid">
-        <!-- 좌측 요약 -->
+        <!-- 요약 정보 -->
         <div class="left-summary">
           <div class="hostname-section">
             <h2>{{ summary.hostname }}</h2>
           </div>
-          <!-- 항상 표시되는 날짜 선택 박스 -->
-          <div class="date-picker-section">수집 날짜
-            <input
-              type="date"
-              v-model="selectedDate"
-              @change="handleDateChange"
-              class="calendar-input"
-            />
-          </div>
 
-          <div class="summary-cards">
+            <!-- 날짜 달력 -->
+             <div class="date-picker-section">
+                    <CustomDatePicker
+                       v-model="selectedDate"
+                       :collectedDates="collectedDates"
+                       @date-select="onPrimeDateSelected"
+                       @month-change="onPrimeMonthChange"
+                     />
+                 </div>
+
+        <div class="summary-cards">
             <div class="card">CPU 사용률<br /><strong>{{ summary.cpuUsage }}%</strong></div>
             <div class="card">메모리 사용률<br /><strong>{{ summary.memUsage }}%</strong></div>
             <div class="card">디스크 사용률<br /><strong>{{ summary.diskUsage }}%</strong></div>
           </div>
 
-          <!-- 디스크 정보 -->
           <div class="disk-section">
             <h3>디스크 상세</h3>
             <canvas :id="`diskChart-${chartKey}`"></canvas>
@@ -62,7 +62,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="disk in disks" :key="disk.id">
+                <tr v-for="disk in disks || []" :key="disk.id">
                   <td>{{ disk.filesystem }}</td>
                   <td>{{ disk.diskSize }}</td>
                   <td>{{ disk.used }}</td>
@@ -75,7 +75,7 @@
           </div>
         </div>
 
-        <!-- 우측 시스템 로그 요약 -->
+        <!-- 로그 요약 -->
         <div class="right-log">
           <div class="log-section">
             <h3>시스템 로그 요약</h3>
@@ -98,94 +98,113 @@
   </div>
 </template>
 
+
+
 <script setup>
-import { computed, onMounted, ref, nextTick } from 'vue';
+import { computed, onMounted, ref, nextTick, onBeforeUnmount ,watch} from 'vue';
 import Chart from 'chart.js/auto';
+import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import api from '@/api';
+import { useSysInfoCalendar } from '@/stores/useSysInfoCalendar';
+const { collectedDates, loadCollectedDates } = useSysInfoCalendar();
+// 커스텀 프리셋
+
 
 const summary = ref({});
 const disks = ref([]);
 const logSummaries = ref([]);
 const hostList = ref([]);
-const selectedHost = ref(null);
+const selectedHost = ref('');
 const chartKey = ref(0);
 let chartInstance = null;
-const selectedDate = ref(null);
 const expandedLoc = ref({});
 
-const handleDateChange = async () => {
-  if (!selectedHost.value || !selectedDate.value) return;
+const selectedDate = ref(null);
+const showCalendar = ref(false);
+const calendarWrapper = ref(null);
 
-  const { data } = await api.get('/api/sysinfo/by-date', {
-    params: {
-      hostname: selectedHost.value,
-      date: selectedDate.value
+
+const highlightDates = computed(() =>
+  (collectedDates.value || []).map(d => {
+    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+    if (d instanceof Date) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
     }
-  });
-  summary.value = data.summary;
-  disks.value = data.disks;
+    return '';
+  })
+)
 
-  const res = await api.get('/api/sysinfo/log-summary/by-date', {
-    params: {
-      hostname: selectedHost.value,
-      date: selectedDate.value
-    }
-  });
-  logSummaries.value = res.data;
 
-  chartKey.value += 1;
-  nextTick(() => renderDiskChart());
+// 날짜 클릭 → 해당 일자 데이터 조회
+const onPrimeDateSelected = async (event) => {
+  showCalendar.value = false;
+  if (!selectedHost.value || !event || isNaN(event.getTime())) return;
+  selectedDate.value = event;
+  await handleDateChange(event);
 };
-const groupedHostList = computed(() => {
-  if (!Array.isArray(hostList.value)) return {};
 
-  return hostList.value
-    .filter(item => item.hostname && item.loc)
-    .sort((a, b) => {
-      const locCompare = a.loc.localeCompare(b.loc, 'ko');
-      return locCompare !== 0 ? locCompare : a.hostname.localeCompare(b.hostname, 'ko');
-    })
-    .reduce((acc, item) => {
-      if (!acc[item.loc]) acc[item.loc] = [];
-      acc[item.loc].push({ label: item.hostname, id: item.hostname });
-      return acc;
-    }, {});
-});
-
-const groupedLogSummaries = computed(() => {
-  const groups = {};
-  for (const entry of logSummaries.value) {
-    const date = entry.logDate;
-    if (!groups[date]) groups[date] = [];
-
-    let typeGroup = groups[date].find(g => g.logType === entry.logType);
-    if (!typeGroup) {
-      typeGroup = { logType: entry.logType, messages: [] };
-      groups[date].push(typeGroup);
-    }
-
-    typeGroup.messages.push({ message: entry.message, count: entry.count });
+const onPrimeMonthChange = async ({ month, year }) => {
+  // month-change에서 month는 0~11, year 그대로
+  // selectedDate(현재 달력 v-model)의 getMonth()도 0~11
+  // 둘이 다르면 selectedDate로 맞추거나, 둘 중 큰 쪽(최신 달력 값) 사용
+  let trueMonth = month + 1;
+  if (selectedDate.value instanceof Date && selectedDate.value.getFullYear() === year) {
+    trueMonth = selectedDate.value.getMonth() + 1; // Date는 0-based
   }
+  await loadCollectedDates(selectedHost.value, year, trueMonth);
+  console.log("🔄 month-change 이후 collectedDates:", collectedDates.value);
+};
 
-  // ✅ 날짜 기준으로 내림차순 정렬
-  const sortedGroups = Object.keys(groups)
-    .sort((a, b) => b.localeCompare(a)) // 최신 날짜가 위로
-    .reduce((acc, key) => {
-      acc[key] = groups[key];
-      return acc;
-    }, {});
-
-  return sortedGroups;
-});
-
-const getLogTypeClass = (type) => {
-  switch (type) {
-    case 'ERROR':
-    case 'DB_ERROR': return 'log-error';
-    case 'WARN': return 'log-warn';
-    case 'INFO': return 'log-info';
-    default: return '';
+const handleDateChange = async (value) => {
+  const selected = value instanceof Date ? value : new Date(value);
+  if (!selectedHost.value || !selected || isNaN(selected.getTime())) {
+    summary.value = {};
+    disks.value = [];
+    logSummaries.value = [];
+    return;
   }
+  const yyyy = selected.getFullYear();
+  const mm = selected.getMonth() + 1;
+  const dateStr = selected.toISOString().slice(0, 10);
+
+  await loadCollectedDates(selectedHost.value, yyyy, mm);
+
+  try {
+    const res = await api.get('/api/sysinfo/by-host-and-date', {
+      params: { hostname: selectedHost.value, date: dateStr }
+    });
+    const { summary: sum, disks: dks, logs: logs } = res.data || {};
+    summary.value = sum || {};
+    disks.value = Array.isArray(dks) ? dks : [];
+    logSummaries.value = Array.isArray(logs) ? logs : [];
+    selectedDate.value = selected;
+    chartKey.value += 1;
+    await nextTick(() => renderDiskChart());
+  } catch (e) {
+    summary.value = {};
+    disks.value = [];
+    logSummaries.value = [];
+    selectedDate.value = null;
+    console.error('❌ 수집 데이터 요청 실패:', e);
+  }
+};
+
+
+const selectHost = async (hostname) => {
+  selectedHost.value = hostname;
+  await fetchSysInfo(hostname);
+
+  if (selectedDate.value) {
+    const year = selectedDate.value.getFullYear();
+    const month = selectedDate.value.getMonth() + 1;
+    await loadCollectedDates(hostname, year, month);
+    // 여기서 최신 값 출력!
+    console.log("🔄 selectHost 이후 collectedDates:", collectedDates.value);
+  }
+  await nextTick();
 };
 
 
@@ -196,9 +215,12 @@ const fetchSysInfo = async (hostname = null) => {
   summary.value = data.summary;
   disks.value = data.disks;
 
-  // ✅ 수집일을 date-picker 기본값으로 설정
   if (summary.value?.checkDate) {
-    selectedDate.value = summary.value.checkDate.slice(0, 10); // yyyy-MM-dd
+    selectedDate.value = new Date(summary.value.checkDate);
+    const year = selectedDate.value.getFullYear();
+    const month = selectedDate.value.getMonth() + 1;
+    console.log('호스트:', hostname, '수집일:', collectedDates.value);
+    await loadCollectedDates(hostname, year, month);
   }
 
   logSummaries.value = [];
@@ -211,25 +233,59 @@ const fetchSysInfo = async (hostname = null) => {
   nextTick(() => renderDiskChart());
 };
 
+const groupedHostList = computed(() => {
+  if (!Array.isArray(hostList.value)) return {};
+  return hostList.value
+    .filter(item => item.hostname && item.loc)
+    .sort((a, b) => a.loc.localeCompare(b.loc, 'ko') || a.hostname.localeCompare(b.hostname, 'ko'))
+    .reduce((acc, item) => {
+      if (!acc[item.loc]) acc[item.loc] = [];
+      acc[item.loc].push({ label: item.hostname, id: item.hostname });
+      return acc;
+    }, {});
+});
 
+const groupedLogSummaries = computed(() => {
+  const groups = {};
+  for (const entry of logSummaries.value) {
+    const date = entry.logDate;
+    if (!groups[date]) groups[date] = [];
+    let group = groups[date].find(g => g.logType === entry.logType);
+    if (!group) {
+      group = { logType: entry.logType, messages: [] };
+      groups[date].push(group);
+    }
+    group.messages.push({ message: entry.message, count: entry.count });
+  }
+  return Object.fromEntries(
+    Object.entries(groups).sort(([a], [b]) => b.localeCompare(a))
+  );
+});
 
+const getLogTypeClass = (type) => {
+  switch (type) {
+    case 'ERROR':
+    case 'DB_ERROR': return 'log-error';
+    case 'WARN': return 'log-warn';
+    case 'INFO': return 'log-info';
+    default: return '';
+  }
+};
+// ❌ 달력 외부 클릭 시 닫기
+const handleClickOutside = (e) => {
+  if (calendarWrapper.value && !calendarWrapper.value.contains(e.target)) {
+    showCalendar.value = false;
+  }
+};
 const fetchHostList = async () => {
   const res = await api.get('/api/sysinfo/hostnames');
   hostList.value = res.data;
 };
 
-const selectHost = (hostname) => {
-  selectedHost.value = hostname;
-  fetchSysInfo(hostname);
-};
-
 const renderDiskChart = () => {
   const canvasId = `diskChart-${chartKey.value}`;
   const ctx = document.getElementById(canvasId);
-  if (!ctx) {
-    console.warn("❗ 차트 캔버스를 찾지 못했습니다:", canvasId);
-    return;
-  }
+  if (!ctx) return;
   if (chartInstance) chartInstance.destroy();
 
   chartInstance = new Chart(ctx, {
@@ -246,25 +302,12 @@ const renderDiskChart = () => {
       responsive: true,
       maintainAspectRatio: false,
       indexAxis: 'y',
-      plugins: {
-        legend: {
-          labels: {
-            color: '#333',
-            font: { size: 14, weight: 'bold' }
-          }
-        },
-        title: { display: false }
-      },
+      plugins: { legend: { labels: { color: '#333', font: { size: 14, weight: 'bold' } } } },
       scales: {
         x: {
           max: 100,
           ticks: { color: '#000', font: { size: 13, weight: 'bold' } },
-          title: {
-            display: true,
-            text: '사용률 (%)',
-            color: '#000',
-            font: { weight: 'bold', size: 14 }
-          }
+          title: { display: true, text: '사용률 (%)', color: '#000', font: { weight: 'bold', size: 14 } }
         },
         y: {
           ticks: { color: '#000', font: { size: 13, weight: 'bold' } }
@@ -276,8 +319,22 @@ const renderDiskChart = () => {
 
 onMounted(() => {
   fetchHostList();
+  document.addEventListener('click', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+});
+watch([collectedDates, highlightDates], ([dates, highlights]) => {
+  console.log('collectedDates:', dates);
+  console.log('highlightDates:', highlights);
 });
 </script>
+
 
 
 <style scoped>
@@ -481,32 +538,10 @@ canvas[id^="diskChart-"] {
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
+  display: inline-block;
+
+
 }
 
-.calendar-icon {
-  font-size: 20px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-.calendar-icon:hover {
-  transform: scale(1.1);
-}
-
-.calendar-input {
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.date-picker-section {
-  margin-bottom: 10px;
-}
-
-.calendar-input {
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-}
 </style>

@@ -1,0 +1,26 @@
+/* 수집일: 파스텔 블루 동그라미 */
+.my-modern-calendar .my-modern-collected {
+  border: 2px solid #b7d5fa !important;      /* 부드러운 파스텔 블루 */
+  color: #3898ec !important;                 /* 파란계열 (조금 연함) */
+  background: #e9f6fd !important;            /* 아주 연한 파스텔 스카이블루 */
+  border-radius: 50% !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+  line-height: 32px !important;
+  z-index: 1;
+  position: relative;
+  box-shadow: 0 2px 8px 0 rgba(177, 207, 255, 0.18); /* 은은한 그림자 */
+  transition: box-shadow 0.2s, background 0.2s, color 0.2s;
+}
+
+/* 선택된 날(클릭 시) 강조: 조금 더 진한 느낌 */
+.my-modern-calendar .my-modern-collected.selected,
+.my-modern-calendar .my-modern-collected:active {
+  border-color: #80bfff !important;
+  background: #d2e9fb !important;
+  color: #216cbe !important;
+  box-shadow: 0 4px 12px 0 rgba(100, 170, 255, 0.20);
+}
