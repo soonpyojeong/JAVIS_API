@@ -12,7 +12,6 @@ export function useSysInfoCalendar() {
   const loadCollectedDates = async (hostname, year, month) => {
     const key = getCacheKey(hostname, year, month);
 
-    console.log('🔎 API 호출 params:', { hostname, year, month });
 
     if (collectedDatesCache.has(key)) {
       collectedDates.value = collectedDatesCache.get(key);
@@ -26,7 +25,6 @@ export function useSysInfoCalendar() {
       const res = await api.get('/api/sysinfo/collected-dates-by-month', {
         params: { hostname, year, month }
       });
-      console.log('🔎 API 응답:', res.data);
 
       const parsedDates = (Array.isArray(res.data) ? res.data : [])
         .filter(dateStr => /^\d{4}-\d{2}-\d{2}$/.test(dateStr));

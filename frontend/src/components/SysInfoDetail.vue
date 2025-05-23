@@ -155,7 +155,7 @@ const onPrimeMonthChange = async ({ month, year }) => {
     trueMonth = selectedDate.value.getMonth() + 1; // Date는 0-based
   }
   await loadCollectedDates(selectedHost.value, year, trueMonth);
-  console.log("🔄 month-change 이후 collectedDates:", collectedDates.value);
+ // console.log("🔄 month-change 이후 collectedDates:", collectedDates.value);
 };
 
 const handleDateChange = async (value) => {
@@ -188,7 +188,7 @@ const handleDateChange = async (value) => {
     disks.value = [];
     logSummaries.value = [];
     selectedDate.value = null;
-    console.error('❌ 수집 데이터 요청 실패:', e);
+    //console.error('❌ 수집 데이터 요청 실패:', e);
   }
 };
 
@@ -202,7 +202,7 @@ const selectHost = async (hostname) => {
     const month = selectedDate.value.getMonth() + 1;
     await loadCollectedDates(hostname, year, month);
     // 여기서 최신 값 출력!
-    console.log("🔄 selectHost 이후 collectedDates:", collectedDates.value);
+    //console.log("🔄 selectHost 이후 collectedDates:", collectedDates.value);
   }
   await nextTick();
 };
