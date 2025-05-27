@@ -5,6 +5,8 @@ import store from './store';
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura'
 import './main.css'
+import 'primeicons/primeicons.css';
+
 
 const token = localStorage.getItem("accessToken");
 const userRaw = localStorage.getItem("user");
