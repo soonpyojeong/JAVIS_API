@@ -164,14 +164,15 @@ watch(user, (newVal) => {
 });
 
 const menuItems = [
-  { name: "첫화면", path: "/", roles: ["DBA", "DEV", "VIEW"] },
-  { name: "DB 전체 리스트", path: "/db-list", roles: ["DBA"] },
-  { name: "SMS 전송 내역", path: "/sms-history", roles: ["DBA", "DEV", "VIEW"] },
-  { name: "임계치 리스트", path: "/threshold-list", roles: ["DBA"] },
-  { name: "테이블스페이스 리스트", path: "/tablespaces", roles: ["DBA"] },
-  { name: "일일 점검(hit율)", path: "/dailyChk", roles: ["DBA"] },
-  { name: "일일 점검(SYS)", path: "/SysInfoDetail", roles: ["DBA"] },
-  { name: "패스워드관리", path: "/Manager", roles: ["DBA"]},
+  { name: "첫화면", path: "/", roles: ["ADMIN","DBA", "DEV", "VIEW"] },
+  { name: "DB 전체 리스트", path: "/db-list", roles: ["ADMIN","DBA"] },
+  { name: "SMS 전송 내역", path: "/sms-history", roles: ["ADMIN","DBA", "DEV", "VIEW"] },
+  { name: "임계치 리스트", path: "/threshold-list", roles: ["ADMIN","DBA"] },
+  { name: "테이블스페이스 리스트", path: "/tablespaces", roles: ["ADMIN","DBA"] },
+  { name: "일일 점검(hit율)", path: "/dailyChk", roles: ["ADMIN","DBA"] },
+  { name: "일일 점검(SYS)", path: "/SysInfoDetail", roles: ["ADMIN","DBA"] },
+  { name: "패스워드관리", path: "/Manager", roles: ["ADMIN","DBA"]},
+  { name: "TEST", path: "/TEST", roles: ["ADMIN"]},
 ];
 
 const filteredMenuItems = computed(() => {

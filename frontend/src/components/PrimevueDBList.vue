@@ -1,8 +1,8 @@
+//PrimevueTest.vue
+
 <template>
   <div class="db-list-container">
-    <!-- 1. 타이틀 (가운데) -->
     <h1 class="db-title">DB 리스트</h1>
-    <!-- 2. 상단 컨트롤 (검색/버튼) -->
     <div class="top-container flex justify-between items-center mb-4">
       <InputText
         v-model="searchQuery"
@@ -24,42 +24,42 @@
           iconPos="left"
           severity="primary"
           size="small"
-          @click="showAddDialog = true"
+          @click="openAddModal"
         />
       </div>
     </div>
 
-      <!-- 3. DataTable 별도 분리! -->
-      <div class="datatable-section">
-        <DataTable
-          :value="filteredDbList"
-          tableClass="text-center"
-          headerClass="text-center"
-          stripedRows
-          showGridlines
-          paginator
-          :rows="100"
-          :rowsPerPageOptions="[10,15,30,50,100]"
-          scrollable
-          scrollHeight="70vh"
-          class="shadow-3"
-          v-if="filteredDbList.length > 0"
-          responsiveLayout="scroll"
-          sortMode="single"
-          :sortField="sortKey"
-          :sortOrder="sortAsc ? 1 : -1"
-          @sort="onSort"
-          :globalFilterFields="['dbDescript','pubIp','vip','dbName']"
-          :globalFilter="searchQuery"
-          dataKey="id"
-        >
-      <Column field="loc" header="지역" sortable bodyClass="text-center" headerClass="text-center" />
-      <Column field="assets" header="자산" sortable bodyClass="text-center" headerClass="text-center" />
-      <Column field="dbDescript" header="설명" sortable bodyClass="text-center" headerClass="text-center" />
-      <Column field="hostname" header="호스트" sortable bodyClass="text-center" headerClass="text-center" />
-      <Column field="pubIp" header="PubIP" sortable bodyClass="text-center" headerClass="text-center" />
-      <Column field="dbName" header="DB 이름" sortable bodyClass="text-center" headerClass="text-center" />
-      <Column field="dbType" header="DB 타입" sortable bodyClass="text-center" headerClass="text-center" />
+    <div class="datatable-section">
+      <DataTable
+        :value="filteredDbList"
+        @row-dblclick="openEditModal"
+        tableClass="text-center"
+        headerClass="text-center"
+        stripedRows
+        showGridlines
+        paginator
+        :rows="100"
+        :rowsPerPageOptions="[10,15,30,50,100]"
+        scrollable
+        scrollHeight="70vh"
+        class="shadow-3"
+        v-if="filteredDbList.length > 0"
+        responsiveLayout="scroll"
+        sortMode="single"
+        :sortField="sortKey"
+        :sortOrder="sortAsc ? 1 : -1"
+        @sort="onSort"
+        :globalFilterFields="['dbDescript','pubIp','vip','dbName']"
+        :globalFilter="searchQuery"
+        dataKey="id"
+      >
+        <Column field="loc" header="지역" sortable bodyClass="text-center" headerClass="text-center" />
+        <Column field="assets" header="자산" sortable bodyClass="text-center" headerClass="text-center" />
+        <Column field="dbDescript" header="설명" sortable bodyClass="text-center" headerClass="text-center" />
+        <Column field="hostname" header="호스트" sortable bodyClass="text-center" headerClass="text-center" />
+        <Column field="pubIp" header="PubIP" sortable bodyClass="text-center" headerClass="text-center" />
+        <Column field="dbName" header="DB 이름" sortable bodyClass="text-center" headerClass="text-center" />
+        <Column field="dbType" header="DB 타입" sortable bodyClass="text-center" headerClass="text-center" />
       <Column header="LIVE">
         <template #body="{ data }">
           <Button
@@ -137,78 +137,18 @@
       </Column>
     </DataTable>
     <div v-else class="text-center text-gray-500 p-6">데이터가 없습니다.</div>
-        <!-- DB 등록  Dialog (PrimeVue) -->
-        <Dialog v-model:visible="showAddDialog" modal header="DB 등록" :closable="false" style="width: 380px; max-width: 95vw;">
-          <form @submit.prevent="handleSubmit">
-            <div class="flex flex-col gap-3">
-              <Select
-                v-model="addForm.loc"
-                :invalid="!addForm.loc"
-                :options="LocOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="지역 선택"
-                class="w-full"
-                required
-                appendTo="body"
-              />
-              <Select
-                v-model="addForm.dbType"
-                :invalid="!addForm.dbType"
-                :options="dbTypeOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="DB 타입 선택"
-                class="w-full"
-                required
-                appendTo="body"
-              />
-              <Select
-                v-model="addForm.assets"
-                :invalid="!addForm.assets"
-                :options="assetsOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="자산 선택"
-                class="w-full"
-                required
-                appendTo="body"
-              />
-
-              <InputText v-model="addForm.dbVer" :invalid="!addForm.dbVer" placeholder="DB버전" class="w-full" />
-              <InputText v-model="addForm.smsGroup" placeholder="SMS Group" class="w-full" />
-              <InputText v-model="addForm.dbDescript" :invalid="!addForm.dbDescript" placeholder="설명" class="w-full" />
-              <InputText v-model="addForm.os" placeholder="OS" class="w-full" />
-              <InputText v-model="addForm.hostname" placeholder="호스트명" class="w-full" required />
-              <InputText v-model="addForm.dbName" :invalid="!addForm.dbName" placeholder="DB 이름" class="w-full" required />
-              <InputText v-model="addForm.instanceName" :invalid="!addForm.instanceName" placeholder="Instance Name" class="w-full" required />
-              <InputText v-model="addForm.pubIp" :invalid="!addForm.pubIp" placeholder="PubIP" class="w-full" />
-              <InputText v-model="addForm.vip" placeholder="VIP" class="w-full" />
-              <InputNumber v-model="addForm.port" :invalid="!addForm.port" placeholder="포트" class="w-full" :useGrouping="false" />
-              <InputText v-model="addForm.userid" :invalid="!addForm.userid" placeholder="USERID" class="w-full" />
-              <Password v-model="addForm.pw" :invalid="!addForm.pw" placeholder="PW" class="w-full" :feedback="false" toggleMask />
-
-            </div>
-             <!-- 체크박스 영역 -->
-                  <div v-if="dbCheckItems.length" class="flex flex-col gap-2 mt-3">
-                    <span class="font-semibold">모니터링 항목</span>
-                    <div v-for="item in dbCheckItems" :key="item.key" class="flex items-center gap-2">
-                      <Checkbox
-                        v-model="addForm[item.key]"
-                        binary
-                        trueValue="Y"
-                        falseValue="N"
-                        :inputId="item.key"
-                      />
-                      <label :for="item.key">{{ item.label }}</label>
-                    </div>
-                  </div><br>
-            <div class="flex justify-end gap-2">
-              <Button label="등록" type="submit" severity="primary" class="font-bold" />
-              <Button label="취소" type="button" severity="secondary" outlined @click="showAddDialog = false" />
-            </div>
-          </form>
-        </Dialog>
+        <DbEditForm
+             v-model:visible="editDialogVisible"
+            :mode="editMode"
+            :form="editForm"
+            :locOptions="LocOptions"
+            :dbTypeOptions="dbTypeOptions"
+            :assetsOptions="assetsOptions"
+            :dbCheckItems="computedDbCheckItems"
+            @submit="handleDbEditSubmit"
+            @cancel="closeEditDialog"
+            @dbTypeChange="onChildDbTypeChange"
+        />
         <!-- 팝업 모달 Dialog (PrimeVue) -->
         <Dialog v-model:visible="isModalVisible" modal header="상태 변경" :closable="false">
           <div class="text-lg mb-4">정말 수정하시겠습니까?</div>
@@ -236,17 +176,14 @@
 </template>
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount,watch } from 'vue'
-import api from "@/api"
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Checkbox from 'primevue/checkbox'
-import Dialog from 'primevue/dialog'
-import Select from 'primevue/select'
-import InputNumber from 'primevue/inputnumber'
-import Password from 'primevue/password'
 import { connectWebSocket, disconnectWebSocket } from "@/websocket"
+import api from "@/api"
+import DbEditForm from '@/components/DbEditForm.vue'
+import DataTable from 'primevue/datatable'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import Column from 'primevue/column'
 
 // 1. 상태 선언 (Composition API 방식)
 const dbList = ref([])
@@ -260,36 +197,22 @@ const sortKey = ref("dbDescript")
 const sortAsc = ref(true)
 const isPauseModalVisible = ref(false)
 const targetPauseDb = ref(null)
-const onSort = (event) => { sortKey.value = event.sortField; sortAsc.value = event.sortOrder === 1; }
+const onSort = (event) => {
+  sortKey.value = event.sortField; sortAsc.value = event.sortOrder === 1;
+}
+const editForm = ref({})
+const editDialogVisible = ref(false)
+const editMode = ref('add')
+
+const defaultForm = {
+  loc: '', dbType: '', assets: '', dbVer: '', smsGroup: 'DKS_DBA',
+  dbDescript: '', os: '', hostname: '', dbName: '', instanceName: '',
+  pubIp: '', vip: '', port: '', userid: 'zenius', pw: 'z_nius_19',
+  liveChk: 'Y', sizeChk: 'Y', objSegSizeChk: 'Y', dailyChk: 'Y', backupChk: 'N'
+}
 
 
 
-
-
-
-const showAddDialog = ref(false)
-const addForm = ref({
-    loc: '',
-    dbType: '',
-    assets: '',
-    dbVer:'',
-    smsGroup:'DKS_DBA',
-    os: '',
-    hostname: '',
-    dbName: '',
-    instanceName: '',
-    pubIp: '',
-    vip: '',
-    port: '',
-    userid: 'zenius',
-    pw: 'z_nius_19',
-    dbDescript: '',
-    liveChk: 'Y',
-    sizeChk: 'Y',
-    objSegSizeChk: 'Y',
-    dailyChk: 'Y',
-    backupChk: 'N',
-})
 const dbTypeOptions = [
   { label: 'TIBERO', value: 'TIBERO' },
   { label: 'EDB', value: 'EDB' },
@@ -350,16 +273,55 @@ const dbCheckItemsMap = {
   ]
 }
 
-const dbCheckItems = computed(() => {
-  return dbCheckItemsMap[addForm.value.dbType] || []
+// =========== 등록 =============
+function openAddModal() {
+  editForm.value = { ...defaultForm }
+  editMode.value = 'add'
+  editDialogVisible.value = true
+}
+// =========== 수정 =============
+function openEditModal({ data }) {
+  editForm.value = { ...defaultForm, ...data }
+  // null → ""로 변환
+  Object.keys(editForm.value).forEach(k => {
+    if (editForm.value[k] === null) editForm.value[k] = '';
+  })
+  editMode.value = 'edit'
+  editDialogVisible.value = true
+}
+
+// =========== 폼에서 체크박스 항목 제공 =============
+const computedDbCheckItems = computed(() => {
+  console.log(computedDbCheckItems.value)
+  return dbCheckItemsMap[editForm.value.dbType] || []
 })
 
-const handleSubmit = async () => {
-  // 실제 API 엔드포인트에 맞게 조정
-  await api.post('/api/db-list/save', addForm.value)
-  showAddDialog.value = false
-  // 등록 후 리스트 새로고침 등 추가 동작
+function onChildDbTypeChange(newType) {
+  editForm.value.dbType = newType // 부모 editForm의 dbType도 동기화
 }
+
+// =========== 저장 로직 ===========
+async function handleDbEditSubmit(form) {
+  if (editMode.value === 'add') {
+    const { data } = await api.post('/api/db-list/save', form);
+    dbList.value.unshift(data);
+  } else {
+    const { data } = await api.put(`/api/db-list/update/${form.id}`, form);
+    const idx = dbList.value.findIndex(d => d.id === form.id);
+    if (idx !== -1) dbList.value.splice(idx, 1, data);
+  }
+  editDialogVisible.value = false;
+}
+
+
+function closeEditDialog() { editDialogVisible.value = false }
+// =========== 목록 로딩 ===========
+async function loadDbList() {
+  const { data } = await api.get("/api/db-list/all")
+  dbList.value = data
+}
+onMounted(loadDbList)
+
 
 
 const buttonRules = {
@@ -372,29 +334,24 @@ const buttonRules = {
 
 // 2. computed 예시
 const filteredDbList = computed(() => {
-  const query = searchQuery.value.toLowerCase();
-  let result = dbList.value.filter((db) => {
-    return (
-      (db.dbDescript && db.dbDescript.toLowerCase().includes(query)) ||
-      (db.hostname && db.hostname.toLowerCase().includes(query)) ||
-      (db.pubIp && db.pubIp.toLowerCase().includes(query)) ||
-      (db.vip && db.vip.toLowerCase().includes(query)) ||
-      (db.dbType && db.dbType.toLowerCase().includes(query)) ||
-      (db.dbName && db.dbName.toLowerCase().includes(query))
+  const query = searchQuery.value?.trim().toLowerCase();
+  let arr = dbList.value;
+  if (query) {
+    arr = arr.filter(db =>
+      ['dbDescript', 'hostname', 'pubIp', 'vip', 'dbType', 'dbName']
+        .some(key => (db[key] || '').toLowerCase().includes(query))
     );
-  });
-
+  }
   if (sortKey.value) {
-    result = [...result].sort((a, b) => {
-      const valA = a[sortKey.value] ? a[sortKey.value].toString().toLowerCase() : "";
-      const valB = b[sortKey.value] ? b[sortKey.value].toString().toLowerCase() : "";
-      if (valA < valB) return sortAsc.value ? -1 : 1;
-      if (valA > valB) return sortAsc.value ? 1 : -1;
-      return 0;
+    arr = arr.slice().sort((a, b) => {
+      const valA = (a[sortKey.value] ?? '').toString().toLowerCase();
+      const valB = (b[sortKey.value] ?? '').toString().toLowerCase();
+      return valA.localeCompare(valB) * (sortAsc.value ? 1 : -1);
     });
   }
-  return result;
-})
+  return arr;
+});
+
 
 // 3. methods를 함수로
 function showPauseModal(db) {
@@ -446,7 +403,7 @@ function getAssetButtonLabel(db) {
   const targetFields = ['liveChk', 'sizeChk', 'trnBakChk', 'objSegSizeChk', 'dailyChk'];
   const managedFields = targetFields.filter(field => buttonRules[field]?.includes(db.dbType));
   const hasAnyY = managedFields.some(field => db[field] === "Y");
-  return hasAnyY ? "자산중지" : "관제활성";
+  return hasAnyY ? "중지" : "활성";
 }
 
 function getAssetButtonClass(db) {
@@ -548,10 +505,16 @@ onBeforeUnmount(() => {
   disconnectWebSocket();
 })
 
-// DB_TYPE이 바뀔 때마다 해당 체크항목만 N으로 초기화
-watch(() => addForm.value.dbType, (newType) => {
-  (dbCheckItemsMap[newType] || []).forEach(item => {
-    addForm.value[item.key] = 'Y'
+// =========== 체크박스 자동 초기화 ===========
+watch(() => editForm.value.dbType, (newType) => {
+  const keys = Object.keys(defaultForm).filter(k => /Chk$/.test(k))
+  const validKeys = (dbCheckItemsMap[newType] || []).map(i => i.key)
+  keys.forEach(key => {
+    if (validKeys.includes(key)) {
+      if (editForm.value[key] !== 'Y' && editForm.value[key] !== 'N') editForm.value[key] = 'Y'
+    } else {
+      editForm.value[key] = 'N'
+    }
   })
 })
 

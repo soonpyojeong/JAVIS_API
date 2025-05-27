@@ -53,6 +53,21 @@ public class DBListController {
             String objSegSizeChk = (String) requestMap.get("objSegSizeChk");
             String dailyChk = (String) requestMap.get("dailyChk");
             String dbDescript = (String) requestMap.get("dbDescript");
+            existingDbList.setLoc((String) requestMap.get("loc"));
+            existingDbList.setAssets((String) requestMap.get("assets"));
+            existingDbList.setDbDescript((String) requestMap.get("dbDescript"));
+            existingDbList.setSmsGroup((String) requestMap.get("smsGroup"));
+            existingDbList.setDbType((String) requestMap.get("dbType"));
+            existingDbList.setDbVer((String) requestMap.get("dbVer"));
+            existingDbList.setOs((String) requestMap.get("os"));
+            existingDbList.setHostname((String) requestMap.get("hostname"));
+            existingDbList.setDbName((String) requestMap.get("dbName"));
+            existingDbList.setInstanceName((String) requestMap.get("instanceName"));
+            existingDbList.setPubIp((String) requestMap.get("pubIp"));
+            existingDbList.setVip((String) requestMap.get("vip"));
+            existingDbList.setPort(requestMap.get("port") != null ? Integer.parseInt(requestMap.get("port").toString()) : null);
+            existingDbList.setUserid((String) requestMap.get("userid"));
+            existingDbList.setPw((String) requestMap.get("pw"));
 
             // ✅ 추가: userId 받아오기
             String username = (String) requestMap.get("username");

@@ -1,7 +1,7 @@
 // router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../components/MainPage';
-import DBList from '../components/DBList';
+import DBList from '../components/PrimevueDBList';
 import SmsHistory from '../components/SmsHistory';
 import ThresholdList from '../components/ThresholdList';
 import TablespacesList from '../components/TablespacesList';
@@ -9,6 +9,7 @@ import DailyChkView from '../components/DailyChk';
 import LoginComponent from '../components/LoginComponent';
 import SysInfoDetail from '../components/SysInfoDetail';
 import PWMng from '../components/PassWordMng';
+import PrimevueTest from '../components/PrimevueTest';
 import store from '../store';
 
 const routes = [
@@ -20,7 +21,8 @@ const routes = [
   { path: '/tablespaces', name: 'TablespacesList', component: TablespacesList, meta: { title: 'Tablespaces List', requiresAuth: true } },
   { path: '/dailyChk', name: 'DailyChkView', component: DailyChkView, meta: { title: 'Daily Check View', requiresAuth: true } },
   { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: 'SysInfoDetail', requiresAuth: true } },
-  { path: '/Manager', name: 'PWMng', component: PWMng, meta: { title: 'Manager', requiresAuth: true } }
+  { path: '/Manager', name: 'PWMng', component: PWMng, meta: { title: 'Manager', requiresAuth: true } },
+  { path: '/TEST', name: 'PrimevueTest', component: PrimevueTest, meta: { title: 'Manager', requiresAuth: true } }
 ];
 
 const router = createRouter({

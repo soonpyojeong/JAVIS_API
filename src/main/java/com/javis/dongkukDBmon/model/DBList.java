@@ -13,8 +13,14 @@ import lombok.Setter;
 public class DBList {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JAVIS_MAIN")
+    @SequenceGenerator(
+            name = "SEQ_JAVIS_MAIN",
+            sequenceName = "SEQ_JAVIS_MAIN", // Oracle 시퀀스 사용
+            allocationSize = 1
+    )
     private Long id;
+
 
     @Column(name = "LOC")
     private String loc;
