@@ -30,7 +30,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/", "/index.html",
-                                "/favicon.ico", "/static/**", "/assets/**",
+                                "/favicon.ico", "/static/**", "/assets/**","/fonts/**",
                                 "/js/**", "/css/**","/api/**","/ws/**","/api/alerts/**",
                                 "/api/auth/**","/api/sysinfo/**","/api/SysInfoDetail/**","/api/sysinfo/by-date/**",
                                 "/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk",

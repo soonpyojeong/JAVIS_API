@@ -28,6 +28,7 @@ public class SysInfoLogSummary {
     @Column(name = "LOG_TYPE")
     private String logType;
 
+    @Lob
     @Column(name = "MESSAGE")
     private String message;
 

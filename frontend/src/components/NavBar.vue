@@ -6,7 +6,7 @@
         :key="item.path"
         :class="{ active: selectedMenu === item.path }"
         @click="navigateTo(item.path)"
-      >
+      ><i :class="item.iconClass + ' mr-2'" ></i>
         {{ item.name }}
       </li>
       <li v-if="user && user.username" class="user-info-wrapper">
@@ -164,16 +164,17 @@ watch(user, (newVal) => {
 });
 
 const menuItems = [
-  { name: "첫화면", path: "/", roles: ["ADMIN","DBA", "DEV", "VIEW"] },
-  { name: "DB 전체 리스트", path: "/db-list", roles: ["ADMIN","DBA"] },
-  { name: "SMS 전송 내역", path: "/sms-history", roles: ["ADMIN","DBA", "DEV", "VIEW"] },
-  { name: "임계치 리스트", path: "/threshold-list", roles: ["ADMIN","DBA"] },
-  { name: "테이블스페이스 리스트", path: "/tablespaces", roles: ["ADMIN","DBA"] },
-  { name: "일일 점검(hit율)", path: "/dailyChk", roles: ["ADMIN","DBA"] },
-  { name: "일일 점검(SYS)", path: "/SysInfoDetail", roles: ["ADMIN","DBA"] },
-  { name: "패스워드관리", path: "/Manager", roles: ["ADMIN","DBA"]},
-  { name: "TEST", path: "/TEST", roles: ["ADMIN"]},
+  { name: "첫화면", path: "/", roles: ["ADMIN","DBA", "DEV", "VIEW"], iconClass: "pi pi-home" },
+  { name: "DB 전체 리스트", path: "/db-list", roles: ["ADMIN","DBA"], iconClass: "pi pi-database" },
+  { name: "SMS 전송 내역", path: "/sms-history", roles: ["ADMIN","DBA", "DEV", "VIEW"], iconClass: "pi pi-send" },
+  { name: "임계치 리스트", path: "/threshold-list", roles: ["ADMIN","DBA"], iconClass: "pi pi-sliders-h" },
+  { name: "테이블스페이스 리스트", path: "/tablespaces", roles: ["ADMIN","DBA"], iconClass: "pi pi-align-left" },
+  { name: "일일 점검(hit율)", path: "/dailyChk", roles: ["ADMIN","DBA"], iconClass: "pi pi-chart-bar" },
+  { name: "일일 점검(SYS)", path: "/SysInfoDetail", roles: ["ADMIN","DBA"], iconClass: "pi pi-chart-line" },
+  { name: "패스워드관리", path: "/Manager", roles: ["ADMIN","DBA"], iconClass: "pi pi-key" },
+  { name: "TEST", path: "/TEST", roles: ["ADMIN"], iconClass: "pi pi-cog" },
 ];
+
 
 const filteredMenuItems = computed(() => {
   const role = user.value?.userRole?.toUpperCase();
@@ -316,6 +317,7 @@ const roleEmoji = computed(() => {
 
 .card-inner {
   padding: 16px 20px;
+
 }
 
 .card-header {
@@ -331,6 +333,7 @@ const roleEmoji = computed(() => {
 .card-header .name {
   font-weight: bold;
   font-size: 16px;
+  color: #666;
 }
 
 .card-header .email {

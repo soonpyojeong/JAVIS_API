@@ -8,12 +8,13 @@ import com.javis.dongkukDBmon.repository.SysInfoLogSummaryRepository;
 import com.javis.dongkukDBmon.repository.SysInfoSummaryRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LogSummarySchedulerService {
@@ -29,59 +30,63 @@ public class LogSummarySchedulerService {
 
     @Transactional
     public List<SysInfoLogSummary> generateTodaySummary() {
-        // ✅ 수정: List<SysInfoSummary> 로 받기
-        List<SysInfoSummary> summaryList = (List<SysInfoSummary>) summaryMainRepo.findLatestSummaryToday();
+        List<SysInfoSummary> summaryList = summaryMainRepo.findLatestSummaryToday();
+        if (summaryList == null || summaryList.isEmpty()) return Collections.emptyList();
+
+        List<Long> summaryIds = summaryList.stream()
+                .map(SysInfoSummary::getId)
+                .toList();
+
+        // 전체 로그 한방에 SELECT
+        List<SysInfoLog> allLogs = logRepo.findBySummaryIds(summaryIds);
+
+        // summaryId별로 그룹화해서 각각 처리
+        Map<Long, List<SysInfoLog>> logMapBySummaryId = allLogs.stream()
+                .collect(Collectors.groupingBy(log -> log.getSummary().getId()));
 
         List<SysInfoLogSummary> result = new ArrayList<>();
+
         for (SysInfoSummary summary : summaryList) {
-            result.addAll(generateSummaryBySummaryId(summary.getId()));
-        }
+            Long summaryId = summary.getId();
+            List<SysInfoLog> logs = logMapBySummaryId.getOrDefault(summaryId, Collections.emptyList());
 
-        return result; // ✅ 빠뜨리면 안됨
-    }
+            if (logs.isEmpty()) continue;
 
+            // 날짜-타입-메시지별 그룹핑 및 count
+            Map<String, Map<String, Map<String, Long>>> grouped = logs.stream()
+                    .collect(Collectors.groupingBy(
+                            log -> {
+                                Date date = log.getLogDate();
+                                return (date instanceof java.sql.Date)
+                                        ? ((java.sql.Date) date).toLocalDate().toString()
+                                        : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString();
+                            },
+                            Collectors.groupingBy(
+                                    SysInfoLog::getLogType,
+                                    Collectors.groupingBy(
+                                            log -> normalizeMessage(log.getMessage()),
+                                            Collectors.counting()
+                                    )
+                            )
+                    ));
 
-
-    @Transactional
-    public List<SysInfoLogSummary> generateSummaryBySummaryId(Long summaryId) {
-        List<SysInfoLog> logs = logRepo.findBySummaryId(summaryId);
-
-        if (logs.isEmpty()) return Collections.emptyList();
-
-        List<SysInfoLogSummary> summaries = new ArrayList<>();
-
-        Map<String, Map<String, Map<String, Long>>> grouped = logs.stream()
-                .collect(Collectors.groupingBy(
-                        log -> {
-                            Date date = log.getLogDate();
-                            return (date instanceof java.sql.Date)
-                                    ? ((java.sql.Date) date).toLocalDate().toString()
-                                    : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString();
-                        },
-                        Collectors.groupingBy(
-                                SysInfoLog::getLogType,
-                                Collectors.groupingBy(
-                                        log -> normalizeMessage(log.getMessage()),
-                                        Collectors.counting()
-                                )
-                        )
-                ));
-
-        for (String logDate : grouped.keySet()) {
-            for (String logType : grouped.get(logDate).keySet()) {
-                Map<String, Long> messageMap = grouped.get(logDate).get(logType);
-                for (Map.Entry<String, Long> entry : messageMap.entrySet()) {
-                    summaries.add(SysInfoLogSummary.builder()
-                            .summaryId(summaryId)
-                            .logDate(logDate)
-                            .logType(logType)
-                            .message(entry.getKey())
-                            .count(entry.getValue())
-                            .build());
+            for (String logDate : grouped.keySet()) {
+                for (String logType : grouped.get(logDate).keySet()) {
+                    Map<String, Long> messageMap = grouped.get(logDate).get(logType);
+                    for (Map.Entry<String, Long> entry : messageMap.entrySet()) {
+                        result.add(SysInfoLogSummary.builder()
+                                .summaryId(summaryId)
+                                .logDate(logDate)
+                                .logType(logType)
+                                .message(entry.getKey())
+                                .count(entry.getValue())
+                                .build());
+                    }
                 }
             }
         }
 
-        return summaryRepo.saveAll(summaries);
+        // 배치 인서트 적용됨: saveAll 한 번만 호출
+        return summaryRepo.saveAll(result);
     }
 }

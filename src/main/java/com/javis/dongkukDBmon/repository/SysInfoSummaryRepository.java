@@ -52,6 +52,7 @@ public interface SysInfoSummaryRepository extends JpaRepository<SysInfoSummary, 
             @Param("date") String date
     );
 
+
     @Query("SELECT DISTINCT TO_CHAR(s.checkDate, 'YYYY-MM-DD') " +
             "FROM SysInfoSummary s " +
             "WHERE s.hostname = :hostname AND s.checkDate BETWEEN :start AND :end")

@@ -20,7 +20,7 @@
         />
         <Button
           label="DB 등록"
-          icon="pi pi-plus"
+          icon="pi pi-save"
           iconPos="left"
           severity="primary"
           size="small"
@@ -35,13 +35,14 @@
         @row-dblclick="openEditModal"
         tableClass="text-center"
         headerClass="text-center"
+        style="max-width: 100%;"
         stripedRows
         showGridlines
         paginator
         :rows="100"
         :rowsPerPageOptions="[10,15,30,50,100]"
         scrollable
-        scrollHeight="70vh"
+        scrollHeight="68vh"
         class="shadow-3"
         v-if="filteredDbList.length > 0"
         responsiveLayout="scroll"
@@ -315,13 +316,13 @@ async function handleDbEditSubmit(form) {
 
 
 function closeEditDialog() { editDialogVisible.value = false }
+
+
 // =========== 목록 로딩 ===========
 async function loadDbList() {
   const { data } = await api.get("/api/db-list/all")
   dbList.value = data
 }
-onMounted(loadDbList)
-
 
 
 const buttonRules = {
@@ -480,14 +481,7 @@ function handleWebSocketMessage(updatedDb) {
 
 // 4. 라이프사이클
 onMounted(() => {
-  api.get("/api/db-list/all")
-    .then((response) => {
-      dbList.value = response.data;
-    })
-    .catch((error) => {
-      console.error("API 호출 오류:", error);
-    });
-
+ loadDbList()
   api.get("/api/db-list/allchk")
     .then((response) => {
       allChkStatus.value = response.data;
@@ -524,6 +518,7 @@ watch(() => editForm.value.dbType, (newType) => {
 <style scoped>
 .db-list-container {
 font-family: 'Arial', sans-serif;
+font-family: 10px;
 padding: 20px;
 max-width: 1600px;
 margin: 0 auto;
@@ -545,7 +540,7 @@ align-items: center;
 }
 /* DataTable 별도 마진 */
 .datatable-section {
-margin-top: 20px;
+margin-top: 1px;
 }
 /* DataTable 헤더와 바디 */
 .p-datatable-thead th,
@@ -560,8 +555,8 @@ vertical-align: middle !important;
 }
 .toolbar {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 5px;
+  margin-bottom: 5px;
   align-items: center;
 }
 

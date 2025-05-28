@@ -16,8 +16,8 @@ public class LogSummaryScheduler {
 
     private final LogSummarySchedulerService summaryService;
 
-    // 매일 새벽 1시에 실행
-    @Scheduled(cron = "0 40 07 * * *")
+    // 매일 새벽 7시40분에 실행
+    //@Scheduled(cron = "0 53 13 * * *")  파이썬 크론텝 등로함
     public void runDailySummary() {
         log.info("[🔄 LogSummaryScheduler] 시작");
 

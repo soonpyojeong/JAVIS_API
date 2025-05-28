@@ -1,458 +1,531 @@
 <template>
-  <div class="container-wrapper">
-    <!-- DB 트리(PanelMenu) -->
-    <div class="db-tree min-w-[220px] max-w-[260px] w-[250px] bg-white px-4 py-5 shadow rounded-tr-2xl rounded-br-2xl">
-      <h3 class="mb-4 font-bold text-lg">DBMS 목록</h3>
-      <PanelMenu :model="panelMenuData" v-model:expandedKeys="expandedKeys" />
-    </div>
-    <!-- 오른쪽 메인 (시스템 정보/로그) -->
-    <div class="main-panel">
-      <div class="sysinfo-area">
-        <div class="hostname-section">
-          <h2>{{ summary.hostname }}</h2>
+  <div class="top-nav">
+    <div v-if="isLoggedIn" class="flex items-center">
+      <!-- Menubar: 좌측 메뉴 -->
+          <Menubar :model="menubarItems" class="main-menubar" />
+      <li v-if="user && user.username" class="user-info-wrapper">
+        <div class="user-info-badge" @click="toggleProfile">
+          <span class="emoji">{{ roleEmoji }}</span>
+          <span class="username">{{ user.username }}님</span>
+          <span class="role">({{ user.userRole }})</span>
         </div>
-        <div class="date-picker-section">
-          <CustomDatePicker
-            v-model="selectedDate"
-            :collectedDates="collectedDates"
-            @date-select="onPrimeDateSelected"
-            @month-change="onPrimeMonthChange"
-          />
-        </div>
-        <div class="summary-cards">
-          <div class="card">CPU<br /><strong>{{ summary.cpuUsage }}%</strong></div>
-          <div class="card">MEM<br /><strong>{{ summary.memUsage }}%</strong></div>
-          <div class="card">DISK<br /><strong>{{ summary.diskUsage }}%</strong></div>
-        </div>
-        <div class="disk-section">
-          <h3>디스크 상세</h3>
-            <canvas id="diskChart"></canvas>
-          <table class="disk-table">
-            <thead>
-              <tr>
-                <th>Filesystem</th>
-                <th>Size</th>
-                <th>Used</th>
-                <th>Avail</th>
-                <th>Use%</th>
-                <th>Mounted on</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="disk in disks || []" :key="disk.id">
-                <td>{{ disk.filesystem }}</td>
-                <td>{{ disk.diskSize }}</td>
-                <td>{{ disk.used }}</td>
-                <td>{{ disk.avail }}</td>
-                <td>{{ disk.usePercent }}</td>
-                <td>{{ disk.mountedOn }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="syslog-area">
-        <div class="log-section">
-          <h3>시스템 로그 요약</h3>
-          <div class="log-list">
-            <div v-for="(entries, date) in groupedLogSummaries" :key="date" class="log-group">
-              <div class="log-group-header">📅 {{ date }}</div>
-              <div v-for="(group, index) in entries" :key="index" class="log-line">
-                <div class="log-sub-header" :class="getLogTypeClass(group.logType)">[{{ group.logType }}]</div>
-                <div class="log-message" v-for="(msg, i) in group.messages" :key="i">
-                  - {{ msg.message }} ({{ msg.count }}건)
-                </div>
+        <div v-if="showProfile" class="profile-card">
+          <div class="card-inner">
+            <div class="card-header">
+              <span class="emoji-big">{{ roleEmoji }}</span>
+              <div>
+                <div class="name">{{ user.username }}</div>
+                <div class="email">{{ user.email || "이메일 없음" }}</div>
+                <div class="role">🏷 {{ user.userRole }}</div>
               </div>
             </div>
+            <hr />
+            <button class="logout-card-btn" @click="logout">🚪 로그아웃</button>
           </div>
         </div>
-      </div>
-    </div>
+        <div class="notification-wrapper">
+        <div class="bell-icon" :class="{ active: hasUnread }" @click="toggleModal">
+        🔔
+          <span v-if="hasUnread" class="badge">{{ unreadCount }}</span>
+         </div>
+         <div v-if="showModal" class="alert-modal-below-nav">
+         <div class="alert-modal">
+             <h3 class="modal-title">📢 알림 내역</h3>
+             <ul class="alert-list">
+              <li v-for="alert in sortedAlerts" :key="alert.id" class="alert-item">
+                <div>
+                 <span class="timestamp">{{ formatDate(alert.createdAt) }}</span><br>
+                  <span class="message">{{ alert.message }}</span>
+                </div>
+                 <button class="delete-btn" @click="dismissAlert(alert)">삭제</button>
+                </li>
+              </ul>
+          </div>
+         </div>
+        </div>
+      </li>
+   </div>
+
+    <div v-else style="color: white;">😆 로그인 상태가 아닌다</div>
   </div>
 </template>
-
-
 <script setup>
-import { computed, onMounted, ref, nextTick, onBeforeUnmount ,watch} from 'vue';
-import Chart from 'chart.js/auto';
-import CustomDatePicker from '@/components/CustomDatePicker.vue'
-import PanelMenu from 'primevue/panelmenu';
-//import Panel from 'primevue/panel';
-import api from '@/api';
-import { useSysInfoCalendar } from '@/stores/useSysInfoCalendar';
-const { collectedDates, loadCollectedDates } = useSysInfoCalendar();
-// 커스텀 프리셋
+import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue";
+import { useStore } from "vuex";
+import { useRouter, useRoute } from "vue-router";
+import api from "@/api";
+import { connectWebSocket, disconnectWebSocket } from "@/websocket";
+import Menubar from 'primevue/menubar';
 
 
-const summary = ref({});
-const disks = ref([]);
-const logSummaries = ref([]);
-const hostList = ref([]);
-const selectedHost = ref('');
-let chartInstance = null;
+const store = useStore();
+const router = useRouter();
+const route = useRoute();
 
-const selectedDate = ref(null);
-const showCalendar = ref(false);
-const calendarWrapper = ref(null);
+const isLoggedIn = computed(() => store.state.isLoggedIn);
+const user = computed(() => store.state.user);
+const showProfile = ref(false);
+const showModal = ref(false);
+const alerts = ref([]);
+const userId = computed(() => user.value?.loginId);
+const toggleProfile = () => (showProfile.value = !showProfile.value);
+const toggleModal = () => {
+  if (alerts.value.length > 0) {
+    showModal.value = !showModal.value;
+  }
+};
+const selectedMenu = ref(route.path);
+const hasUnread = computed(() => alerts.value.length > 0);
+const unreadCount = computed(() => alerts.value.length);
 
-
-const expandedKeys = ref({});
-const panelMenuData = computed(() => {
-  return Object.entries(groupedHostList.value).map(([loc, items]) => ({
-    key: `loc-${loc}`,
-    label: loc,
-    icon: 'pi pi-globe',
-    items: (items || []).map(host => ({
-      key: `host-${loc}-${host.label}`,
-      label: host.label,
-      icon: 'pi pi-database',
-      command: () => selectHost(host.label)
-    }))
-  }));
+const sortedAlerts = computed(() => {
+  return [...alerts.value].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+});
+const filteredMenuItems = computed(() => {
+  const role = user.value?.userRole?.toUpperCase();
+  return menuItems.filter(item => item.roles.includes(role));
 });
 
-const highlightDates = computed(() =>
-  (collectedDates.value || []).map(d => {
-    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-    if (d instanceof Date) {
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
+// Menubar용 model 변환
+const menubarItems = computed(() =>
+  filteredMenuItems.value.map(item => ({
+    label: item.name,
+    icon: item.iconClass,
+    command: () => navigateTo(item.path)
+  }))
+);
+
+function fetchAlerts() {
+  const uid = userId.value;
+  const token = localStorage.getItem("accessToken"); // 또는 Vuex에서 가져오기
+
+  api.get(`/api/alerts/${uid}/alerts`, {
+    headers: {
+      Authorization: `Bearer ${token}`
     }
-    return '';
   })
-)
+    .then((res) => {
+      alerts.value = res.data.map(a => ({
+        id: a.alert.id,
+        message: a.alert.message,
+        createdAt: a.alert.createdAt
+      }));
+    })
+    .catch((err) => console.error("알림 조회 실패:", err));
+}
 
 
-// 날짜 클릭 → 해당 일자 데이터 조회
-const onPrimeDateSelected = async (event) => {
-  showCalendar.value = false;
-  if (!selectedHost.value || !event || isNaN(event.getTime())) return;
-  selectedDate.value = event;
-  await handleDateChange(event);
-};
+function dismissAlert(alert) {
+  const uid = userId.value;
+  const alertId = alert.id;
 
-const onPrimeMonthChange = async ({ month, year }) => {
-  // month-change에서 month는 0~11, year 그대로
-  // selectedDate(현재 달력 v-model)의 getMonth()도 0~11
-  // 둘이 다르면 selectedDate로 맞추거나, 둘 중 큰 쪽(최신 달력 값) 사용
-  let trueMonth = month + 1;
-  if (selectedDate.value instanceof Date && selectedDate.value.getFullYear() === year) {
-    trueMonth = selectedDate.value.getMonth() + 1; // Date는 0-based
+  //console.log("삭제 요청:", alertId, uid);
+  api.put(`/api/alerts/${alertId}/hide?userId=${uid}`)
+    .then(() => {
+      alerts.value = alerts.value.filter(a => a.id !== alertId);
+    })
+    .catch(err => console.error("알림 삭제 실패:", err));
+}
+
+function handleAlertMessage(payload) {
+  if (payload.message) {
+    //console.log("📩 웹소켓 수신:", payload.message);
+    fetchAlerts();
   }
-  await loadCollectedDates(selectedHost.value, year, trueMonth);
- // console.log("🔄 month-change 이후 collectedDates:", collectedDates.value);
-};
+}
 
-const handleDateChange = async (value) => {
-  const selected = value instanceof Date ? value : new Date(value);
-  if (!selectedHost.value || !selected || isNaN(selected.getTime())) {
-    summary.value = {};
-    disks.value = [];
-    logSummaries.value = [];
-    return;
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleString('ko-KR', { hour12: false });
+}
+
+const handleClickOutside = (event) => {
+  const card = document.querySelector(".profile-card");
+  const badge = document.querySelector(".user-info-badge");
+  const modal = document.querySelector(".notification-wrapper .alert-modal-below-nav");
+  const bell = document.querySelector(".bell-icon");
+
+  const isOutsideProfile = card && !card.contains(event.target) && badge && !badge.contains(event.target);
+  const isOutsideBell = modal && !modal.contains(event.target) && bell && !bell.contains(event.target);
+
+  if (isOutsideProfile) {
+    showProfile.value = false;
   }
-  const yyyy = selected.getFullYear();
-  const mm = selected.getMonth() + 1;
-  const dateStr = selected.toISOString().slice(0, 10);
-
-  await loadCollectedDates(selectedHost.value, yyyy, mm);
-
-  try {
-    const res = await api.get('/api/sysinfo/by-host-and-date', {
-      params: { hostname: selectedHost.value, date: dateStr }
-    });
-    const { summary: sum, disks: dks, logs: logs } = res.data || {};
-    summary.value = sum || {};
-    disks.value = Array.isArray(dks) ? dks : [];
-    logSummaries.value = Array.isArray(logs) ? logs : [];
-    selectedDate.value = selected;
-    await nextTick(() => renderDiskChart());
-  } catch (e) {
-    summary.value = {};
-    disks.value = [];
-    logSummaries.value = [];
-    selectedDate.value = null;
-    //console.error('❌ 수집 데이터 요청 실패:', e);
+  if (isOutsideBell) {
+    showModal.value = false;
   }
 };
-
-
-const selectHost = async (hostname) => {
-  selectedHost.value = hostname;
-  await fetchSysInfo(hostname);
-
-  if (selectedDate.value) {
-    const year = selectedDate.value.getFullYear();
-    const month = selectedDate.value.getMonth() + 1;
-    await loadCollectedDates(hostname, year, month);
-    // 여기서 최신 값 출력!
-    //console.log("🔄 selectHost 이후 collectedDates:", collectedDates.value);
-  }
-  await nextTick();
-};
-
-
-const fetchSysInfo = async (hostname = null) => {
-  const url = hostname ? `/api/sysinfo/latest?hostname=${hostname}` : '/api/sysinfo/latest';
-  const { data } = await api.get(url);
-
-  summary.value = data.summary;
-  disks.value = data.disks;
-
-  if (summary.value?.checkDate) {
-    selectedDate.value = new Date(summary.value.checkDate);
-    const year = selectedDate.value.getFullYear();
-    const month = selectedDate.value.getMonth() + 1;
-    console.log('호스트:', hostname, '수집일:', collectedDates.value);
-    await loadCollectedDates(hostname, year, month);
-  }
-
-  logSummaries.value = [];
-  if (summary.value?.id) {
-    const res = await api.get(`/api/sysinfo/log-summary?summaryId=${summary.value.id}`);
-    logSummaries.value = res.data;
-  }
-
-  nextTick(() => renderDiskChart());
-};
-
-const groupedHostList = computed(() => {
-  if (!Array.isArray(hostList.value)) return {};
-  return hostList.value
-    .filter(item => item.hostname && item.loc)
-    .sort((a, b) => a.loc.localeCompare(b.loc, 'ko') || a.hostname.localeCompare(b.hostname, 'ko'))
-    .reduce((acc, item) => {
-      if (!acc[item.loc]) acc[item.loc] = [];
-      acc[item.loc].push({ label: item.hostname, id: item.hostname });
-      return acc;
-    }, {});
-});
-
-const groupedLogSummaries = computed(() => {
-  const groups = {};
-  for (const entry of logSummaries.value) {
-    const date = entry.logDate;
-    if (!groups[date]) groups[date] = [];
-    let group = groups[date].find(g => g.logType === entry.logType);
-    if (!group) {
-      group = { logType: entry.logType, messages: [] };
-      groups[date].push(group);
-    }
-    group.messages.push({ message: entry.message, count: entry.count });
-  }
-  return Object.fromEntries(
-    Object.entries(groups).sort(([a], [b]) => b.localeCompare(a))
-  );
-});
-
-const getLogTypeClass = (type) => {
-  switch (type) {
-    case 'ERROR':
-    case 'DB_ERROR': return 'log-error';
-    case 'WARN': return 'log-warn';
-    case 'INFO': return 'log-info';
-    default: return '';
-  }
-};
-// ❌ 달력 외부 클릭 시 닫기
-const handleClickOutside = (e) => {
-  if (calendarWrapper.value && !calendarWrapper.value.contains(e.target)) {
-    showCalendar.value = false;
-  }
-};
-const fetchHostList = async () => {
-  const res = await api.get('/api/sysinfo/hostnames');
-  hostList.value = res.data;
-};
-
-// script 부분
-const renderDiskChart = () => {
-  const ctx = document.getElementById('diskChart');
-  if (!ctx) return;
-  if (chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
-  }
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: disks.value.map(d => d.mountedOn),
-      datasets: [{
-        label: '디스크 사용률(%)',
-        data: disks.value.map(d => parseInt(d.usePercent)),
-        backgroundColor: 'rgba(75, 192, 192, 0.6)'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      indexAxis: 'y',
-      plugins: { legend: { labels: { color: '#333', font: { size: 14, weight: 'bold' } } } },
-      scales: {
-        x: {
-          max: 100,
-          ticks: { color: '#000', font: { size: 13, weight: 'bold' } },
-          title: { display: true, text: '사용률 (%)', color: '#000', font: { weight: 'bold', size: 14 } }
-        },
-        y: {
-          ticks: { color: '#000', font: { size: 13, weight: 'bold' } }
-        }
-      }
-    }
-  });
-};
-
-
 
 onMounted(() => {
-  fetchHostList();
-  document.addEventListener('click', handleClickOutside);
+  document.addEventListener("click", handleClickOutside);
+  fetchAlerts();
+  connectWebSocket({ onAlertMessage: handleAlertMessage });
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside);
-  if (chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
-  }
-});
-watch([collectedDates, highlightDates], ([dates, highlights]) => {
-  console.log('collectedDates:', dates);
-  console.log('highlightDates:', highlights);
+  document.removeEventListener("click", handleClickOutside);
+  disconnectWebSocket();
 });
 
+watch(user, (newVal) => {
+  if (!newVal || !newVal.username) {
+    showProfile.value = false;
+  }
+});
+
+const menuItems = [
+  { name: "첫화면", path: "/", roles: ["ADMIN","DBA", "DEV", "VIEW"], iconClass: "pi pi-home" },
+  { name: "DB 전체 리스트", path: "/db-list", roles: ["ADMIN","DBA"], iconClass: "pi pi-database" },
+  { name: "SMS 전송 내역", path: "/sms-history", roles: ["ADMIN","DBA", "DEV", "VIEW"], iconClass: "pi pi-send" },
+  { name: "임계치 리스트", path: "/threshold-list", roles: ["ADMIN","DBA"], iconClass: "pi pi-sliders-h" },
+  { name: "테이블스페이스 리스트", path: "/tablespaces", roles: ["ADMIN","DBA"], iconClass: "pi pi-align-left" },
+  { name: "일일 점검(hit율)", path: "/dailyChk", roles: ["ADMIN","DBA"], iconClass: "pi pi-chart-bar" },
+  { name: "일일 점검(SYS)", path: "/SysInfoDetail", roles: ["ADMIN","DBA"], iconClass: "pi pi-chart-line" },
+  { name: "패스워드관리", path: "/Manager", roles: ["ADMIN","DBA"], iconClass: "pi pi-key" },
+  { name: "TEST", path: "/TEST", roles: ["ADMIN"], iconClass: "pi pi-cog" },
+];
+
+
+
+const navigateTo = (path) => {
+  selectedMenu.value = path; // ✅ 클릭한 메뉴로 선택 경로 업데이트
+  router.push(path);
+};
+
+const logout = () => {
+  store.dispatch("logout");
+  showProfile.value = false;
+  window.location.href = "/";
+  router.push("/login");
+};
+
+const roleEmoji = computed(() => {
+  if (!user.value || !user.value.userRole) return "🙂";
+  switch (user.value.userRole.toUpperCase()) {
+    case "DBA": return "👑";
+    case "DEV": return "‍💻";
+    case "VIEW": return "🐥";
+    default: return "😊";
+  }
+});
 </script>
 
 
-
 <style scoped>
-.container-wrapper {
-  display: flex;
-  flex-direction: row;
-  height: 100vh;
-  background: #f8fafc;
-  gap: 0; /* 여백 없이 딱! */
-}
-.db-tree {
-  width: 230px;
-  min-width: 210px;
-  max-width: 250px;
-  background: #fff;
-  padding: 12px 10px 12px 18px;
-  border-radius: 0 18px 18px 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  height: 100vh;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-.main-panel {
-  display: flex;
-  flex-direction: row;
-  flex: 1 1 0;
-  min-width: 0;
-  background: transparent;
-  padding: 0;
-  gap: 0;
-  align-items: stretch;
-}
-
-.sysinfo-area {
-  width: 720px;
-  min-width: 260px;
-  max-width: 720px;
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  padding: 20px 20px 12px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-left: 2px;
-  margin: 0;
-}
-.syslog-area {
-  flex: 1;
-  min-width: 0;
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.11);
-  margin-left: 2px;
-  padding: 20px 24px;
-  overflow-y: auto;
-}
-.hostname-section { margin-bottom: 6px; }
-.summary-cards {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.card {
-  flex: 1 1 0;
-  min-width: 90px;
-  padding: 8px 4px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  text-align: center;
-  font-weight: 600;
-  background: #f6fafd;
-  font-size: 1rem;
-  color: #2d64a9;
-}
-.disk-section { margin-bottom: 14px; }
-.disk-table {
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 7px;
-  font-size: 0.96em;
-}
-
-.disk-section canvas#diskChart {
-  width: 100% !important;
-  height: 160px !important;
-  max-height: 200px;
-  display: block;
-}
-.disk-table th, .disk-table td {
-  border: 1px solid #f3f4f7;
-  padding: 5px 8px;
-}
-.date-picker-section {
-  margin: 3px 0 9px 0;
+  height: 60px;
+  background-color: #4caf50;
+  padding: 0 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  font-family: 'Segoe UI', 'Pretendard', sans-serif;
+  white-space: nowrap;
 }
-.log-group-header {
-  font-weight: 700;
-  background: #f3f4f7;
-  color: #374151;
-  padding: 8px 12px;
-  border-radius: 5px;
+
+.top-nav ul {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+}
+
+.top-nav li {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  margin: 0;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border-radius: 20px;
+  position: relative;
+}
+
+.top-nav li:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.top-nav li.active {
+  background-color: #2e7d32;
+  color: #fff;
+}
+
+.logout-btn {
+  color: #ffdddd;
+  font-weight: bold;
+}
+
+.logout-btn:hover {
+  background-color: rgba(255, 0, 0, 0.1);
+}
+
+.user-info-badge {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.user-info-badge:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+}
+
+.user-info-badge .emoji {
+  font-size: 18px;
+}
+
+.user-info-badge .username {
+  font-weight: 600;
+  font-family: "Segoe UI", "Pretendard", sans-serif;
+}
+
+.user-info-badge .role {
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.user-info-wrapper {
+  position: relative;
+  z-index: 10001;
+}
+
+.profile-card {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  z-index: 10002;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 260px;
+  animation: slideDown 0.2s ease-out;
+}
+
+.card-inner {
+  padding: 16px 20px;
+
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emoji-big {
+  font-size: 30px;
+}
+
+.card-header .name {
+  font-weight: bold;
+  font-size: 16px;
+  color: #666;
+}
+
+.card-header .email {
+  font-size: 13px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.card-header .role {
+  font-size: 12px;
+  color: #888;
+}
+
+.logout-card-btn {
   margin-top: 12px;
-}
-.log-line {
-  font-size: 0.97rem;
-  background: #f8fafc;
-  padding: 10px 16px;
-  border-radius: 9px;
-  border-left: 4px solid #dbeafe;
-  margin: 6px 0;
-}
-.log-message {
-  background: #e7f3ff;
-  border-left: 3px solid #93c5fd;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: #f44336;
+  color: white;
+  font-weight: bold;
   border-radius: 6px;
-  margin: 3px 0;
-  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
-.log-sub-header.log-error { color: #e11d48; font-weight: bold; }
-.log-sub-header.log-warn { color: #f59e42; font-weight: bold; }
-.log-sub-header.log-info { color: #0284c7; font-weight: bold; }
-@media (max-width: 1200px) {
-  .container-wrapper, .main-panel { flex-direction: column; }
-  .sysinfo-area, .syslog-area { width: 100%; max-width: none; min-width: 0; margin-left: 0; }
+
+.logout-card-btn:hover {
+  background: #d32f2f;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.notification-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-left: 1rem;
+}
+
+.bell-icon {
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: transform 0.3s;
+  position: relative;
+}
+
+.bell-icon.active {
+  color: #ff6b6b; /* 예쁜 밝은 레드 */
+  //border: 5px solid rgba(255, 107, 107, 0.7); /* 살짝 투명한 테두리 */
+  border-radius: 50%;
+  padding: 6px;
+  background-color: rgba(255, 107, 107, 0.15); /* 연한 배경 */
+  box-shadow: 0 0 12px rgba(255, 107, 107, 0.5); /* 부드러운 글로우 */
+  transition: all 0.3s ease;
+  animation: softPulse 1.8s infinite ease-in-out; /* 부드럽게  퍼지는 애니메이션 */
+}
+
+@keyframes softPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 107, 107, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+  }
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  background: red;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,0,0,0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(255,0,0,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,0,0,0); }
+}
+.alert-modal-below-nav {
+  position: absolute;
+  top: 60px; /* 네비게이션 바 아래 위치 */
+  right: 10px;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  width: 420px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+}
+
+.alert-modal {
+  width: 100%;
+}
+
+.modal-title {
+  font-size: 20px;
+  color: Black;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.alert-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column; /* ✅ 아래쪽으로 나열 */
+  gap: 8px;
+}
+
+.alert-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  word-break: break-word;
+}
+
+.message {
+  font-size: 15px;
+  margin-right: 10px;
+  color: red;
+  white-space: normal;
+  word-break: break-word;
+}
+.timestamp {
+  font-size: 15px;
+  color: #888;
+  color: red;
+}
+
+.delete-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+}
+.main-menubar {
+  background: transparent;
+  box-shadow: none;
+  margin-right: auto;
+}
+.p-menubar {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.p-menubar-root-list > .p-menuitem > .p-menuitem-link {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+.p-menubar-root-list > .p-menuitem > .p-menuitem-link:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.card {
+  overflow: visible !important;
+}
+.p-menubar {
+  z-index: 10000;
 }
 </style>
+

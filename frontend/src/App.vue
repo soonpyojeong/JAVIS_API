@@ -74,8 +74,8 @@ onMounted(async () => {
 
 <style>
 .main-content {
-  margin-top: 60px;
-  padding: 20px;
+  margin-top: 55px;
+  padding: 10px;
 }
 
 

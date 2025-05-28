@@ -52,28 +52,40 @@
         </div>
       </div>
       <div class="syslog-area">
-        <div class="log-section">
-          <h3>시스템 로그 요약</h3>
-          <div class="log-list">
-            <div v-for="(entries, date) in groupedLogSummaries" :key="date" class="log-group">
-              <div class="log-group-header">📅 {{ date }}</div>
-              <div v-for="(group, index) in entries" :key="index" class="log-line">
-                <div class="log-sub-header" :class="getLogTypeClass(group.logType)">[{{ group.logType }}]</div>
-                <div class="log-message" v-for="(msg, i) in group.messages" :key="i">
-                  - {{ msg.message }} ({{ msg.count }}건)
-                </div>
-              </div>
+          <div class="log-section">
+            <h3>시스템 로그 요약</h3>
+            <div class="log-list">
+              <template v-if="isLoading">
+                <ProgressSpinner style="width:50px;height:50px" />
+                <div class="loading-text">로그 요약 불러오는 중...</div>
+              </template>
+              <template v-else>
+                <template v-if="Object.keys(groupedLogSummaries).length > 0">
+                  <div v-for="(entries, date) in groupedLogSummaries" :key="date" class="log-group">
+                    <div class="log-group-header">📅 {{ date }}</div>
+                    <div v-for="(group, index) in entries" :key="index" class="log-line">
+                      <div class="log-sub-header" :class="getLogTypeClass(group.logType)">[{{ group.logType }}]</div>
+                      <div class="log-message" v-for="(msg, i) in group.messages" :key="i">
+                        - {{ msg.message }} ({{ msg.count }}건)
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="loading-text">로그 요약 없음</div>
+                </template>
+              </template>
             </div>
           </div>
         </div>
-      </div>
+
     </div>
   </div>
 </template>
 
 
 <script setup>
-import { computed, onMounted, ref, nextTick, onBeforeUnmount ,watch} from 'vue';
+import { computed, onMounted, ref, nextTick, onBeforeUnmount } from 'vue';
 import Chart from 'chart.js/auto';
 import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import PanelMenu from 'primevue/panelmenu';
@@ -81,8 +93,8 @@ import PanelMenu from 'primevue/panelmenu';
 import api from '@/api';
 import { useSysInfoCalendar } from '@/stores/useSysInfoCalendar';
 const { collectedDates, loadCollectedDates } = useSysInfoCalendar();
+import ProgressSpinner from 'primevue/progressspinner'
 // 커스텀 프리셋
-
 
 const summary = ref({});
 const disks = ref([]);
@@ -94,7 +106,7 @@ let chartInstance = null;
 const selectedDate = ref(null);
 const showCalendar = ref(false);
 const calendarWrapper = ref(null);
-
+const isLoading = ref(false)
 
 const expandedKeys = ref({});
 const panelMenuData = computed(() => {
@@ -111,18 +123,18 @@ const panelMenuData = computed(() => {
   }));
 });
 
-const highlightDates = computed(() =>
-  (collectedDates.value || []).map(d => {
-    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-    if (d instanceof Date) {
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    }
-    return '';
-  })
-)
+//const highlightDates = computed(() =>
+//  (collectedDates.value || []).map(d => {
+//    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+//   if (d instanceof Date) {
+//      const yyyy = d.getFullYear();
+//      const mm = String(d.getMonth() + 1).padStart(2, '0');
+//     const dd = String(d.getDate()).padStart(2, '0');
+//      return `${yyyy}-${mm}-${dd}`;
+//    }
+//    return '';
+//  })
+//)
 
 
 // 날짜 클릭 → 해당 일자 데이터 조회
@@ -195,6 +207,7 @@ const selectHost = async (hostname) => {
 
 
 const fetchSysInfo = async (hostname = null) => {
+  isLoading.value = true;
   const url = hostname ? `/api/sysinfo/latest?hostname=${hostname}` : '/api/sysinfo/latest';
   const { data } = await api.get(url);
 
@@ -205,7 +218,6 @@ const fetchSysInfo = async (hostname = null) => {
     selectedDate.value = new Date(summary.value.checkDate);
     const year = selectedDate.value.getFullYear();
     const month = selectedDate.value.getMonth() + 1;
-    console.log('호스트:', hostname, '수집일:', collectedDates.value);
     await loadCollectedDates(hostname, year, month);
   }
 
@@ -214,7 +226,7 @@ const fetchSysInfo = async (hostname = null) => {
     const res = await api.get(`/api/sysinfo/log-summary?summaryId=${summary.value.id}`);
     logSummaries.value = res.data;
   }
-
+  isLoading.value = false;
   nextTick(() => renderDiskChart());
 };
 
@@ -318,10 +330,11 @@ onBeforeUnmount(() => {
     chartInstance = null;
   }
 });
-watch([collectedDates, highlightDates], ([dates, highlights]) => {
-  console.log('collectedDates:', dates);
-  console.log('highlightDates:', highlights);
-});
+
+//watch([collectedDates, highlightDates], ([dates, highlights]) => {
+//  console.log('collectedDates:', dates);
+//  console.log('highlightDates:', highlights);
+//});
 
 </script>
 
@@ -455,4 +468,13 @@ watch([collectedDates, highlightDates], ([dates, highlights]) => {
   .container-wrapper, .main-panel { flex-direction: column; }
   .sysinfo-area, .syslog-area { width: 100%; max-width: none; min-width: 0; margin-left: 0; }
 }
+
+
+.loading-text {
+  margin-top: 16px;
+  text-align: center;
+  color: #666;
+  font-size: 1.1em;
+}
+
 </style>
