@@ -68,7 +68,7 @@ public class DBList {
     private String insType;
 
     @Column(name = "PORT")
-    private int port;
+    private String port;
 
     @Column(name = "BACK_DUE")
     private String backDue;

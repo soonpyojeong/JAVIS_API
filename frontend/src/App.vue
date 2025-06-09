@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+  <Toast />
     <!-- 로그인 상태 복원 후에만 NavBar 표시 -->
     <NavBar v-if="isNavReady" @logout="handleLogout" />
     <div class="main-content">

@@ -65,7 +65,7 @@ public class DBListController {
             existingDbList.setInstanceName((String) requestMap.get("instanceName"));
             existingDbList.setPubIp((String) requestMap.get("pubIp"));
             existingDbList.setVip((String) requestMap.get("vip"));
-            existingDbList.setPort(requestMap.get("port") != null ? Integer.parseInt(requestMap.get("port").toString()) : null);
+            existingDbList.setPort((String) requestMap.get("port"));
             existingDbList.setUserid((String) requestMap.get("userid"));
             existingDbList.setPw((String) requestMap.get("pw"));
 

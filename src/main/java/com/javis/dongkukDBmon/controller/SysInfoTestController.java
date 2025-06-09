@@ -33,6 +33,7 @@ public class SysInfoTestController {
     @PostMapping
     public ResponseEntity<Void> receiveSysInfo(@RequestBody SysInfoDTO dto) {
         log.info("[RECEIVED] SysInfoDTO: {}", dto.getHostInfo().getHostname());
+        log.info("[RECEIVED] UPTIME = {}", dto.getHostInfo().getUptime());
 
         // 1. Summary 저장
         SysInfoSummary summary = summaryRepo.save(dto.toEntity());

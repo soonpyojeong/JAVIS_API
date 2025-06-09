@@ -6,7 +6,7 @@ import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura'
 import './main.css'
 import 'primeicons/primeicons.css';
-
+import ToastService from 'primevue/toastservice'
 
 const token = localStorage.getItem("accessToken");
 const userRaw = localStorage.getItem("user");
@@ -35,7 +35,7 @@ app.use(PrimeVue, {
         }
     }
  });
-
+app.use(ToastService) ;
 app.mount('#app');
 
 

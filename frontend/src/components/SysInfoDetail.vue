@@ -30,7 +30,10 @@
           <div class="hostname-section">
             <h2>{{ summary.hostname }}</h2>
           </div>
+          <div class="text-sm text-gray-600">
+            <i class="pi pi-clock text-blue-500 mr-1" /> 가동 시간: {{ summary.uptime }}가동시간 왜 안나와
 
+          </div>
             <!-- 날짜 달력 -->
              <div class="date-picker-section">
                     <CustomDatePicker
@@ -177,7 +180,7 @@ const handleDateChange = async (value) => {
       params: { hostname: selectedHost.value, date: dateStr }
     });
     const { summary: sum, disks: dks, logs: logs } = res.data || {};
-    summary.value = sum || {};
+    summary.value = { ...summary.value, ...sum };
     disks.value = Array.isArray(dks) ? dks : [];
     logSummaries.value = Array.isArray(logs) ? logs : [];
     selectedDate.value = selected;
@@ -404,6 +407,11 @@ watch([collectedDates, highlightDates], ([dates, highlights]) => {
   flex-direction: column;
   overflow: hidden;
   min-height: 100vh;
+}
+.uptime-display {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 5px;
 }
 
 .top-grid {

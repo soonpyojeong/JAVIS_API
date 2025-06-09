@@ -18,6 +18,8 @@ public class SysInfoSummary {
     private Double cpuUsage;
     private Double memUsage;
     private String diskUsage;
+    @Column(name = "UPTIME")
+    private String uptime;  // ✅ String 형태로 추가
 
     @Temporal(TemporalType.DATE)
     private Date checkDate;

@@ -83,10 +83,11 @@
          :class="{ 'p-invalid': showError && !localForm.PubIP }"/>
          <small v-if="showError && !localForm.PubIP" class="p-error">V</small>
         <InputText v-model="localForm.vip" placeholder="VIP" class="w-full" />
-        <InputNumber
+        <InputText
           v-model="localForm.port"
           placeholder="포트"
           class="w-full"
+          type="text"
           :class="{ 'p-invalid': showError && !localForm.port }"
         />
         <small v-if="showError && !localForm.port" class="p-error">V</small>
@@ -136,7 +137,6 @@ import { ref, watch, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
 import Password from 'primevue/password'
 import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'

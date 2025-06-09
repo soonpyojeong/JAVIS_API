@@ -10,6 +10,10 @@ import LoginComponent from '../components/LoginComponent';
 import SysInfoDetail from '../components/PrimevueSysInfoDetail';
 import PWMng from '../components/PassWordMng';
 import PrimevueTest from '../components/PrimevueTest';
+import EtlDbConnection from '../components/EtlDbConnection';
+import ETLJobList from '../components/ETLJobList';
+import MappingSimulate from '../components/MappingSimulate';
+
 import store from '../store';
 
 const routes = [
@@ -22,7 +26,10 @@ const routes = [
   { path: '/dailyChk', name: 'DailyChkView', component: DailyChkView, meta: { title: 'Daily Check View', requiresAuth: true } },
   { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: 'SysInfoDetail', requiresAuth: true } },
   { path: '/Manager', name: 'PWMng', component: PWMng, meta: { title: 'Manager', requiresAuth: true } },
-  { path: '/TEST', name: 'PrimevueTest', component: PrimevueTest, meta: { title: 'Manager', requiresAuth: true } }
+  { path: '/TEST', name: 'PrimevueTest', component: PrimevueTest, meta: { title: 'Manager', requiresAuth: true } },
+  { path: '/EtlDbConnection', name: 'EtlDbConnection', component: EtlDbConnection, meta: { title: 'EtlDbConnection', requiresAuth: true } },
+  { path: '/ETLJobList', name: 'ETLJobList', component: ETLJobList, meta: { title: 'ETLJobList', requiresAuth: true } },
+  { path: '/MappingSimulate', name: 'MappingSimulate', component: MappingSimulate, meta: { title: 'MappingSimulate', requiresAuth: true } }
 ];
 
 const router = createRouter({

@@ -19,26 +19,32 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig implements WebMvcConfigurer {
 
-    // ✅ final 키워드 추가 → @RequiredArgsConstructor가 주입 가능하게 만듦
     private final JwtTokenProvider jwtTokenProvider;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // CSRF 비활성화 (API 서버일 경우 추천)
                 .csrf(AbstractHttpConfigurer::disable)
+                // CORS 설정 적용
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        // [공개 경로]
                         .requestMatchers(
-                                "/", "/index.html",
-                                "/favicon.ico", "/static/**", "/assets/**","/fonts/**",
-                                "/js/**", "/css/**","/api/**","/ws/**","/api/alerts/**",
-                                "/api/auth/**","/api/sysinfo/**","/api/SysInfoDetail/**","/api/sysinfo/by-date/**",
-                                "/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk",
-                                "/SysInfoDetail","/api/pass/**","/api/sysinfo/log-summary/**",
-                                "/api/sysinfo/collected-dates-by-month/**","/TEST","/api/db-list/save/**"
-                ).permitAll()
+                                "/", "/index.html",                // 메인 페이지
+                                "/favicon.ico",                    // 파비콘
+                                "/static/**", "/assets/**",        // 정적 리소스
+                                "/fonts/**", "/js/**", "/css/**",  // 리소스
+                                // ===== 업무 화면 =====
+                                "/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk", "/SysInfoDetail", "/TEST",
+                                "/api/**",                         // API 전체 허용(하위 경로 포함)
+                                "/ws/**",                          // WebSocket
+                                "/ETLJobList", "/etljob-history"   // ETL 관련
+                        ).permitAll()
+                        // [그 외에는 인증 필요]
                         .anyRequest().authenticated()
                 )
+                // JWT 인증 필터 적용
                 .addFilterBefore(
                         new JwtAuthenticationFilter(jwtTokenProvider),
                         UsernamePasswordAuthenticationFilter.class
@@ -63,3 +69,23 @@ public class SecurityConfig implements WebMvcConfigurer {
         return source;
     }
 }
+
+/*
+========= [원본 코드] =========
+
+.requestMatchers(
+        "/", "/index.html",
+        "/favicon.ico", "/static/**", "/assets/**","/fonts/**",
+        "/js/**", "/css/**","/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk",
+        "/api/**","/ws/**","/api/alerts/**","/api/auth/**","/api/sysinfo/**","/api/SysInfoDetail/**","/api/sysinfo/by-date/**",
+        "/api/sysinfo/log-summary/**","/SysInfoDetail","/api/pass/**",
+        "/api/sysinfo/collected-dates-by-month/**","/TEST","/api/db-list/save/**",
+        "/api/db-connection","/ETLJobList","/etljob-history",
+        "/api/etl/job/**","/api/etl/run/**",
+        "/api/etl/job/run/**","/api/etl/**"
+ ).permitAll()
+
+ - "/api/**"로 시작하면 하위 경로는 전부 허용됨.
+ - 불필요하게 세부 경로 여러 번 추가할 필요 없음.
+ - 예외적으로, "/ws/**", "/ETLJobList" 등만 별도 추가해주면 됨.
+ */

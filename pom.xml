@@ -34,8 +34,8 @@
 		<connection>scm:git:git://github.com/soonpyojeong/JAVIS_API.git </connection>
 		<developerConnection>scm:git:ssh://git@github.com:soonpyojeong/JAVIS_API.git </developerConnection>
 		<url>http://github.com/soonpyojeong/JAVIS_API</url>
-	  <tag>1.0.1</tag>
-  </scm>
+		<tag>1.0.1</tag>
+	</scm>
 	<properties>
 		<java.version>17</java.version>
 	</properties>
@@ -85,13 +85,79 @@
 		</dependency>
 		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
-			<artifactId>ojdbc11</artifactId>
-			<scope>runtime</scope>
+			<artifactId>ojdbc8</artifactId>
+			<version>12.2.0.1</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/libs/ojdbc8-12.2.0.1.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.springboot</groupId>
+			<artifactId>camel-spring-boot-starter</artifactId>
+			<version>4.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.springboot</groupId>
+			<artifactId>camel-jdbc-starter</artifactId>
+			<version>4.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.springboot</groupId>
+			<artifactId>camel-sql-starter</artifactId>
+			<version>4.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-sql</artifactId>
+			<version>4.5.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.33</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+			<version>3.3.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.7.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+			<version>7.4.1.jre12</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/libs/mssql-jdbc-7.4.1.jre12.jar</systemPath>
+		</dependency>
+
+		<dependency>
+			<groupId>com.tmax.tibero.jdbc</groupId>
+			<artifactId>tibero6-jdbc</artifactId>
+			<version>6.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/libs/tibero6-jdbc.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>jdbc.sybase</groupId>
+			<artifactId>jconn4</artifactId>
+			<version>16.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/libs/jconn4-16.0.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.sap.cloud.db.jdbc</groupId>
+			<artifactId>ngdbc</artifactId>
+			<version>2.16.14</version>
+			<type>pom</type>
 		</dependency>
 		<dependency>
 			<groupId>org.jetbrains</groupId>

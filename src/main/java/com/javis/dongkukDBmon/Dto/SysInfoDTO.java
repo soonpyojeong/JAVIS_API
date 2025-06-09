@@ -19,6 +19,7 @@ public class SysInfoDTO {
         private double cpuUsage;
         private double memUsage;
         private String diskUsage;
+        private String uptime;
     }
 
     @Data
@@ -37,6 +38,7 @@ public class SysInfoDTO {
         s.setCpuUsage(this.hostInfo.getCpuUsage());
         s.setMemUsage(this.hostInfo.getMemUsage());
         s.setDiskUsage(this.hostInfo.getDiskUsage());
+        s.setUptime(this.hostInfo.getUptime()); // ✅ 추가
         s.setCheckDate(java.sql.Date.valueOf(LocalDate.now()));
         return s;
     }
