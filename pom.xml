@@ -87,8 +87,6 @@
 			<groupId>com.oracle.database.jdbc</groupId>
 			<artifactId>ojdbc8</artifactId>
 			<version>12.2.0.1</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/libs/ojdbc8-12.2.0.1.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -135,23 +133,17 @@
 			<groupId>com.microsoft.sqlserver</groupId>
 			<artifactId>mssql-jdbc</artifactId>
 			<version>7.4.1.jre12</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/libs/mssql-jdbc-7.4.1.jre12.jar</systemPath>
 		</dependency>
-
 		<dependency>
 			<groupId>com.tmax.tibero.jdbc</groupId>
 			<artifactId>tibero6-jdbc</artifactId>
 			<version>6.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/libs/tibero6-jdbc.jar</systemPath>
 		</dependency>
+
 		<dependency>
-			<groupId>jdbc.sybase</groupId>
-			<artifactId>jconn4</artifactId>
-			<version>16.0</version>
-			<scope>system</scope>
-			<systemPath>${project.basedir}/libs/jconn4-16.0.jar</systemPath>
+		<groupId>jdbc.sybase</groupId>
+		<artifactId>jconn4</artifactId>
+		<version>16.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.sap.cloud.db.jdbc</groupId>

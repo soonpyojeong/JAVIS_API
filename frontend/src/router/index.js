@@ -1,18 +1,18 @@
 // router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
-import Dashboard from '../components/MainPage';
-import DBList from '../components/PrimevueDBList';
-import SmsHistory from '../components/SmsHistory';
-import ThresholdList from '../components/ThresholdList';
-import TablespacesList from '../components/TablespacesList';
-import DailyChkView from '../components/PrimevueDailyChk';
-import LoginComponent from '../components/LoginComponent';
-import SysInfoDetail from '../components/PrimevueSysInfoDetail';
-import PWMng from '../components/PassWordMng';
-import PrimevueTest from '../components/PrimevueTest';
-import EtlDbConnection from '../components/EtlDbConnection';
-import ETLJobList from '../components/ETLJobList';
-import MappingSimulate from '../components/MappingSimulate';
+import Dashboard from '../components/MainPage.vue';
+import DBList from '../components/PrimevueDBList.vue';
+import SmsHistory from '../components/SmsHistory.vue';
+import ThresholdList from '../components/ThresholdList.vue';
+import TablespacesList from '../components/TablespacesList.vue';
+import DailyChkView from '../components/PrimevueDailyChk.vue';
+import LoginComponent from '../components/LoginComponent.vue';
+import SysInfoDetail from '../components/PrimevueSysInfoDetail.vue';
+import PWMng from '../components/PassWordMng.vue';
+import PrimevueTest from '../components/PrimevueTest.vue';
+import EtlDbConnection from '../components/EtlDbConnection.vue';
+import ETLJobList from '../components/ETLJobList.vue';
+import MappingSimulate from '../components/MappingSimulate.vue';
 
 import store from '../store';
 

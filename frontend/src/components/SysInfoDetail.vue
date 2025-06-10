@@ -3,6 +3,9 @@
     <!-- HOSTNAME 리스트 -->
     <div class="db-tree">
       <h3>DBMS 목록</h3>
+       <div class="uptime-display">
+                  <i class="pi pi-clock text-blue-500 mr-1" /> 가동 시간: {{ summary.uptime }}가동시간 왜 안나와
+                  </div>
       <ul>
         <li v-for="(items, loc) in groupedHostList" :key="loc">
           <span class="tree-node" @click="expandedLoc[loc] = !expandedLoc[loc]">
@@ -28,13 +31,11 @@
         <!-- 요약 정보 -->
         <div class="left-summary">
           <div class="hostname-section">
-            <h2>{{ summary.hostname }}</h2>
-          </div>
-          <div class="text-sm text-gray-600">
-            <i class="pi pi-clock text-blue-500 mr-1" /> 가동 시간: {{ summary.uptime }}가동시간 왜 안나와
+            <h2> {{ summary.hostname }}</h2>
 
           </div>
-            <!-- 날짜 달력 -->
+
+            <!-- 날짜 달력  -->
              <div class="date-picker-section">
                     <CustomDatePicker
                        v-model="selectedDate"
@@ -205,7 +206,7 @@ const selectHost = async (hostname) => {
     const month = selectedDate.value.getMonth() + 1;
     await loadCollectedDates(hostname, year, month);
     // 여기서 최신 값 출력!
-    //console.log("🔄 selectHost 이후 collectedDates:", collectedDates.value);
+   // console.log("🔄 selectHost 이후 collectedDates:", collectedDates.value);
   }
   await nextTick();
 };
@@ -323,6 +324,7 @@ const renderDiskChart = () => {
 onMounted(() => {
   fetchHostList();
   document.addEventListener('click', handleClickOutside);
+  console.log("🔄 TEST");
 });
 
 onBeforeUnmount(() => {
@@ -550,6 +552,11 @@ canvas[id^="diskChart-"] {
   display: inline-block;
 
 
+}
+.uptime-display {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 5px;
 }
 
 </style>

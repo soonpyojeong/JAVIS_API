@@ -1,13 +1,16 @@
-import { createApp } from 'vue';
-import App from './App.vue';
-import router from './router';
-import store from './store';
-import PrimeVue from 'primevue/config';
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import store from './store'
+import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
 import './main.css'
-import 'primeicons/primeicons.css';
+import 'primeicons/primeicons.css'
 import ToastService from 'primevue/toastservice'
+import Toast from 'primevue/toast'
 
+
+// 토큰/유저 상태 복구 (Vite에서도 동일)
 const token = localStorage.getItem("accessToken");
 const userRaw = localStorage.getItem("user");
 
@@ -21,21 +24,19 @@ if (token && userRaw && userRaw !== "undefined") {
   }
 }
 
-const app = createApp(App);
-app.use(store);
-app.use(router);
+const app = createApp(App)
+app.use(store)
+app.use(router)
 app.use(PrimeVue, {
-    // Default theme configuration
-    theme: {
-        preset: Aura,
-        options: {
-            prefix: 'p',
-            darkModeSelector: 'light',
-            cssLayer: false
-        }
+  theme: {
+    preset: Aura,
+    options: {
+      prefix: 'p',
+      darkModeSelector: 'light',
+      cssLayer: false
     }
- });
-app.use(ToastService) ;
-app.mount('#app');
-
-
+  }
+})
+app.use(ToastService)
+app.component('Toast', Toast)
+app.mount('#app')

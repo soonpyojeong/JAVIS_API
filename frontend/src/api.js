@@ -2,7 +2,7 @@ import axios from "axios";
 import store from "@/store";
 
 const api = axios.create({
-  baseURL: process.env.VUE_APP_BASE_URL, // 예: http://10.90.4.60:8813
+  baseURL: import.meta.env.VITE_APP_BASE_URL, // ✅ Vite 환경변수 방식!
   timeout: 600000,
   withCredentials: true,
   headers: {
@@ -31,7 +31,6 @@ api.interceptors.response.use(
       !originalRequest._retry
     ) {
       originalRequest._retry = true;
-      console.warn("⚠️ accessToken 만료, refresh 시도 중...");
       try {
         const res = await api.post('/api/auth/refresh', {
           refreshToken: localStorage.getItem('refreshToken'),
@@ -39,10 +38,8 @@ api.interceptors.response.use(
         const newAccessToken = res.data.accessToken;
         localStorage.setItem('accessToken', newAccessToken);
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        //console.info("✅ accessToken 재발급 성공");
-        return axios(originalRequest);
+        return api(originalRequest); // axios(originalRequest) → api(originalRequest)
       } catch (refreshError) {
-        //console.error("❌ refreshToken 재발급 실패", refreshError);
         store.dispatch("logout");
         window.location.href = "/login";
         return Promise.reject(refreshError);
@@ -53,5 +50,5 @@ api.interceptors.response.use(
   }
 );
 
-
 export default api;
+

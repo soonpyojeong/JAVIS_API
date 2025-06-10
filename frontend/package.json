@@ -3,10 +3,11 @@
   "version": "1.0.1",
   "private": true,
   "scripts": {
-    "set-version": "node  ./setVersion.js",
-    "serve": "vue-cli-service serve --port 8812",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "set-version": "node ./setVersion.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint --ext .js,.vue src"
   },
   "dependencies": {
     "@primeuix/themes": "^1.1.1",
@@ -15,7 +16,6 @@
     "axios": "^1.8.3",
     "chart.js": "^4.4.8",
     "chartjs-plugin-datalabels": "^2.2.0",
-    "core-js": "^3.32.0",
     "crypto-js": "^4.2.0",
     "pinia": "^3.0.1",
     "primeicons": "^7.0.0",
@@ -31,20 +31,13 @@
     "ws": "^8.18.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.22.9",
-    "@babel/eslint-parser": "^7.22.9",
-    "@vue/cli-plugin-babel": "~5.0.8",
-    "@vue/cli-plugin-eslint": "~5.0.8",
-    "@vue/cli-service": "~5.0.8",
+    "@vitejs/plugin-vue": "^5.2.4",
     "autoprefixer": "^10.4.21",
     "eslint": "^8.48.0",
     "eslint-plugin-vue": "^9.17.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.7",
-    "webpack": "5.88.2",
-    "webpack-bundle-analyzer": "4.9.1",
-    "webpack-cli": "5.1.4",
-    "webpack-dev-server": "^5.2.1"
+    "vite": "^6.3.5"
   },
   "eslintConfig": {
     "root": true,
