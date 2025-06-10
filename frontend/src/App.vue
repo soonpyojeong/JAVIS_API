@@ -7,6 +7,9 @@
       <router-view />
     </div>
   </div>
+    <footer>
+
+    </footer>
 </template>
 
 <script setup>
@@ -20,7 +23,6 @@ const store = useStore();
 const router = useRouter();
 
 const isNavReady = ref(false);
-
 const handleLogout = () => {
   store.dispatch("logout");
   router.push("/login");

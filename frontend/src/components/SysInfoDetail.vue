@@ -34,7 +34,10 @@
             <h2> {{ summary.hostname }}</h2>
 
           </div>
-
+            <div class="hostname-section">
+              <h2>{{ summary.hostname }}</h2>
+              <div class="uptime-display">🕒 {{ summary.uptime }}</div>
+            </div>
             <!-- 날짜 달력  -->
              <div class="date-picker-section">
                     <CustomDatePicker
@@ -187,6 +190,7 @@ const handleDateChange = async (value) => {
     selectedDate.value = selected;
     chartKey.value += 1;
     await nextTick(() => renderDiskChart());
+    console.log('summary:', summary.value);
   } catch (e) {
     summary.value = {};
     disks.value = [];
@@ -324,7 +328,7 @@ const renderDiskChart = () => {
 onMounted(() => {
   fetchHostList();
   document.addEventListener('click', handleClickOutside);
-  console.log("🔄 TEST");
+  console.log("🔄 TES T");
 });
 
 onBeforeUnmount(() => {

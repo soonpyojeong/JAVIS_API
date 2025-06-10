@@ -1,11 +1,13 @@
+// setVersion.js
 const fs = require('fs');
 const path = require('path');
 
-const newVersion = process.argv[2];
-const packageJsonPath = path.resolve(__dirname, '../frontend/package.json');
+const versionFile = path.join(__dirname, 'buildVersion.txt');
 
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-packageJson.version = newVersion;
+let version = 1;
+if (fs.existsSync(versionFile)) {
+  version = parseInt(fs.readFileSync(versionFile).toString(), 10) + 1;
+}
+fs.writeFileSync(versionFile, version.toString());
 
-fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-console.log(`Version updated to ${newVersion}`);
+console.log('빌드 버전:', version);
