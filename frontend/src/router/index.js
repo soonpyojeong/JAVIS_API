@@ -13,6 +13,7 @@ import PrimevueTest from '../components/PrimevueTest.vue';
 import EtlDbConnection from '../components/EtlDbConnection.vue';
 import ETLJobList from '../components/ETLJobList.vue';
 import MappingSimulate from '../components/MappingSimulate.vue';
+import EtlWorkflow from '../components/EtlWorkflow.vue';
 
 import store from '../store';
 
@@ -29,7 +30,8 @@ const routes = [
   { path: '/TEST', name: 'PrimevueTest', component: PrimevueTest, meta: { title: 'Manager', requiresAuth: true } },
   { path: '/EtlDbConnection', name: 'EtlDbConnection', component: EtlDbConnection, meta: { title: 'EtlDbConnection', requiresAuth: true } },
   { path: '/ETLJobList', name: 'ETLJobList', component: ETLJobList, meta: { title: 'ETLJobList', requiresAuth: true } },
-  { path: '/MappingSimulate', name: 'MappingSimulate', component: MappingSimulate, meta: { title: 'MappingSimulate', requiresAuth: true } }
+  { path: '/MappingSimulate', name: 'MappingSimulate', component: MappingSimulate, meta: { title: 'MappingSimulate', requiresAuth: true } },
+  { path: '/EtlWorkflow', name: 'EtlWorkflow', component: EtlWorkflow, meta: { title: 'EtlWorkflow', requiresAuth: true } }
 ];
 
 const router = createRouter({

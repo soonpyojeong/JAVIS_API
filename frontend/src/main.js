@@ -8,7 +8,7 @@ import './main.css'
 import 'primeicons/primeicons.css'
 import ToastService from 'primevue/toastservice'
 import Toast from 'primevue/toast'
-
+import './assets/vue-flow.css'
 
 // 토큰/유저 상태 복구 (Vite에서도 동일)
 const token = localStorage.getItem("accessToken");
