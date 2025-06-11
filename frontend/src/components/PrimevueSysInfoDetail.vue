@@ -10,6 +10,11 @@
       <div class="sysinfo-area">
         <div class="hostname-section">
           <h2>{{ summary.hostname }}</h2>
+            <div class="uptime-display">
+              <i class="pi pi-clock"></i>
+              <span>가동 시간: {{ summary.uptime }}</span>
+            </div>
+
         </div>
         <div class="date-picker-section">
           <CustomDatePicker
@@ -26,7 +31,7 @@
         </div>
         <div class="disk-section">
           <h3>디스크 상세</h3>
-            <canvas id="diskChart"></canvas>
+           <!--<canvas id="diskChart"></canvas>-->
           <table class="disk-table">
             <thead>
               <tr>
@@ -475,6 +480,21 @@ onBeforeUnmount(() => {
   text-align: center;
   color: #666;
   font-size: 1.1em;
+}
+.uptime-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e8f0fe;
+  color: #2563eb;
+  font-weight: bold;
+  padding: 6px 14px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px #2563eb22;
+  width: fit-content;
+}
+.uptime-display .pi-clock {
+  font-size: 1.3em;
 }
 
 </style>
