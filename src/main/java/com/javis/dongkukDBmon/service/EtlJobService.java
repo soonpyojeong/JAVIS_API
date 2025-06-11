@@ -224,7 +224,6 @@ public class EtlJobService {
 
         } finally {
             try {
-                // 로그로 경계 체크
                 System.out.println("[FINALLY] Route/Registry/DataSource cleanup 시작");
                 if (camelContext.getRoute(routeId) != null) {
                     System.out.println("[FINALLY] removeRoute 호출");
@@ -234,20 +233,16 @@ public class EtlJobService {
                     System.out.println("[FINALLY] registry unbind 호출");
                     camelContext.getRegistry().unbind(TARGET_DATASOURCE_NAME);
                 }
-                if (srcDs instanceof HikariDataSource) {
-                    System.out.println("[FINALLY] srcDs close 호출");
-                    ((HikariDataSource) srcDs).close();
-                }
-                if (tgtDs instanceof HikariDataSource) {
-                    System.out.println("[FINALLY] tgtDs close 호출");
-                    ((HikariDataSource) tgtDs).close();
-                }
+                // 👇 아래 두 줄은 삭제 (공유 풀 close 금지!)
+                // if (srcDs instanceof HikariDataSource) ((HikariDataSource) srcDs).close();
+                // if (tgtDs instanceof HikariDataSource) ((HikariDataSource) tgtDs).close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
             saveJobLog(jobId, isSuccess, resultMessage);
             notifyJobStatus(job);
         }
+
         return resultMessage;
     }
 
