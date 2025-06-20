@@ -293,7 +293,6 @@ function openEditModal({ data }) {
 
 // =========== 폼에서 체크박스 항목 제공 =============
 const computedDbCheckItems = computed(() => {
-  console.log(computedDbCheckItems.value)
   return dbCheckItemsMap[editForm.value.dbType] || []
 })
 

@@ -18,7 +18,6 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import NavBar from "./components/NavBar.vue";
 import api from "@/api";
-const toast = useToast();
 const store = useStore();
 const router = useRouter();
 

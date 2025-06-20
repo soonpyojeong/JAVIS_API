@@ -228,7 +228,10 @@ import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 import CustomNode from './CustomNode.vue'
 import CustomEdge from './CustomEdge.vue'
+
+import { useToast } from 'primevue/usetoast'
 import api from '@/api'
+
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -248,6 +251,8 @@ const workflowList = ref([])
 const workflowHistory = ref([])
 const selectedNode = ref(null)
 const showJsonModal = ref(false)
+const toast = useToast()
+
 
 const store = useStore()
 const user = computed(() => store.state.user || {})
@@ -355,16 +360,14 @@ async function loadDbList() {
 async function saveWorkflow() {
   if (!workflowName.value) {
     toast.add({
-          severity: 'success',
-          summary: '알림',
-          detail: '워크플로우 이름을 입력하세요!',
-          life: 3000 // 3초
-        });
+      severity: 'warn',
+      summary: '알림',
+      detail: '워크플로우 이름을 입력하세요!',
+      life: 3000
+    });
     return
   }
-  // userId나 userName 등 실 서비스에서 맞는 값 사용
   const userId = user.value.userId || user.value.username || 'anonymous'
-
   const body = {
     workflowId: workflowId.value,
     workflowName: workflowName.value,
@@ -376,52 +379,58 @@ async function saveWorkflow() {
     if (data && data.workflowId) {
       workflowId.value = data.workflowId
       toast.add({
-                severity: 'success',
-                summary: '알림',
-                detail: '저장 완료!',
-                life: 3000 // 3초
-              });
+        severity: 'success',
+        summary: '알림',
+        detail: '저장 완료!',
+        life: 3000
+      });
     }
   } catch (e) {
-          toast.add({
-            severity: 'error',
-            summary: '실행 실패',
-            detail:  '에러 발생 '|| e.response?.data?.message,
-            life: 3000
-          });
+    toast.add({
+      severity: 'error',
+      summary: '실패',
+      detail: '저장 실패! 서버 에러 또는 필드 오류',
+      life: 3000
+    });
   }
 }
+
+
 async function deleteWorkflow() {
   if (!workflowId.value) {
-    alert('삭제할 워크플로우를 먼저 불러오세요!')
+    toast.add({
+      severity: 'warn',
+      summary: '알림',
+      detail: '삭제할 워크플로우를 먼저 불러오세요!',
+      life: 3000
+    });
     return
   }
   if (!confirm('정말 삭제하시겠습니까?')) return
   try {
     await api.delete(`/api/workflow/${workflowId.value}`)
-    alert('삭제 완료!')
-    // 초기화 및 목록 새로고침
+    toast.add({
+      severity: 'success',
+      summary: '알림',
+      detail: '삭제 완료!',
+      life: 3000
+    });
     workflowId.value = null
     workflowName.value = ''
     nodes.value = []
     edges.value = []
     workflowList.value = []
-    await openLoadDialog() // 리스트 갱신
+    await openLoadDialog()
+  } catch (e) {
     toast.add({
-                  severity: 'success',
-                  summary: '알림',
-                  detail: '삭제 완료!',
-                  life: 3000 // 3초
-                });
-
-    } catch (e) {
-            toast.add({
-              severity: 'error',
-              summary: '삭제 실패',
-              detail:  '에러 발생 '|| e.response?.data?.message,
-              life: 3000
-            });
+      severity: 'error',
+      summary: '실패',
+      detail: '삭제 실패! 서버 에러',
+      life: 3000
+    });
+  }
 }
+
 
 function newWorkflow() {
   if (nodes.value.length > 0 || workflowName.value) {
@@ -432,6 +441,7 @@ function newWorkflow() {
   nodes.value = [];
   edges.value = [];
 }
+
 
 
 // 워크플로우 불러오기 관련
@@ -467,18 +477,19 @@ async function loadWorkflowHistory() {
 async function openHistoryDialog() {
   if (!workflowId.value) {
     toast.add({
-                      severity: 'success',
-                      summary: '알림',
-                      detail: '워크플로우를 먼저 선택/불러오세요!',
-                      life: 3000 // 3초
-                    });
-
+      severity: 'info',
+      summary: '알림',
+      detail: '워크플로우를 먼저 선택/불러오세요',
+      life: 3000
+    });
     return
   }
   const { data } = await api.get(`/api/workflow/${workflowId.value}/history`)
   workflowHistory.value = data
   showHistoryModal.value = true
 }
+
+
 function restoreHistory(hist) {
   try {
     const wfData = JSON.parse(hist.workflowJson || '{}')
@@ -486,19 +497,18 @@ function restoreHistory(hist) {
     edges.value = wfData.edges || []
     showHistoryModal.value = false
     toast.add({
-              severity: 'success',
-              summary: '알림',
-              detail: '과거 이력 불러오기 완료 (저장 버튼을 누르면 반영됨)',
-              life: 3000 // 3초
-    });
-
+      severity: 'success',
+      summary: '알림',
+      detail: '과거 이력 불러오기 완료 (저장 버튼을 누르면 반영됨)',
+      life: 3000
+    })
   } catch (e) {
-       toast.add({
-        severity: 'error',
-        summary: '실행 실패',
-        detail: 이력 불러오기 실패 (JSON 파싱 오류),
-        life: 4000
-      });
+    toast.add({
+      severity: 'error',
+      summary: '실패',
+      detail: '이력 불러오기 실패 (JSON 파싱 오류)',
+      life: 4000
+    })
   }
 }
 
@@ -514,6 +524,7 @@ function onDragStart(e, data) {
 }
 function handleDrop(e) {
   const data = JSON.parse(e.dataTransfer.getData('application/node'))
+  console.log("드롭된 노드 데이터:", data)
 
   const bounds = e.target.getBoundingClientRect()
   const position = project({

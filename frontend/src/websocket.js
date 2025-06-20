@@ -10,9 +10,9 @@ export function connectWebSocket({ onDbStatusMessage, onAlertMessage }) {
 
   stompClient = new Client({
     webSocketFactory: () => socket,
-    debug: (str) => {
-      console.log('[STOMP DEBUG]', str);
-    },
+    // debug: (str) => {
+    //   console.log('[STOMP DEBUG]', str);
+    // },
     reconnectDelay: 5000,
     onConnect: () => {
       if (typeof onDbStatusMessage === 'function') {
