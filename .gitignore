@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# 프론트엔드 node_modules 추가
+frontend/node_modules/
