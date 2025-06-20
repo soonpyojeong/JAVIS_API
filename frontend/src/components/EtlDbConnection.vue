@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="db-conn-wrapper">
     <h2 class="text-xl font-bold mb-4">DB 연결정보 관리</h2>
     <div class="flex justify-between items-center mb-2">
       <Button label="DB 추가" icon="pi pi-plus" @click="openAddDialog" />
@@ -76,7 +76,6 @@ import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
 const { testConnection } = useDbConnection()
 const toast = useToast()
-toast.add({ severity: 'info', summary: '테스트', detail: '이게 보이면 Toast 잘됨', life: 2000 })
 
 
 const handleTestConn = async () => {
@@ -162,3 +161,37 @@ const closeDialog = () => {
   editData.value = {}
 }
 </script>
+<style scoped>
+.db-conn-wrapper {
+  max-width: 1200px;
+  margin: 32px auto 0 auto;
+  background: var(--surface-card);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px 0 rgba(80, 80, 100, 0.06);
+  padding: 32px 24px 32px 24px;
+}
+.data-table-sm .p-datatable-tbody > tr > td,
+.data-table-sm .p-datatable-thead > tr > th {
+  padding: 0.5rem 0.7rem;
+  font-size: 0.97rem;
+}
+.form-sm .field {
+  margin-bottom: 0.8rem;
+}
+.form-sm label {
+  font-size: 0.96rem;
+}
+.form-sm input, .form-sm .p-dropdown {
+  font-size: 1rem;
+  padding: 0.35rem 0.7rem;
+}
+@media (max-width: 900px) {
+  .db-conn-wrapper {
+    max-width: 97vw;
+    padding: 10px;
+  }
+  .data-table-sm {
+    font-size: 0.93rem;
+  }
+}
+</style>

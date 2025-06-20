@@ -1,12 +1,52 @@
 <script setup>
+import { ref } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
-const props = defineProps(['data', 'id', 'onDelete'])
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
 
+const props = defineProps(['data', 'id', 'onDelete', 'onRoleChange'])
+const emit = defineEmits(['updateTargetTable'])
+
+const showTableModal = ref(false)
+const tempTableName = ref(props.data.targetTable || '')
+
+// 역할 토글(Source <-> Target)
+function toggleRole(e) {
+  e.stopPropagation()
+  let nextRole
+  if (!props.data.role || props.data.role === 'source') {
+    nextRole = 'target'
+    // Target으로 바뀔 때 모달 자동 오픈
+    showTableModal.value = true
+    tempTableName.value = props.data.targetTable || ''
+  } else {
+    nextRole = 'source'
+  }
+  if (props.onRoleChange) props.onRoleChange(props.id, nextRole)
+}
+
+// 더블클릭 시(타겟이면) 테이블명 입력 모달 오픈
+function onNodeDblClick(e) {
+  if (props.data.role === 'target') {
+    showTableModal.value = true
+    tempTableName.value = props.data.targetTable || ''
+  }
+}
+
+// 테이블명 저장
+function saveTableName() {
+  emit('updateTargetTable', props.id, tempTableName.value)
+  showTableModal.value = false
+}
+
+// 노드 삭제 버튼
 function handleDelete(e) {
   e.stopPropagation()
   if (props.onDelete) props.onDelete(props.id)
 }
 </script>
+
 <template>
   <div
     class="custom-node"
@@ -15,24 +55,53 @@ function handleDelete(e) {
       color: '#fff',
       borderColor: props.data?.color || '#bbb'
     }"
+    @dblclick="onNodeDblClick"
   >
-    <!-- 삭제 버튼 -->
     <button class="delete-btn" title="노드 삭제" @click="handleDelete">✕</button>
+    <!-- 역할 토글 버튼: DB 노드에만 보임 -->
+    <div
+      class="role-toggle-btn-area"
+      v-if="['ORACLE','TIBERO','MYSQL','MSSQL','POSTGRESQL'].includes(props.data?.type)"
+      style="margin-bottom:6px; width:100%; display:flex; justify-content:center;"
+    >
+      <Button
+        :label="props.data?.role === 'target' ? 'Target' : 'Source'"
+        :severity="props.data?.role === 'target' ? 'danger' : 'success'"
+        size="small"
+        class="font-bold"
+        @click="toggleRole"
+        style="min-width:70px;"
+      />
+    </div>
     <Handle type="target" :position="Position.Top" id="top" />
-    <Handle v-if="props.data?.type && ['ORACLE','TIBERO','MYSQL','MSSQL'].includes(props.data.type)" type="target" :position="Position.Left" id="left" />
-    <Handle v-if="props.data?.type && ['ORACLE','TIBERO','MYSQL','MSSQL'].includes(props.data.type)" type="source" :position="Position.Right" id="right" />
+    <Handle type="target" :position="Position.Left" id="left" />
+    <Handle type="source" :position="Position.Right" id="right" />
     <Handle type="source" :position="Position.Bottom" id="bottom" />
     <div>
       {{ props.data?.label }}
       <span v-if="props.data?.type" style="font-size:11px; margin-left:5px;">({{ props.data.type }})</span>
     </div>
+
+    <!-- 테이블명 표시(타겟일 때만) -->
+    <div v-if="props.data.role==='target' && props.data.targetTable"
+         style="font-size:11px; margin-top:4px;">
+      <b>테이블명:</b> {{ props.data.targetTable }}
+    </div>
+
+    <!-- 테이블명 입력 모달 -->
+    <Dialog v-model:visible="showTableModal" header="타겟 테이블명 지정" modal>
+      <InputText v-model="tempTableName" placeholder="테이블명"/>
+      <template #footer>
+        <Button label="저장" @click="saveTableName"/>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <style scoped>
 .custom-node {
   min-width: 100px;
-  padding: 8px;
+  padding: 8px 8px 5px 8px;
   border: 1.5px solid #bbb;
   border-radius: 7px;
   display: flex;

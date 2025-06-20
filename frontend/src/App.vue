@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-  <Toast />
+  <Toast position="center" />
     <!-- 로그인 상태 복원 후에만 NavBar 표시 -->
     <NavBar v-if="isNavReady" @logout="handleLogout" />
     <div class="main-content">
@@ -18,7 +18,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import NavBar from "./components/NavBar.vue";
 import api from "@/api";
-
+const toast = useToast();
 const store = useStore();
 const router = useRouter();
 

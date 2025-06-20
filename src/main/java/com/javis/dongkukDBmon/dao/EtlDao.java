@@ -16,7 +16,7 @@ import java.util.*;
 public class EtlDao {
 
     private final JdbcTemplate jdbcTemplate;
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    public static final ObjectMapper objectMapper = new ObjectMapper();
 
     public EtlDao(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;

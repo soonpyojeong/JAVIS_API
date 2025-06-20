@@ -14,6 +14,7 @@ import EtlDbConnection from '../components/EtlDbConnection.vue';
 import ETLJobList from '../components/ETLJobList.vue';
 import MappingSimulate from '../components/MappingSimulate.vue';
 import EtlWorkflow from '../components/EtlWorkflow.vue';
+import MonitorModuleManage from '../components/MonitorModuleManage.vue';
 
 import store from '../store';
 
@@ -31,7 +32,8 @@ const routes = [
   { path: '/EtlDbConnection', name: 'EtlDbConnection', component: EtlDbConnection, meta: { title: 'EtlDbConnection', requiresAuth: true } },
   { path: '/ETLJobList', name: 'ETLJobList', component: ETLJobList, meta: { title: 'ETLJobList', requiresAuth: true } },
   { path: '/MappingSimulate', name: 'MappingSimulate', component: MappingSimulate, meta: { title: 'MappingSimulate', requiresAuth: true } },
-  { path: '/EtlWorkflow', name: 'EtlWorkflow', component: EtlWorkflow, meta: { title: 'EtlWorkflow', requiresAuth: true } }
+  { path: '/EtlWorkflow', name: 'EtlWorkflow', component: EtlWorkflow, meta: { title: 'EtlWorkflow', requiresAuth: true } },
+    { path: '/MonitorModuleManage', name: 'MonitorModuleManage', component: MonitorModuleManage, meta: { title: 'MonitorModuleManage', requiresAuth: true } }
 ];
 
 const router = createRouter({

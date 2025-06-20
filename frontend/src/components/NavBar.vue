@@ -250,9 +250,10 @@ const dailySubMenus = [
 
 const etlSubMenus = [
   { name: "DB연결정보관리", path: "/EtlDbConnection", iconClass: "pi pi-database" },
+  { name: "관제 모듈 관리", path: "/MonitorModuleManage", iconClass: "pi pi-sitemap" },
+  { name: "워크플로우 설계", path: "/EtlWorkflow", iconClass: "pi pi-sitemap" },
   { name: "ETL 작업 관리", path: "/ETLJobList", iconClass: "pi pi-cog" },
   { name: "ETL 실행 이력", path: "/etljob-history", iconClass: "pi pi-list" },
-  { name: "ETL 워크플로우 설계", path: "/EtlWorkflow", iconClass: "pi pi-sitemap" },
 ];
 
 
