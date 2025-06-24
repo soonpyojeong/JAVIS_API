@@ -305,7 +305,7 @@ async function onSave() {
       scheduleExpr: makeScheduleExpr(form.value),
       startDate: toYyyyMmDd(form.value.startDate) || null,
       endDate: toYyyyMmDd235959(form.value.endDate) || null,
-      enabledYn: 'Y',
+      enabledYn: form.value.enabledYn,
       updatedUser: user.value.username || user.value.id || '',
     }
     if (isEditMode.value) {

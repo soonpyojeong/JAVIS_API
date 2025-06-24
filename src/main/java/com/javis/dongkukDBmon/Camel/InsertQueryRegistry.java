@@ -67,6 +67,7 @@ public class InsertQueryRegistry {
             )
         """);
 
+
         // INVALID_OBJECT 모듈
         register("INVALID_OBJECT", "ORACLE", """
             INSERT INTO TB_DB_INVALID_OBJECT (
@@ -74,6 +75,29 @@ public class InsertQueryRegistry {
             ) VALUES (
                 SYSDATE, ?, ?, ?, ?, ?
             )
+        """);
+
+        // INVALID_OBJECT 모듈
+        register("INVALID_OBJECT", "TIBERO", """
+            INSERT INTO TB_DB_INVALID_OBJECT (
+                CHK_DATE, DB_TYPE, DB_NAME, OWNER, OBJECT_NAME, OBJECT_TYPE
+            ) VALUES (
+                SYSDATE, ?, ?, ?, ?, ?
+            )
+        """);
+
+
+        // PROC 모듈
+        register("PROC", "ORACLE", """
+            INSERT INTO TB_STORED_PROC_EXEC
+             (EXEC_ID, EXEC_DATE, DB_TYPE, DB_NAME, STORED_PROC_NAME, STATUS, RESULT_MSG)
+             VALUES (SQ_STORED_PROC_EXEC.NEXTVAL, ?, ?, ?, ?, ?, ?)
+        """);
+
+         register("PROC", "TIBERO", """
+            INSERT INTO TB_STORED_PROC_EXEC
+                (EXEC_ID, EXEC_DATE, DB_TYPE, DB_NAME, STORED_PROC_NAME, STATUS, RESULT_MSG)
+                 VALUES (SQ_STORED_PROC_EXEC.NEXTVAL, ?, ?, ?, ?, ?, ?)
         """);
     }
 

@@ -30,7 +30,7 @@ public class EtlModuleHandlerRegistry {
     private String getModuleCode(AbstractEtlModuleHandler handler) {
         // 각 핸들러가 supports("모듈코드") 구현하므로 이를 활용
         // 초기 등록을 위해 전수 조사 방식 사용
-        List<String> knownModules = List.of("HEALTH", "INVALID_OBJECT", "SESSION", "DISK", "ETC");
+        List<String> knownModules = List.of("HEALTH", "INVALID_OBJECT", "SESSION", "DISK", "ETC","PROC");
         for (String code : knownModules) {
             if (handler.supports(code)) return code;
         }
