@@ -15,6 +15,10 @@ import ETLJobList from '../components/ETLJobList.vue';
 import MappingSimulate from '../components/MappingSimulate.vue';
 import EtlWorkflow from '../components/EtlWorkflow.vue';
 import MonitorModuleManage from '../components/MonitorModuleManage.vue';
+import EtlJobScheduler from '../components/EtlJobScheduler.vue';
+import EtlSchedulerLog from '../components/EtlSchedulerLog.vue';
+import EtlSchedulerDialog from '../components/EtlSchedulerDialog.vue';
+
 
 import store from '../store';
 
@@ -33,7 +37,8 @@ const routes = [
   { path: '/ETLJobList', name: 'ETLJobList', component: ETLJobList, meta: { title: 'ETLJobList', requiresAuth: true } },
   { path: '/MappingSimulate', name: 'MappingSimulate', component: MappingSimulate, meta: { title: 'MappingSimulate', requiresAuth: true } },
   { path: '/EtlWorkflow', name: 'EtlWorkflow', component: EtlWorkflow, meta: { title: 'EtlWorkflow', requiresAuth: true } },
-    { path: '/MonitorModuleManage', name: 'MonitorModuleManage', component: MonitorModuleManage, meta: { title: 'MonitorModuleManage', requiresAuth: true } }
+  { path: '/ETLjob-Scheduler', name: 'EtlJobScheduler', component: EtlJobScheduler, meta: { title: 'EtlJobScheduler', requiresAuth: true } },
+  { path: '/MonitorModuleManage', name: 'MonitorModuleManage', component: MonitorModuleManage, meta: { title: 'MonitorModuleManage', requiresAuth: true } }
 ];
 
 const router = createRouter({

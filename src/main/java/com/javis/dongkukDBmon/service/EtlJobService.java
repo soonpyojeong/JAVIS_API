@@ -258,6 +258,7 @@ public class EtlJobService {
 
     public String runEtlJob(Long jobId) {
         EtlJob job = etlJobRepo.findById(jobId).orElseThrow();
+
         Long batchId = null;
 
         try {

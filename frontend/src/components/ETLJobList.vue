@@ -33,16 +33,16 @@
       </Column>
       <Column field="schedule" header="스케줄"/>
       <Column field="status" header="상태"/>
-        <Column header="실행">
-          <template #body="{data}">
-            <Button icon="pi pi-play" @click="runJob(data)" severity="success" size="small"/>
-            <ProgressBar
-              v-if="loadingJobId === data.id"
-              mode="indeterminate"
-              style="height:6px; margin-top:12px"
-            />
-          </template>
-        </Column>
+      <Column header="실행">
+        <template #body="{data}">
+          <Button icon="pi pi-play" @click="runJob(data)" severity="success" size="small"/>
+          <ProgressBar
+            v-if="loadingJobId === data.id"
+            mode="indeterminate"
+            style="height:6px; margin-top:12px"
+          />
+        </template>
+      </Column>
       <Column field="lastResult" header="최종 결과">
         <template #body="{ data }">
           <Tag :severity="data.lastResult === 'FAIL' ? 'danger' : 'success'">
@@ -67,18 +67,18 @@
       </Column>
     </DataTable>
 
+    <!-- 상세정보 Dialog -->
     <Dialog v-model:visible="showJobModal" header="ETL JOB 상세정보" width="600" modal>
       <div v-if="selectedJob">
         <p><b>작업명:</b> {{ selectedJob.jobName }}</p>
         <p><b>스케줄:</b> {{ selectedJob.schedule }}</p>
         <p><b>상태:</b> {{ selectedJob.status }}</p>
         <p><b>관제 모듈:</b> {{ selectedJob.monitorModule?.label || 'N/A' }}</p>
-
         <div v-if="selectedJob.monitorModule?.queryList">
           <p><b>쿼리 목록 (DB별)</b></p>
           <ul>
-              <li v-for="(query, dbType) in selectedJob.extractQueries" :key="dbType">
-                <b>{{ dbType }}:</b> <code>{{ query }}</code>
+            <li v-for="(query, dbType) in selectedJob.extractQueries" :key="dbType">
+              <b>{{ dbType }}:</b> <code>{{ query }}</code>
             </li>
           </ul>
         </div>
@@ -95,69 +95,20 @@
       </template>
     </Dialog>
 
-    <!-- 실행 로그 (배치별 트리 구조) -->
-     <Dialog v-model:visible="logDialog" header="실행 결과 로그 (트리)" width="900" modal>
-       <!-- 상단 새로고침 버튼 추가 -->
-       <div class="flex justify-end mb-2">
-         <Button
-           label="새로고침"
-           icon="pi pi-refresh"
-           @click="refreshTree"
-           size="small"
-           outlined
-         />
-       </div>
-       <TreeTable :value="treeData" :tableStyle="{ minWidth: '60rem' }">
-         <Column field="executedAt" header="배치 실행일/DB명" expander>
-           <template #body="{ node }">
-             <span v-if="node.type === 'batch'">🗂️ {{ formatDate(node.executedAt) }}</span>
-             <span v-else>{{ node.sourceDbName }}</span>
-           </template>
-         </Column>
-         <Column field="status" header="결과">
-           <template #body="{ node }">
-             <Tag v-if="node.type === 'batch'" :severity="node.status === 'FAIL' ? 'danger' : 'success'">
-               {{ node.status }}
-             </Tag>
-             <Tag v-else :severity="node.result === 'FAIL' ? 'danger' : 'success'">
-               {{ node.result }}
-             </Tag>
-           </template>
-         </Column>
-         <Column field="executedAt" header="실행시각">
-           <template #body="{ node }">
-             <span v-if="node.type === 'log'">{{ formatDate(node.executedAt) }}</span>
-           </template>
-         </Column>
-         <Column field="message" header="메시지">
-           <template #body="{ node }">
-             <span v-if="node.type === 'log'">{{ node.message }}</span>
-           </template>
-         </Column>
-         <Column header="작업">
-           <template #body="{ node }">
-             <Button
-               v-if="node.type === 'log' && node.result === 'FAIL'"
-               label="재수행"
-               icon="pi pi-refresh"
-               severity="danger"
-               size="small"
-               @click="retryJob(node)"
-             />
-           </template>
-         </Column>
-       </TreeTable>
-       <template #footer>
-         <Button label="닫기" @click="logDialog=false"/>
-       </template>
-     </Dialog>
-
-
-
-
+    <!-- 실행 로그 Dialog -->
+    <Dialog v-model:visible="logDialogVisible" header="실행 로그" width="900" modal>
+      <ETLJobLog
+        v-if="logDialogVisible"
+        :jobId="logJobId"
+        @retry="retryJob"
+        @close="logDialogVisible = false"
+      />
+      <template #footer>
+        <Button label="닫기" @click="logDialogVisible = false"/>
+      </template>
+    </Dialog>
   </div>
 </template>
-
 
 <script setup>
 import { ref, onMounted } from "vue";
@@ -165,130 +116,34 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
-import Textarea from 'primevue/textarea'
-import InputText from 'primevue/inputtext'
-import TreeTable from 'primevue/treetable'
 import ProgressBar from 'primevue/progressbar'
 import Tag from 'primevue/tag'
+import ETLJobLog from './ETLJobLog.vue'
 import api from "@/api"; // axios 인스턴스
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import MappingSimulate from './MappingSimulate.vue'
 import { useToast } from 'primevue/usetoast';
-const logTreeDialog = ref(false)
+
 const toast = useToast();
-const treeData = ref([]);
 const jobs = ref([]);
-const logs = ref([]);
 const dbList = ref([]);
-const jobDialog = ref(false);
-const logDialog = ref(false);
-const editMode = ref(false);
-const editJob = ref({});
-const simulateDialog = ref(false);
-const simulateJob = ref(null);
 const selectedJob = ref(null)
 const showJobModal = ref(false)
 const modules = ref([])
-const selectedJobId = ref(null);
-const batchLogs = ref([]); // 배치별 그룹핑 로그
-const loading = ref(false)
 const loadingJobId = ref(null);
 
-
-function openLogTree(job) {
-  selectedJob.value = job;
-  logTreeDialog.value = true;
+const logDialogVisible = ref(false)
+const logJobId = ref(null)
+function openLogDialog(job) {
+  logJobId.value = job.id
+  logDialogVisible.value = true
 }
-
 
 function fetchModules() {
   api.get("/api/monitor-module").then(res => {
     modules.value = res.data
   })
 }
-
-// 새로고침 함수 (현재 선택된 job의 로그 트리 갱신)
-function refreshTree() {
-  if (!selectedJob.value || !selectedJob.value.id) return;
-  fetchBatchLogs(selectedJob.value.id)
-    .then(() => {
-      treeData.value = buildTreeTableData(batchLogs.value);
-    });
-}
-
-function openSimulateDialog(job) {
-  simulateDialog.value = false;
-  simulateJob.value = null;
-
-  setTimeout(() => {
-    simulateJob.value = job;
-    simulateDialog.value = true;
-  }, 0);
-}
-
-let stompClient = null;
-function connectWebSocket() {
-  stompClient = new Client({
-    brokerURL: null,
-    webSocketFactory: () => new SockJS('/ws'),
-    reconnectDelay: 5000,
-    onConnect: () => {
-      stompClient.subscribe('/topic/etl-job-status', message => {
-        const msg = JSON.parse(message.body);
-
-        const idx = jobs.value.findIndex(j => j.id === msg.jobId);
-
-        if (idx > -1) {
-          jobs.value[idx] = {
-            ...jobs.value[idx],
-            lastResult: msg.result,
-            lastRunAt: msg.lastRunAt,
-          };
-        }
-      });
-
-
-
-    },
-    onStompError: frame => {
-      console.error('[WebSocket STOMP 에러]', frame);
-    },
-    onWebSocketError: error => {
-      console.error('[WebSocket 연결 에러]', error);
-    }
-  });
-  stompClient.activate();
-}
-// 기존 batchLogs -> 트리 구조로 변환
-function buildTreeTableData(batchLogs) {
-  return batchLogs.map(batch => ({
-    key: 'batch-' + batch.batchId,
-    type: 'batch',
-    executedAt: batch.executedAt,
-    status: getBatchStatus(batch),
-    batchId: batch.batchId,
-    sourceDbName: '', // batch엔 DB명이 없음
-    message: '',
-    // 로그를 children으로 추가
-    children: batch.logs.map(log => ({
-      key: 'log-' + log.logId,
-      type: 'log',
-      sourceDbName: log.sourceDbName,
-      executedAt: log.executedAt,
-      result: log.result,
-      message: log.message,
-      jobId: log.jobId,
-      sourceDbId: log.sourceDbId,
-      logId: log.logId,
-      status: log.result // log에서는 status == result
-    }))
-  }));
-}
-
-
-
 
 async function fetchJobs() {
   const { data } = await api.get("/api/etl/job")
@@ -309,13 +164,7 @@ function fetchDbList() {
   });
 }
 
-
-// 배치의 결과는 logs 중 하나라도 FAIL이면 FAIL
-function getBatchStatus(batch) {
-  return batch.logs.some(log => log.result === 'FAIL') ? 'FAIL' : 'SUCCESS';
-}
-
-// 재수행
+// 재수행 (로그 Dialog에서 emit 받아서 실행)
 const retryJob = async (log) => {
   const jobId = log.jobId;
   const sourceDbId = log.sourceDbId;
@@ -327,47 +176,22 @@ const retryJob = async (log) => {
   try {
     await api.post(`/api/etl/job/${jobId}/retry/${sourceDbId}`);
     toast.add({ severity: 'success', summary: '재수행 완료', detail: '해당 작업이 다시 실행되었습니다.', life: 3000 });
-    // 재조회 및 트리 갱신
-    await fetchBatchLogs(jobId);
-    treeData.value = buildTreeTableData(batchLogs.value);
   } catch (e) {
     toast.add({ severity: 'error', summary: '재수행 실패', detail: e.response?.data?.message || '에러 발생', life: 4000 });
   }
 };
 
-
-// 배치 단위로 로그 그룹핑해서 가져오기 (API 설계에 맞게 수정)
-async function fetchBatchLogs(jobId) {
-  // API에서 바로 배치별 구조로 내려주는게 베스트
-  // 예: /api/etl/job/{jobId}/batch-logs
-  const { data } = await api.get(`/api/etl/job/${jobId}/batch-logs`);
-  batchLogs.value = data; // [{ batchId, executedAt, logs: [...] }, ...]
-
-}
-
-
-
 function openAddDialog() {
-  editMode.value = false;
-  editJob.value = { jobName: '', sourceDbId: null, targetDbId: null, targetTable: '', schedule: '', status: 'ACTIVE' };
-  jobDialog.value = true;
+  // 생략
 }
 function openEditDialog(event) {
-  editMode.value = true;
-  editJob.value = {...event.data};
-  console.log('[openEditDialog] editJob:', editJob.value); // ← 콘솔에서 직접 확인!
-  showJobModal.value = true;
+  // 생략
 }
 function closeJobDialog() {
-  jobDialog.value = false;
+  // 생략
 }
 function saveJob() {
-  if (editMode.value) {
-    api.put(`/api/etl/job/${editJob.value.id}`, editJob.value).then(fetchJobs);
-  } else {
-    api.post(`/api/etl/job`, editJob.value).then(fetchJobs);
-  }
-  jobDialog.value = false;
+  // 생략
 }
 function deleteJob(job) {
   if (confirm("삭제할까요?")) {
@@ -375,9 +199,8 @@ function deleteJob(job) {
   }
 }
 
-
 function runJob(job) {
-  loading.value = true; // 실행 시작할 때 로딩 시작
+  loadingJobId.value = job.id;
   api.post(`/api/etl/job/run/${job.id}`)
     .then(res => {
       toast.add({
@@ -386,7 +209,6 @@ function runJob(job) {
         detail: res.data || '실행 완료!',
         life: 3000
       });
-      fetchLogs(job.id);
     })
     .catch(e => {
       toast.add({
@@ -395,65 +217,72 @@ function runJob(job) {
         detail: e.response?.data?.message || '에러 발생',
         life: 4000
       });
-      fetchLogs(job.id);
     })
     .finally(() => {
-      loading.value = false; // 무조건 로딩 바 닫기
+      loadingJobId.value = null;
     });
 }
-
-
-// 로그 Dialog 열기: API로 batch별 그룹핑 로그 받아오기
-async function openLogDialog(job) {
-  if (!job || !job.id) {
-    toast.add({ severity: 'warn', summary: '실패', detail: 'JOB ID가 없습니다', life: 3000 });
-    return;
-  }
-  await fetchBatchLogs(job.id); // batchLogs.value 세팅
-  treeData.value = buildTreeTableData(batchLogs.value); // 트리로 변환
-  logDialog.value = true;
-  console.log(batchLogs.value);
-  console.log(treeData.value);
-}
-
-
-function fetchLogs(jobId) {
-    if (!jobId) {
-      alert('작업을 선택해주세요!');
-      return;
-    }
-  api.get(`/api/etl/job/${jobId}/logs`)
-    .then(res => {
-      logs.value = res.data.sort((a, b) => new Date(b.executedAt) - new Date(a.executedAt)); // 최신순 정렬
-    })
-    .catch(err => {
-      console.error("로그 조회 실패:", err);
-      logs.value = [];
-    });
-}
-
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
-  const formatted = d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
-  return formatted;
+  return d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
 }
 
 async function openJobDetail(jobId) {
-  const { data } = await api.get(`/api/etl/job/${jobId}/db-info`)
-  const job = jobs.value.find(j => j.id === jobId)
-  selectedJob.value = {
-    ...job,
-    sourceDbs: data.sourceDbs,
-    targetDb: data.targetDb,
-    monitorModule: data.monitorModule,
-    extractQueries: data.extractQueries || {}
+  if (!jobId) {
+    alert('jobId가 없습니다!');
+    return;
   }
-  showJobModal.value = true
+  try {
+    const { data } = await api.get(`/api/etl/job/${jobId}/db-info`);
+    const job = jobs.value.find(j => j.id === jobId);
+    if (!job) {
+      alert('화면에 표시된 JOB을 찾을 수 없습니다.');
+      return;
+    }
+    selectedJob.value = {
+      ...job,
+      sourceDbs: data.sourceDbs,
+      targetDb: data.targetDb,
+      monitorModule: data.monitorModule,
+      extractQueries: data.extractQueries || {}
+    };
+    showJobModal.value = true;
+  } catch (err) {
+    alert('상세 정보 조회 중 에러 발생: ' + (err.response?.data?.message || err.message));
+    console.error(err);
+  }
 }
 
-
+let stompClient = null;
+function connectWebSocket() {
+  stompClient = new Client({
+    brokerURL: null,
+    webSocketFactory: () => new SockJS('/ws'),
+    reconnectDelay: 5000,
+    onConnect: () => {
+      stompClient.subscribe('/topic/etl-job-status', message => {
+        const msg = JSON.parse(message.body);
+        const idx = jobs.value.findIndex(j => j.id === msg.jobId);
+        if (idx > -1) {
+          jobs.value[idx] = {
+            ...jobs.value[idx],
+            lastResult: msg.result,
+            lastRunAt: msg.lastRunAt,
+          };
+        }
+      });
+    },
+    onStompError: frame => {
+      console.error('[WebSocket STOMP 에러]', frame);
+    },
+    onWebSocketError: error => {
+      console.error('[WebSocket 연결 에러]', error);
+    }
+  });
+  stompClient.activate();
+}
 
 onMounted(() => {
   fetchJobs()

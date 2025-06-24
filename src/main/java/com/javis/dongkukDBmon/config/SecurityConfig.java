@@ -35,11 +35,15 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 "/favicon.ico",                    // 파비콘
                                 "/static/**", "/assets/**",        // 정적 리소스
                                 "/fonts/**", "/js/**", "/css/**",  // 리소스
+                                // API 전체 허용(하위 경로 포함)
+                                "/api/**",
+                                // WebSocket
+                                "/ws/**",
                                 // ===== 업무 화면 =====
                                 "/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk", "/SysInfoDetail", "/TEST",
-                                "/api/**",                         // API 전체 허용(하위 경로 포함)
-                                "/ws/**",                          // WebSocket
-                                "/ETLJobList", "/etljob-history"   // ETL 관련
+                                // ETL 관련
+                                "/ETLJobList", "/etljob-history",
+                                "/ETLjob-Scheduler"
                         ).permitAll()
                         // [그 외에는 인증 필요]
                         .anyRequest().authenticated()

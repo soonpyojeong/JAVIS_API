@@ -23,6 +23,12 @@ public class MonitorModuleService {
     private final MonitorModuleQueryRepository queryRepo;
 
 
+
+    public MonitorModule getMonitorModuleWithQueries(Long id) {
+        return moduleRepo.findByIdWithQueries(id)
+                .orElseThrow(() -> new IllegalArgumentException("No MonitorModule: " + id));
+    }
+
     // 엔티티 → DTO 변환
     public List<MonitorModuleDto> getAllModuleDtos() {
         return moduleRepo.findAll().stream().map(module -> {

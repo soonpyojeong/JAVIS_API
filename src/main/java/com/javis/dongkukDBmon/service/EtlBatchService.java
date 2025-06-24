@@ -106,7 +106,6 @@ public class EtlBatchService {
 
     public void saveJobLog(Long jobId, Long sourceDbId, boolean isSuccess, String message) {
         // 1. jobId → batchId 추출
-
         Long batchId = batchRepo.findLatestBatchIdByJobId(jobId);
         System.out.println("🐶🐶🐶 saveJobLog call!!");
         log.info("💾 [저장직전] jobId={}, batchId={}, sourceDbId={}", jobId, batchId, sourceDbId);
@@ -114,6 +113,12 @@ public class EtlBatchService {
         if (batchId == null) {
             log.warn("최근 배치 ID를 찾을 수 없습니다. jobId: {}", jobId);
             return;
+        }
+
+        // ✅ sourceDbId가 null이면 방어: -1L로 대체
+        if (sourceDbId == null) {
+            log.warn("sourceDbId가 null입니다. (jobId: {}), -1로 대체하여 저장합니다.", jobId);
+            sourceDbId = -1L;
         }
 
         // 2. 기존 로그 조회
@@ -135,6 +140,7 @@ public class EtlBatchService {
         jobLogRepo.save(logEntity);
         log.info("💾 [저장직후] jobId={}, logId={}", logEntity.getJobId(), logEntity.getLogId());
     }
+
 
 
 

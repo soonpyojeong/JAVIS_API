@@ -68,7 +68,11 @@ public class EtlJobProcessor implements Processor {
         }
 
         EtlJob job = jobRepo.findById(jobId).orElseThrow();
-        MonitorModule module = moduleRepo.findById(job.getMonitorModuleId()).orElseThrow();
+        Long monitorModuleId = job.getMonitorModuleId();
+        MonitorModule module = moduleRepo.findByIdWithQueries(monitorModuleId)
+                .orElseThrow(() -> new IllegalArgumentException("No module: " + monitorModuleId));
+
+
         String moduleCode = module.getModuleCode().trim().toUpperCase();
 
         AbstractEtlModuleHandler handler = (AbstractEtlModuleHandler) handlers.stream()
