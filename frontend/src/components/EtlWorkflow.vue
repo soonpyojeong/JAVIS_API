@@ -190,18 +190,36 @@
 
     <!-- 워크플로우 불러오기 Dialog -->
     <Dialog v-model:visible="showLoadModal" modal :header="'워크플로우 불러오기'">
-      <ul>
-        <li
-          v-for="wf in workflowList"
-          :key="wf.workflowId"
-          style="margin-bottom:8px; cursor:pointer"
-          @click="selectWorkflow(wf)"
-        >
-          <b>{{ wf.workflowName }}</b>
-          <span style="color:gray">({{ wf.createdAt }})</span>
-        </li>
-      </ul>
+      <DataTable
+        :value="workflowList"
+        selectionMode="single"
+        :rows="10"
+        paginator
+        responsiveLayout="scroll"
+        :selection="selectedWorkflow"
+        @rowClick="e => selectWorkflow(e.data)"
+        dataKey="workflowId"
+        style="min-width: 540px;"
+      >
+        <Column field="workflowName" header="워크플로우명" style="width:40%;" />
+        <Column field="createdAt" header="생성일" style="width:28%;">
+          <template #body="{ data }">
+            {{ data.createdAt?.split('T')[0] || '-' }}
+          </template>
+        </Column>
+        <Column field="updatedAt" header="수정일" style="width:28%;">
+          <template #body="{ data }">
+            {{ data.updatedAt?.split('T')[0] || '-' }}
+          </template>
+        </Column>
+        <Column header="불러오기" style="width:70px; text-align:center;">
+          <template #body="{ data }">
+            <Button icon="pi pi-download" text rounded @click.stop="selectWorkflow(data)" />
+          </template>
+        </Column>
+      </DataTable>
     </Dialog>
+
 
     <!-- 워크플로우 이력 Dialog -->
     <Dialog v-model:visible="showHistoryModal" modal :header="'이력 보기'">
@@ -228,6 +246,9 @@ import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 import CustomNode from './CustomNode.vue'
 import CustomEdge from './CustomEdge.vue'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+
 
 import { useToast } from 'primevue/usetoast'
 import api from '@/api'
@@ -252,7 +273,7 @@ const workflowHistory = ref([])
 const selectedNode = ref(null)
 const showJsonModal = ref(false)
 const toast = useToast()
-
+const selectedWorkflow = ref(null)
 
 const store = useStore()
 const user = computed(() => store.state.user || {})
@@ -262,6 +283,25 @@ const jobDialog = ref(false)
 
 
 
+function isWorkflowValid() {
+  // 1. 노드가 3개(소스, 모듈, 타겟) 이상이어야 하고
+  if (nodes.value.length < 3) return false;
+  // 2. edges(엣지)가 2개(소스→모듈, 모듈→타겟) 이상이어야 함
+  if (edges.value.length < 2) return false;
+  // 3. 각 필수 연결이 실제로 존재하는지 확인 (강화)
+  // 예시: 소스→모듈, 모듈→타겟
+  const hasSourceToModule = edges.value.some(e => {
+    const sourceNode = nodes.value.find(n => n.id === e.source);
+    const targetNode = nodes.value.find(n => n.id === e.target);
+    return sourceNode?.data.role === 'source' && targetNode?.data.isModule;
+  });
+  const hasModuleToTarget = edges.value.some(e => {
+    const sourceNode = nodes.value.find(n => n.id === e.source);
+    const targetNode = nodes.value.find(n => n.id === e.target);
+    return sourceNode?.data.isModule && targetNode?.data.role === 'target';
+  });
+  return hasSourceToModule && hasModuleToTarget;
+}
 
 function openJobFromWorkflow() {
   const workflow = {
@@ -358,6 +398,7 @@ async function loadDbList() {
 
 // 워크플로우 저장
 async function saveWorkflow() {
+  // 1. 워크플로우 이름 입력 여부 체크
   if (!workflowName.value) {
     toast.add({
       severity: 'warn',
@@ -365,19 +406,65 @@ async function saveWorkflow() {
       detail: '워크플로우 이름을 입력하세요!',
       life: 3000
     });
-    return
+    return;
   }
-  const userId = user.value.userId || user.value.username || 'anonymous'
+
+  // 2. 노드 개수 체크 (최소 3개: 소스, 모듈, 타겟)
+  if (nodes.value.length < 3) {
+    toast.add({
+      severity: 'warn',
+      summary: '알림',
+      detail: '노드가 3개(소스, 관제 모듈, 타겟) 이상이어야 합니다!',
+      life: 3000
+    });
+    return;
+  }
+
+  // 3. 엣지 개수 체크 (최소 2개: 소스→모듈, 모듈→타겟)
+  if (edges.value.length < 2) {
+    toast.add({
+      severity: 'warn',
+      summary: '알림',
+      detail: '엣지가 2개 이상(소스-모듈, 모듈-타겟) 연결되어야 합니다!',
+      life: 3000
+    });
+    return;
+  }
+
+  // 4. 필수 엣지 연결 체크 (소스→모듈, 모듈→타겟)
+  const hasSourceToModule = edges.value.some(e => {
+    const sourceNode = nodes.value.find(n => n.id === e.source);
+    const targetNode = nodes.value.find(n => n.id === e.target);
+    return sourceNode?.data.role === 'source' && targetNode?.data.isModule;
+  });
+  const hasModuleToTarget = edges.value.some(e => {
+    const sourceNode = nodes.value.find(n => n.id === e.source);
+    const targetNode = nodes.value.find(n => n.id === e.target);
+    return sourceNode?.data.isModule && targetNode?.data.role === 'target';
+  });
+
+  if (!hasSourceToModule || !hasModuleToTarget) {
+    toast.add({
+      severity: 'warn',
+      summary: '알림',
+      detail: '소스 → 관제모듈, 관제모듈 → 타겟 DB 연결(엣지)이 모두 필요합니다!',
+      life: 4000
+    });
+    return;
+  }
+
+  // 5. 저장 요청
+  const userId = user.value.userId || user.value.username || 'anonymous';
   const body = {
     workflowId: workflowId.value,
     workflowName: workflowName.value,
     workflowJson: JSON.stringify({ nodes: nodes.value, edges: edges.value }),
     description: ''
-  }
+  };
   try {
-    const { data } = await api.post(`/api/workflow/save?user=${encodeURIComponent(userId)}`, body)
+    const { data } = await api.post(`/api/workflow/save?user=${encodeURIComponent(userId)}`, body);
     if (data && data.workflowId) {
-      workflowId.value = data.workflowId
+      workflowId.value = data.workflowId;
       toast.add({
         severity: 'success',
         summary: '알림',
@@ -394,6 +481,8 @@ async function saveWorkflow() {
     });
   }
 }
+
+
 
 
 async function deleteWorkflow() {
@@ -464,7 +553,7 @@ function selectWorkflow(wf) {
   }
   showLoadModal.value = false
   loadWorkflowHistory()
-  console.log(nodes.value)
+  //console.log(nodes.value)
 }
 
 
@@ -524,7 +613,7 @@ function onDragStart(e, data) {
 }
 function handleDrop(e) {
   const data = JSON.parse(e.dataTransfer.getData('application/node'))
-  console.log("드롭된 노드 데이터:", data)
+  //console.log("드롭된 노드 데이터:", data)
 
   const bounds = e.target.getBoundingClientRect()
   const position = project({

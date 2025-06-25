@@ -185,6 +185,26 @@ public class EtlSchedulerManager {
                 }
             }
         }
+        else if ("INTERVAL".equalsIgnoreCase(sch.getScheduleType())) {
+            String expr = sch.getScheduleExpr(); // "40/10 minute"
+            if (expr != null) {
+                String[] arr = expr.trim().split(" ");
+                if (arr.length == 2) {
+                    String unit = arr[1];
+                    if (unit.equalsIgnoreCase("minute") && arr[0].contains("/")) {
+                        String[] startAndStep = arr[0].split("/");
+                        int start = Integer.parseInt(startAndStep[0]);
+                        int step = Integer.parseInt(startAndStep[1]);
+                        // ==> "0 40/10 * * * ?"
+                        result.add(String.format("0 %d/%d * * * ?", start, step));
+                    } else if (unit.equalsIgnoreCase("minute")) {
+                        // "0/10 minute" 호환
+                        int step = Integer.parseInt(arr[0]);
+                        result.add(String.format("0 0/%d * * * ?", step));
+                    }
+                }
+            }
+        }
         return result;
     }
 }

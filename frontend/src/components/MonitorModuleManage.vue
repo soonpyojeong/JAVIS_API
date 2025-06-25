@@ -22,6 +22,12 @@ const dbTypeOptions = [
   { label: 'ORACLE', value: 'ORACLE' },
 ]
 
+const moduleCodeOptions = [
+  { label: 'HEALTH', value: 'HEALTH' },
+  { label: 'INVALID_OBJECT', value: 'INVALID_OBJECT' },
+  { label: 'PROC', value: 'PROC' }
+]
+
 // 모듈 목록 불러오기
 const fetchModules = async () => {
   const { data } = await api.get('/api/monitor-module')
@@ -118,7 +124,7 @@ watch(
         <tbody>
           <tr v-for="mod in modules" :key="mod.moduleId">
             <td>{{ mod.moduleCode }}</td>
-            <td>{{ mod.moduleName }}</td>
+            <td>{{ mod.label }}</td>
             <td>
               <span :style="{ background: mod.color, color:'#fff', borderRadius:'5px', padding:'2px 8px' }">{{ mod.color }}</span>
             </td>
@@ -137,7 +143,16 @@ watch(
       <form @submit.prevent="saveModule">
         <div class="form-row">
           <label>모듈 코드</label>
-          <InputText v-model="editModule.moduleCode" required :readonly="isEdit" style="width:100%" />
+          <Dropdown
+            v-model="editModule.moduleCode"
+            :options="moduleCodeOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="코드 선택"
+            :disabled="isEdit"
+            style="width:100%"
+            required
+          />
         </div>
         <div class="form-row">
           <label>모듈명</label>
@@ -196,7 +211,7 @@ watch(
 
 <style scoped>
 .monitor-manage-layout {
-  max-width: 650px;
+  max-width: 1000px;
   margin: 36px auto;
   background: #f7fafc;
   padding: 30px 30px 20px 30px;

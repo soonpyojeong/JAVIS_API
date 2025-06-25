@@ -32,7 +32,33 @@
       <RadioButton v-model="form.type" inputId="weekly" value="weekly" />
       <label for="weekly" class="ml-1 mr-3">매주</label>
       <RadioButton v-model="form.type" inputId="monthly" value="monthly" />
-      <label for="monthly" class="ml-1">매월</label>
+      <label for="monthly" class="ml-1 mr-3">매월</label>
+      <RadioButton v-model="form.type" inputId="interval" value="interval" />
+      <label for="interval" class="ml-1">주기적(간격)</label>
+    </div>
+    <!-- interval 선택시 -->
+    <div v-if="form.type==='interval'" class="mb-4">
+      <label class="block mb-2 font-semibold">주기(Interval)</label>
+      <div class="flex items-center gap-2">
+        <InputText
+          v-model.number="form.intervalStart"
+          type="number"
+          min="0"
+          max="59"
+          class="w-16"
+          placeholder="시작분 (예: 40)"
+        />
+        <span>분부터</span>
+        <InputText
+          v-model.number="form.intervalValue"
+          type="number"
+          min="1"
+          max="59"
+          class="w-16"
+          placeholder="간격 (예: 10)"
+        />
+        <span>분 간격으로 실행</span>
+      </div>
     </div>
 
     <!-- 매일: 시간 선택만 -->
@@ -190,7 +216,10 @@ const form = ref({
   times: [new Date(new Date().setHours(0, 0, 0, 0))],
   weekNo: 1,
   dayOfWeek: 'MON',
-  updatedUser: user.value.userId || user.value.username
+  updatedUser: user.value.userId || user.value.username,
+  intervalStart: 0, // 몇 분부터
+  intervalValue: 10, // 몇 분 간격
+  intervalUnit: 'minute', // 앞으로도 확장 대비 기본값 유지
 })
 
 
@@ -227,7 +256,10 @@ function toggleDay(day) {
 
 const isValid = computed(() => {
   if (!form.value.jobIds.length) return false
-  if (!form.value.times.length) return false
+  if (form.value.type === 'interval') {
+    if (!form.value.intervalValue || form.value.intervalValue < 1 || !form.value.intervalUnit) return false
+  }
+  if (form.value.type === 'daily' && !form.value.times.length) return false
   if (form.value.type === 'weekly' && !form.value.days.length) return false
   if (form.value.type === 'monthly' && !form.value.dayOfWeek) return false
   return true
@@ -246,8 +278,12 @@ const previewText = computed(() => {
     const dayLabel = days.find(d => d.value === form.value.dayOfWeek)?.label
     return `매월 ${weekLabel} ${dayLabel}요일 ${form.value.times.map(formatTime).join(', ')}에 실행됩니다.`
   }
+  if (form.value.type === 'interval') {
+    return `${form.value.intervalStart}분부터 ${form.value.intervalValue}분 간격으로 반복 실행됩니다.`
+  }
   return ''
 })
+
 
 function formatTime(date) {
   if (!date) return ''
@@ -260,7 +296,9 @@ function formatTime(date) {
 function makeScheduleExpr(form) {
   // 여러 시간 지원(문자열로 합치기)
   const times = form.times.map(formatTime).join(',')
-
+    if (form.type === 'interval') {
+      return `${form.intervalStart}/${form.intervalValue} minute`
+    }
   if (form.type === 'daily') {
     return times
   }
@@ -354,6 +392,21 @@ watch(
         updatedUser: user.value.userId || user.value.username
       }
       // scheduleExpr 파싱
+      if (val.scheduleType === 'INTERVAL') {
+        // "40/10 minute" → 40분부터 10분 간격
+        const [startAndStep, unitStr] = val.scheduleExpr.split(' ')
+        if (startAndStep && startAndStep.includes('/')) {
+          const [start, step] = startAndStep.split('/')
+          form.value.intervalStart = Number(start)
+          form.value.intervalValue = Number(step)
+          form.value.intervalUnit = unitStr // 'minute'
+        } else {
+          // 예전 방식 호환
+          form.value.intervalStart = 0
+          form.value.intervalValue = Number(startAndStep)
+          form.value.intervalUnit = unitStr
+        }
+      }
       if (val.scheduleType === 'DAILY') {
         // 예: "08:00,14:00"
         form.value.times = val.scheduleExpr.split(',').map(t => {

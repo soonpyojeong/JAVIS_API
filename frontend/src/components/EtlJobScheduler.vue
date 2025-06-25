@@ -203,6 +203,7 @@ const displaySchedules = computed(() => {
     const typeKor = s.scheduleType === 'DAILY' ? '매일'
                  : s.scheduleType === 'WEEKLY' ? '매주'
                  : s.scheduleType === 'MONTHLY' ? '매월'
+                 : s.scheduleType === 'INTERVAL' ? '주기적'
                  : s.scheduleType
     // 요일/날짜/시간 파싱
     let days = ''
@@ -217,6 +218,9 @@ const displaySchedules = computed(() => {
       const [d, t] = s.scheduleExpr ? s.scheduleExpr.split('|') : ['','']
       days = d
       times = t ? t.split(',') : []
+    } else if (s.scheduleType === 'INTERVAL') {
+      // INTERVAL이면 times에 사람이 읽기 좋은 값 세팅!
+      times = [intervalDisplay(s.scheduleExpr)]
     }
     return {
       ...s,
@@ -229,6 +233,18 @@ const displaySchedules = computed(() => {
     }
   })
 })
+
+
+
+function intervalDisplay(expr) {
+  if (!expr) return '-'
+  const [val, unit] = expr.split(' ')
+  if (unit === 'minute') return `${val}분마다`
+  if (unit === 'hour') return `${val}시간마다`
+  if (unit === '분') return `${val}분마다`
+  if (unit === '시간') return `${val}시간마다`
+  return `${val} ${unit}`
+}
 
 function openLogDialog(row) {
   // row에서 스케줄 정보를 얻어 logSchedule에 세팅 (예시: row.schedule, row.scheduleId 등)
