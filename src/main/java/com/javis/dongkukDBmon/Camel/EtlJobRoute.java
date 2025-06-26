@@ -19,4 +19,6 @@ public class EtlJobRoute extends RouteBuilder {
                 .log("✔ ETL JOB 처리 완료: ${body}");
 
     }
+
+
 }

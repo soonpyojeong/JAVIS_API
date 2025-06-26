@@ -26,6 +26,7 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
         return "PROC".equalsIgnoreCase(moduleCode);
     }
 
+
     @Override
     public void handle(EtlJob job, MonitorModule module, Long batchId) throws Exception {
         Map<String, String> procMap = job.getExtractQueries();
@@ -44,19 +45,16 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
             boolean isSuccess = true;
             String error = null;
 
-            if (procName == null || procName.trim().isEmpty()) {
-                batchService.saveJobLog(batchId, src.getId(), false, "프로시저명 누락: " + dbType);
-                return;
-            }
             String callSql = procName.trim().toUpperCase().startsWith("{CALL")
                     ? procName.trim()
                     : "{call " + procName.trim() + "}";
+
             try {
                 jdbc.update(callSql);
             } catch (Exception ex) {
-                // 에러처리
+                isSuccess = false;
+                error = ex.getMessage();
             }
-
 
             try {
                 String insertSql = insertQueryRegistry.getQuery("PROC", dbType);
@@ -81,6 +79,8 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
             }
         });
     }
+
+
     @Override
     public void handleSingle(EtlJob job, MonitorModule module, Long batchId, DbConnectionInfo src, JdbcTemplate jdbc) {
         Map<String, String> procMap = job.getExtractQueries();
@@ -96,8 +96,13 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
         boolean isSuccess = true;
         String error = null;
 
+        // 👉 callSql 로직 통일: "{call ...}" 형식 사용
+        String callSql = procName.trim().toUpperCase().startsWith("{CALL")
+                ? procName.trim()
+                : "{call " + procName.trim() + "}";
+
         try {
-            jdbc.update(procName); // "{call MY_PROC}" 방식, 파라미터 없으면 이대로 OK
+            jdbc.update(callSql); // callSql 사용
         } catch (Exception e) {
             isSuccess = false;
             error = e.getMessage();
@@ -132,5 +137,6 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
         String finalMessage = isSuccess ? src.getDescription() : (src.getDescription() + " | " + error);
         batchService.saveJobLog(batchId, src.getId(), isSuccess, finalMessage);
     }
+
 
 }

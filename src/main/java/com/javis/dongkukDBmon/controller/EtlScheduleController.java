@@ -24,38 +24,41 @@ public class EtlScheduleController {
     // 등록
     @PostMapping
     public ResponseEntity<EtlScheduleDto> save(@RequestBody EtlScheduleDto dto) throws JsonProcessingException {
+        // 1. DB에 저장
         EtlScheduleDto saved = schservice.save(dto);
+        // 2. Route 동기화
         try {
-            etlSchedulerManager.addOrUpdateScheduleRoute(saved); // Route 동기화!
+            etlSchedulerManager.addOrUpdateScheduleRoute(saved);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("[스케줄 Route 등록 실패] " + e.getMessage(), e);
         }
-        return ResponseEntity.ok(schservice.save(dto));
+        return ResponseEntity.ok(saved);
     }
 
     // 수정
     @PutMapping("/{id}")
     public ResponseEntity<EtlScheduleDto> update(@PathVariable Long id, @RequestBody EtlScheduleDto dto) throws JsonProcessingException {
+        // 1. DB 수정
         EtlScheduleDto updated = schservice.update(id, dto);
+        // 2. Route 동기화
         try {
-            etlSchedulerManager.addOrUpdateScheduleRoute(updated); // Route 동기화!
+            etlSchedulerManager.addOrUpdateScheduleRoute(updated);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("[스케줄 Route 수정 실패] " + e.getMessage(), e);
         }
-        System.out.println("수정 DTO: " + dto); // 여기서 scheduleExpr 출력!
-        EtlScheduleDto updatedDto = schservice.update(id, dto);
-        return ResponseEntity.ok(updatedDto);
+        System.out.println("수정 DTO: " + updated); // scheduleExpr, etc.
+        return ResponseEntity.ok(updated);
     }
 
     // 삭제
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         try {
-            etlSchedulerManager.removeScheduleRoute(id); // Route 제거!
+            etlSchedulerManager.removeScheduleRoute(id); // Route 먼저 제거
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("[스케줄 Route 제거 실패] " + e.getMessage(), e);
         }
-        schservice.delete(id);
+        schservice.delete(id); // DB에서 삭제
         return ResponseEntity.ok().build();
     }
 

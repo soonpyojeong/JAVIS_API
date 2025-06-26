@@ -1,16 +1,13 @@
 package com.javis.dongkukDBmon.service;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.javis.dongkukDBmon.Camel.EtlSchedulerManager;
 import com.javis.dongkukDBmon.model.EtlSchedule;
 import com.javis.dongkukDBmon.Dto.EtlScheduleDto;
 import com.javis.dongkukDBmon.repository.EtlJobRepository;
 import com.javis.dongkukDBmon.repository.EtlScheduleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +22,8 @@ public class EtlScheduleService {
     private final ObjectMapper mapper = new ObjectMapper();
     @Autowired
     private EtlJobRepository etlJobRepo;
+
+
 
 
     // 등록
@@ -53,8 +52,6 @@ public class EtlScheduleService {
         entity.setScheduleId(id);
         schrepo.save(entity); // ① 먼저 저장
         EtlScheduleDto savedDto = toDto(entity); // ② 저장된 엔티티 → DTO 변환
-
-
         return savedDto;
     }
 

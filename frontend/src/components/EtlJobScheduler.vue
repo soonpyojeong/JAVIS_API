@@ -3,6 +3,7 @@
     <div class="toolbar flex gap-2 mb-4">
       <Button label="스케줄 등록" icon="pi pi-plus" @click="openDialog" />
       <Button label="새로고침" icon="pi pi-refresh" @click="fetchSchedules" outlined />
+      <Button label="스케줄러 재등록" icon="pi pi-refresh" @click="reloadScheduler"  outlined />
     </div>
     <DataTable
       :value="displaySchedules"
@@ -117,6 +118,16 @@ async function fetchJobs() {
     })
   }
 }
+
+async function reloadScheduler() {
+  await api.post('/api/etl/schedules/reload')
+  $toast.add({
+    severity: 'success',
+    summary: '스케줄러 재등록 완료',
+    detail: 'DB의 최신 스케줄 정보로 갱신되었습니다.',
+  })
+}
+
 
 function openDialog() {
   editData.value = null

@@ -44,16 +44,27 @@ public class EtlJobProcessor implements Processor {
 
     @Override
     public void process(Exchange exchange) throws Exception {
+        // 1. 여러 jobIds 처리
+        Object jobIdsHeader = exchange.getIn().getHeader("jobIds");
+        if (jobIdsHeader != null) {
+            String jobIdsStr = jobIdsHeader.toString();
+            for (String jobIdStr : jobIdsStr.split(",")) {
+                Long jobId = Long.parseLong(jobIdStr.trim());
+                // 기존 로직 복붙해서 개별 실행!
+                processSingleJob(exchange, jobId);  // 아래에 별도 메소드로 빼기
+            }
+            return; // 끝
+        }
+
+        // 2. 기존 단일 jobId 처리
         Object body = exchange.getIn().getBody();
         Long jobId = null;
         Long sourceDbId;
 
-        // payload가 Long이면 기존 방식
         if (body instanceof Long) {
             sourceDbId = null;
             jobId = (Long) body;
         }
-        // payload가 Map이라면 재수행 payload
         else if (body instanceof Map) {
             Map<?, ?> payload = (Map<?, ?>) body;
             jobId = ((Number) payload.get("jobId")).longValue();
@@ -67,12 +78,19 @@ public class EtlJobProcessor implements Processor {
             throw new IllegalArgumentException("지원하지 않는 메시지 형식");
         }
 
+        processSingleJob(exchange, jobId, sourceDbId);
+    }
+
+    // ✨ 기존 로직을 아래로 분리!
+    private void processSingleJob(Exchange exchange, Long jobId) throws Exception {
+        processSingleJob(exchange, jobId, null);
+    }
+
+    private void processSingleJob(Exchange exchange, Long jobId, Long sourceDbId) throws Exception {
         EtlJob job = jobRepo.findById(jobId).orElseThrow();
         Long monitorModuleId = job.getMonitorModuleId();
         MonitorModule module = moduleRepo.findByIdWithQueries(monitorModuleId)
                 .orElseThrow(() -> new IllegalArgumentException("No module: " + monitorModuleId));
-
-
         String moduleCode = module.getModuleCode().trim().toUpperCase();
 
         AbstractEtlModuleHandler handler = (AbstractEtlModuleHandler) handlers.stream()
@@ -84,24 +102,15 @@ public class EtlJobProcessor implements Processor {
 
         try {
             if (sourceDbId != null) {
-                // ✅ 단일 DB 재수행
                 DbConnectionInfo src = dbRepo.findById(sourceDbId)
                         .orElseThrow(() -> new IllegalArgumentException("해당 sourceDbId 없음: " + sourceDbId));
-
-
-                // 🔐 AES 복호화
                 String decryptedPw = AesUtil.decrypt(aesKey, src.getPassword());
-
-                // 🔌 DataSource → JdbcTemplate 생성
                 JdbcTemplate jdbc = new JdbcTemplate(DataSourceUtil.createDataSource(src, decryptedPw));
 
                 handler.handleSingle(job, module, batchId, src, jdbc);
                 batchService.saveJobLog(jobId, sourceDbId, true, "단일 DB 재수행 완료");
                 batchService.endBatch(batchId, true, "단일 DB 재수행 완료 (" + src.getDbName() + ")");
-
-
             } else {
-                // ✅ 전체 수행
                 handler.handle(job, module, batchId);
                 batchService.endBatch(batchId, true, "전체 모듈 처리 완료");
             }
@@ -114,7 +123,6 @@ public class EtlJobProcessor implements Processor {
             batchService.endBatch(batchId, false, errorContext + " | " + e.getMessage());
             throw e;
         }
-
     }
 
 }

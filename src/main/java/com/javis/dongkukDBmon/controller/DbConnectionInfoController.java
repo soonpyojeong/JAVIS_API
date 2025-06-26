@@ -28,14 +28,26 @@ public class DbConnectionInfoController {
 
     @PostMapping("/test")
     public ResponseEntity<?> testConnection(@RequestBody DbConnectionInfo dto) {
-
         try {
             String jdbcUrl = DataSourceUtil.makeJdbcUrl(dto);
             String driverClassName = DataSourceUtil.getDriverClassName(dto.getDbType());
             log.info("[DB연결테스트] 입력: type={}, url={}, user={}", dto.getDbType(), jdbcUrl, dto.getUsername());
             Class.forName(driverClassName);
 
-            try (Connection conn = DriverManager.getConnection(jdbcUrl, dto.getUsername(), dto.getPassword())) {
+            Connection conn;
+            // ORACLE + SYS 유저면 internal_logon 옵션을 Properties로 전달
+            if ("ORACLE".equalsIgnoreCase(dto.getDbType()) && "sys".equalsIgnoreCase(dto.getUsername())) {
+                java.util.Properties props = new java.util.Properties();
+                props.put("user", dto.getUsername());
+                props.put("password", dto.getPassword());
+                props.put("internal_logon", "sysdba");
+                conn = DriverManager.getConnection(jdbcUrl, props);
+            } else {
+                // 그 외엔 기존 방식
+                conn = DriverManager.getConnection(jdbcUrl, dto.getUsername(), dto.getPassword());
+            }
+
+            try (conn) {
                 log.info("[DB연결테스트] 커넥션 성공: {}", conn);
 
                 String testSql;
@@ -66,10 +78,10 @@ public class DbConnectionInfoController {
                 return ResponseEntity.ok("연결 성공!");
             }
         } catch (Exception e) {
-            // 에러는 stacktrace까지 같이 남김
             log.error("[DB연결테스트] 연결 실패: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body("연결 실패: " + e.getMessage());
         }
     }
+
 
 }

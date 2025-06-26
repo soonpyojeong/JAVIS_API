@@ -47,7 +47,11 @@ public class EtlSchedulerManager {
 
     // 스케줄 등록/수정 시 호출 (여러 Route를 등록)
     public void addOrUpdateScheduleRoute(EtlScheduleDto schedule) throws Exception {
-        removeScheduleRoute(schedule.getScheduleId()); // 기존 route 전부 제거
+        removeScheduleRoute(schedule.getScheduleId());
+        if (!"Y".equalsIgnoreCase(schedule.getEnabledYn())) {
+            log.info("[스케줄 비활성화] scheduleId={}, enabledYn={}", schedule.getScheduleId(), schedule.getEnabledYn());
+            return; // 비활성 스케줄은 Route 미등록!
+        }
 
         List<String> cronExprs = parseToQuartzCronList(schedule);
         for (int i = 0; i < cronExprs.size(); i++) {
