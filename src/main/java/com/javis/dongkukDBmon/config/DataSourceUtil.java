@@ -6,6 +6,7 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DataSourceUtil {
@@ -38,51 +39,73 @@ public class DataSourceUtil {
     private static DataSource createRawDataSource(DbConnectionInfo d) {
         String dbType = d.getDbType().toUpperCase();
 
+        // SYS 유저 여부
+        boolean isSysUser = "ORACLE".equals(dbType) && "sys".equalsIgnoreCase(d.getUsername());
+
         if ("ORACLE".equals(dbType)) {
             String urlSid = "jdbc:oracle:thin:@" + d.getHost() + ":" + d.getPort() + ":" + d.getDbName();
             String urlService = "jdbc:oracle:thin:@//" + d.getHost() + ":" + d.getPort() + "/" + d.getDbName();
 
             Exception lastException = null;
 
-            // 1. SID 방식 먼저 시도
             try {
-                return buildHikari(urlSid, d.getUsername(), d.getPassword(), getDriverClassName(dbType));
+                if (isSysUser) {
+                    Properties props = new Properties();
+                    props.put("user", d.getUsername());
+                    props.put("password", d.getPassword());
+                    props.put("internal_logon", "sysdba");
+                    return buildHikari(urlSid, d.getUsername(), d.getPassword(), getDriverClassName(dbType), props);
+                } else {
+                    return buildHikari(urlSid, d.getUsername(), d.getPassword(), getDriverClassName(dbType));
+                }
             } catch (Exception e1) {
                 System.err.println("[Oracle] ⚠ SID 방식 실패 → 1초 대기 후 ServiceName 방식 재시도");
                 System.err.println("[Oracle] ⚠ 원인: " + e1.getMessage());
                 lastException = e1;
 
-                // 2. 1초 대기 후 ServiceName 방식 재시도 (SID방식이 진짜 실패했을 때만)
-                try {
-                    Thread.sleep(1000); // 3초 대기 (실패한 경우만)
-                } catch (InterruptedException ie) {
+                try { Thread.sleep(1000); } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("[Oracle] Sleep 중 인터럽트 발생", ie);
                 }
 
                 try {
-                    return buildHikari(urlService, d.getUsername(), d.getPassword(), getDriverClassName(dbType));
+                    if (isSysUser) {
+                        Properties props = new Properties();
+                        props.put("user", d.getUsername());
+                        props.put("password", d.getPassword());
+                        props.put("internal_logon", "sysdba");
+                        return buildHikari(urlService, d.getUsername(), d.getPassword(), getDriverClassName(dbType), props);
+                    } else {
+                        return buildHikari(urlService, d.getUsername(), d.getPassword(), getDriverClassName(dbType));
+                    }
                 } catch (Exception e2) {
-                    // 둘 다 실패시 마지막 예외로 던짐
                     System.err.println("[Oracle] ServiceName 방식도 실패함: " + e2.getMessage());
                     throw new RuntimeException("[Oracle] SID/ServiceName 모두 실패: " + e2.getMessage(), e2);
                 }
             }
         }
 
-
         // 그 외 DB는 기존 방식
         String url = makeJdbcUrl(d);
         return buildHikari(url, d.getUsername(), d.getPassword(), getDriverClassName(dbType));
     }
 
+
     private static DataSource buildHikari(String url, String user, String pw, String driverClass) {
+        return buildHikari(url, user, pw, driverClass, null);
+    }
+
+    private static DataSource buildHikari(String url, String user, String pw, String driverClass, Properties props) {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(url);
         config.setDriverClassName(driverClass);
 
-        config.setUsername(user);
-        config.setPassword(pw);
+        if (props != null) {
+            config.setDataSourceProperties(props);
+        } else {
+            config.setUsername(user);
+            config.setPassword(pw);
+        }
         config.setMaximumPoolSize(2);
         config.setMinimumIdle(1);
         config.setIdleTimeout(300_000);
@@ -91,6 +114,7 @@ public class DataSourceUtil {
         config.setPoolName("DBMON-Pool");
         return new HikariDataSource(config);
     }
+
 
 
 

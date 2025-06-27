@@ -1,5 +1,6 @@
 package com.javis.dongkukDBmon.controller;
 
+import com.javis.dongkukDBmon.Dto.SmsHistDto;
 import com.javis.dongkukDBmon.model.SmsHist;
 import com.javis.dongkukDBmon.service.SmsHistService;
 import lombok.extern.slf4j.Slf4j;
@@ -22,11 +23,9 @@ public class SmsHistController {
     private SmsHistService smsHistService;
 
     @GetMapping("/all")
-    public List<SmsHist> getSmsHistories(@RequestParam int day) {
+    public List<SmsHistDto> getSmsHistories(@RequestParam int day) {
         log.info("Request received to fetch SMS histories for {} days", day);
-
-        List<SmsHist> histories = smsHistService.getSmsHistories(day);
-
+        List<SmsHistDto> histories = smsHistService.getSmsHistories(day);
         log.info("Returning {} SMS histories", histories.size());
         return histories;
     }
