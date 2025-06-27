@@ -231,9 +231,9 @@ const subMenuType = ref("");
 const subMenuOriginRect = ref(null);
 
 const menuItems = [
-  { name: "첫화면", path: "/", roles: ["ADMIN", "DBA", "DEV", "VIEW"], iconClass: "pi pi-home" },
-  { name: "DB 전체 리스트", path: "/db-list", roles: ["ADMIN", "DBA"], iconClass: "pi pi-database" },
-  { name: "SMS 전송 내역", path: "/sms-history", roles: ["ADMIN", "DBA", "DEV", "VIEW"], iconClass: "pi pi-send" },
+  { name: "첫화면", path: "/", roles: ["ADMIN", "DBA", "EAI", "VIEW"], iconClass: "pi pi-home" },
+  { name: "DB 전체 리스트", path: "/db-list", roles: ["ADMIN", "DBA", "EAI"], iconClass: "pi pi-database" },
+  { name: "SMS 전송 내역", path: "/sms-history", roles: ["ADMIN", "DBA", "EAI", "VIEW"], iconClass: "pi pi-send" },
   { name: "테이블스페이스관리", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-align-left", hasSub: true, subMenu: "space" },
   { name: "일일점검", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-calendar", hasSub: true, subMenu: "daily" },
   { name: "패스워드관리", path: "/Manager", roles: ["ADMIN", "DBA"], iconClass: "pi pi-key" },

@@ -11,22 +11,23 @@
         clearable
         style="height: 40px;"
       />
-      <div class="toolbar">
-        <Button
-          :label="allChkStatus === 'N' ? '전체관제중지중' : '전체관제 해제'"
-          :severity="allChkStatus === 'N' ? 'danger' : 'primary'"
-          size="small"
-          @click="showAllChkModal"
-        />
-        <Button
-          label="DB 등록"
-          icon="pi pi-save"
-          iconPos="left"
-          severity="primary"
-          size="small"
-          @click="openAddModal"
-        />
-      </div>
+        <!-- EAI 권한이 아니면 toolbar 보이게! -->
+        <div class="toolbar" v-if="userRole !== 'EAI'">
+          <Button
+            :label="allChkStatus === 'N' ? '전체관제중지중' : '전체관제 해제'"
+            :severity="allChkStatus === 'N' ? 'danger' : 'primary'"
+            size="small"
+            @click="showAllChkModal"
+          />
+          <Button
+            label="DB 등록"
+            icon="pi pi-save"
+            iconPos="left"
+            severity="primary"
+            size="small"
+            @click="openAddModal"
+          />
+        </div>
     </div>
 
     <div class="datatable-section">
@@ -179,12 +180,18 @@
 import { ref, computed, onMounted, onBeforeUnmount,watch } from 'vue'
 import { connectWebSocket, disconnectWebSocket } from "@/websocket"
 import api from "@/api"
+
 import DbEditForm from '@/components/DbEditForm.vue'
 import DataTable from 'primevue/datatable'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Column from 'primevue/column'
+import { useStore } from "vuex";
+const store = useStore();
+const userRole = computed(() => store.state.user?.userRole || '');
+
+
 
 // 1. 상태 선언 (Composition API 방식)
 const dbList = ref([])
@@ -204,6 +211,7 @@ const onSort = (event) => {
 const editForm = ref({})
 const editDialogVisible = ref(false)
 const editMode = ref('add')
+
 
 const defaultForm = {
   loc: '', dbType: '', assets: '', dbVer: '', smsGroup: 'DKS_DBA',
@@ -333,9 +341,16 @@ const buttonRules = {
 }
 
 // 2. computed 예시
+
+
 const filteredDbList = computed(() => {
   const query = searchQuery.value?.trim().toLowerCase();
   let arr = dbList.value;
+
+  // 권한이 EAI면 Sybase만 보여줌
+  if (userRole.value === "EAI") {
+    arr = arr.filter(db => db.dbType === "SYBASE");
+  }
   if (query) {
     arr = arr.filter(db =>
       ['dbDescript', 'hostname', 'pubIp', 'vip', 'dbType', 'dbName']
@@ -430,7 +445,7 @@ function confirmUpdate() {
     const newStatus = currentDb.value[currentField.value] === "Y" ? "N" : "Y";
     currentDb.value[currentField.value] = newStatus;
 
-    const username = window.$store?.state?.user?.username || '';
+    const username = store.state.user?.username || '';
     api.put(`/api/db-list/update/${currentDb.value.id}`, {
       ...currentDb.value,
       username,
