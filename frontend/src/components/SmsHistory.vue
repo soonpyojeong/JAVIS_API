@@ -4,25 +4,26 @@
 
     <!-- 컨트롤 박스 -->
     <div class="control-box">
-      <label for="days" class="mr-2">조회할 일수</label>
-      <InputNumber
-        id="days"
-        v-model="day"
-        :min="1"
-        class="mr-2"
-        style="width: 60px; height: 38px;"
-      />
+
       <div style="position: relative; display: inline-block;">
+        <label for="days" >조회할 일수</label>
+        <InputNumber
+          id="days"
+          v-model="day"
+          :min="1"
+          class="mr-2"
+          style="width: 60px; height: 37px;"
+        />
         <Button
           label="조회"
           @click="fetchSmsHistories"
           class="p-button-success"
-          style="height: 38px; min-width: 50px; margin-left: 80px;"
+          style="height: 38px; min-width: 50px; margin-left: 105px;"
           :disabled="loadingJobId === 'sms-history'"
         />
         <ProgressSpinner
           v-if="loadingJobId === 'sms-history'"
-          style="position: absolute; left: 40%; top: 50%; transform: translate(-50%, -50%); width: 22px; height: 22px; pointer-events: none;"
+          style="position: absolute; left: 75%; top: 50%; transform: translate(-50%, -50%); width: 22px; height: 22px; pointer-events: none;"
           strokeWidth="4"
         />
       </div>
