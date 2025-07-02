@@ -1,7 +1,11 @@
 package com.javis.dongkukDBmon.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.javis.dongkukDBmon.Dto.MenuAuthDto;
+import com.javis.dongkukDBmon.Dto.UserRoleUpdateDto;
 import com.javis.dongkukDBmon.config.JwtTokenProvider;
-import com.javis.dongkukDBmon.model.JavisLoginUser;
+import com.javis.dongkukDBmon.model.*;
+import com.javis.dongkukDBmon.repository.*;
 import com.javis.dongkukDBmon.service.JavisLoginUserService;
 import com.javis.dongkukDBmon.service.JavisUserTokenService;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -21,12 +26,21 @@ public class JavisLoginUserController {
 
     @Autowired
     private JavisLoginUserService userService;
-
+    @Autowired
+    private JavisLoginUserRepository userRepo;
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
     @Autowired
     private JavisUserTokenService userTokenService;
+    @Autowired
+    private TbRoleRepository roleRepo;
+    @Autowired
+    private TbMenuRepository menuRepo;
+    @Autowired
+    private TbRoleMenuRepository roleMenuRepo;
+    @Autowired
+    private TbUserRoleRepository userRoleRepo;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
@@ -57,6 +71,13 @@ public class JavisLoginUserController {
                         "message", "토큰 저장 중 오류 발생: " + e.getMessage()
                 ));
             }
+            List<MenuAuthDto> menuAuthList = userService.getUserMenuAuthList(user.getId());
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                log.info("✅ [{}] menuAuthList: {}", user.getLoginId(), mapper.writeValueAsString(menuAuthList));
+            } catch (Exception e) {
+                log.warn("MenuAuthDto JSON 변환 실패", e);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -64,6 +85,7 @@ public class JavisLoginUserController {
             response.put("user", user);
             response.put("accessToken", accessToken);
             response.put("refreshToken", refreshToken);
+            response.put("menuAuthList", menuAuthList);
 
             //System.out.println("✅ 로그인 성공");
             //System.out.println("📦 accessToken: " + accessToken);
@@ -168,5 +190,64 @@ public class JavisLoginUserController {
                 "message", "로그아웃 성공"
         ));
     }
+
+    @GetMapping("/role/all")
+    public List<TbRole> getAllRoles() { return roleRepo.findAll(); }
+
+    @GetMapping("/menu/all")
+    public List<TbMenu> getAllMenus() { return menuRepo.findAll(); }
+
+    @GetMapping("/role/{roleId}/users")
+    public List<JavisLoginUser> findUsersByRole(@PathVariable Long roleId) { // @PathVariable 추가!
+        List<TbUserRole> userRoles = userRoleRepo.findByRoleId(roleId);
+        List<Long> userIds = userRoles.stream().map(TbUserRole::getUserId).toList();
+        return userRepo.findAllById(userIds); // 여기로 변경!
+    }
+
+    @GetMapping("/role-menu/auth")
+    public ResponseEntity<?> getRoleMenuAuth(@RequestParam Long roleId, @RequestParam Long menuId) {
+        Optional<TbRoleMenu> auth = roleMenuRepo.findByRoleIdAndMenuId(roleId, menuId);
+        return ResponseEntity.ok(auth.orElseGet(() -> {
+            TbRoleMenu empty = new TbRoleMenu();
+            empty.setRoleId(roleId); empty.setMenuId(menuId);
+            empty.setCanRead("N"); empty.setCanWrite("N"); empty.setCanDelete("N");
+            return empty;
+        }));
+    }
+
+    @PostMapping("/role-menu/save")
+    public ResponseEntity<?> saveRoleMenuAuth(@RequestBody TbRoleMenu dto) {
+        Optional<TbRoleMenu> old = roleMenuRepo.findByRoleIdAndMenuId(dto.getRoleId(), dto.getMenuId());
+        TbRoleMenu saved;
+        if (old.isPresent()) {
+            TbRoleMenu entity = old.get();
+            entity.setCanRead(dto.getCanRead());
+            entity.setCanWrite(dto.getCanWrite());
+            entity.setCanDelete(dto.getCanDelete());
+            saved = roleMenuRepo.save(entity);
+        } else {
+            saved = roleMenuRepo.save(dto);
+        }
+        return ResponseEntity.ok(saved);
+    }
+
+    @GetMapping("/role-menu/list")
+    public ResponseEntity<?> getRoleMenuList(@RequestParam(required = false) Long roleId) {
+        // roleId 있으면 필터, 없으면 전체
+        if (roleId != null)
+            return ResponseEntity.ok(roleMenuRepo.findByRoleId(roleId));
+        return ResponseEntity.ok(roleMenuRepo.findAll());
+    }
+
+    @PostMapping("/user-role/update")
+    public ResponseEntity<?> updateUserRole(@RequestBody UserRoleUpdateDto dto) {
+        userService.updateUserRole(dto.getUserId(), dto.getUserRole(), dto.getRoleId());
+        return ResponseEntity.ok().build();
+    }
+
+
+
+
+
 
 }

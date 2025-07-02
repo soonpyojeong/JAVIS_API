@@ -43,7 +43,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 "/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk", "/SysInfoDetail", "/TEST",
                                 // ETL 관련
                                 "/ETLJobList", "/etljob-history",
-                                "/ETLjob-Scheduler"
+                                "/ETLjob-Scheduler","/ManagerMenuRole"
                         ).permitAll()
                         // [그 외에는 인증 필요]
                         .anyRequest().authenticated()

@@ -12,12 +12,13 @@
         style="height: 40px;"
       />
         <!-- EAI 권한이 아니면 toolbar 보이게! -->
-        <div class="toolbar" v-if="userRole !== 'EAI'">
+        <div class="toolbar">
           <Button
             :label="allChkStatus === 'N' ? '전체관제중지중' : '전체관제 해제'"
             :severity="allChkStatus === 'N' ? 'danger' : 'primary'"
             size="small"
             @click="showAllChkModal"
+            v-if="dbListMenuAuth.canWrite === 'Y'"
           />
           <Button
             label="DB 등록"
@@ -26,6 +27,7 @@
             severity="primary"
             size="small"
             @click="openAddModal"
+            v-if="dbListMenuAuth.canWrite === 'Y'"
           />
         </div>
     </div>
@@ -151,7 +153,7 @@
             @cancel="closeEditDialog"
             @dbTypeChange="onChildDbTypeChange"
         />
-        <!-- 팝업 모달 Dialog (PrimeVue) -->
+        <!-- 팝업 모달  Dialog (PrimeVue) -->
         <Dialog v-model:visible="isModalVisible" modal header="상태 변경" :closable="false">
           <div class="text-lg mb-4">정말 수정하시겠습니까?</div>
           <div class="flex gap-2 justify-center">
@@ -190,7 +192,7 @@ import Column from 'primevue/column'
 import { useStore } from "vuex";
 const store = useStore();
 const userRole = computed(() => store.state.user?.userRole || '');
-
+const dbListMenuAuth = computed(() => store.state.menuAuthList.find(m => m.menuPath === "/db-list") || {});
 
 
 // 1. 상태 선언 (Composition API 방식)

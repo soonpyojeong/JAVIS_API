@@ -86,16 +86,21 @@ export default {
     const login = async () => {
       try {
         const response = await api.post("/api/auth/login", loginForm.value);
-        const { user, accessToken, refreshToken } = response.data;
+        const { user, accessToken, refreshToken, menuAuthList } = response.data;
 
+        // 1. Vuex에 menuAuthList 저장 (mutation/action 만들어놨을 것)
+        store.commit("setMenuAuthList", menuAuthList);
+        // 만약 store.dispatch("login", ...)에서 menuAuthList도 저장하도록 되어 있다면 아래 코드 필요 없음
+        // store.dispatch("login", { user, accessToken, refreshToken, menuAuthList });
 
-        // 1. Vuex에 사용자 저장
-        store.dispatch("login", { user, accessToken, refreshToken });
-        //console.log("✅ 로그인 응답", response.data);
+        // 2. localStorage에도 저장(새로고침 후에도 권한 정보 유지!)
+        localStorage.setItem("menuAuthList", JSON.stringify(menuAuthList));
 
-        // 2. 로컬 스토리지에 토큰 저장
+        // 3. 기존과 동일하게 나머지 처리
+        store.dispatch("login", { user, accessToken, refreshToken, menuAuthList });
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
+        localStorage.setItem("user", JSON.stringify(user));
 
         // 3. 홈으로 이동
         router.push("/");

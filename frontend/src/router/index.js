@@ -18,6 +18,7 @@ import MonitorModuleManage from '../components/MonitorModuleManage.vue';
 import EtlJobScheduler from '../components/EtlJobScheduler.vue';
 import EtlSchedulerLog from '../components/EtlSchedulerLog.vue';
 import EtlSchedulerDialog from '../components/EtlSchedulerDialog.vue';
+import ManagerMenuRole from '../components/ManagerMenuRole.vue';
 
 
 import store from '../store';
@@ -38,7 +39,8 @@ const routes = [
   { path: '/MappingSimulate', name: 'MappingSimulate', component: MappingSimulate, meta: { title: 'MappingSimulate', requiresAuth: true } },
   { path: '/EtlWorkflow', name: 'EtlWorkflow', component: EtlWorkflow, meta: { title: 'EtlWorkflow', requiresAuth: true } },
   { path: '/ETLjob-Scheduler', name: 'EtlJobScheduler', component: EtlJobScheduler, meta: { title: 'EtlJobScheduler', requiresAuth: true } },
-  { path: '/MonitorModuleManage', name: 'MonitorModuleManage', component: MonitorModuleManage, meta: { title: 'MonitorModuleManage', requiresAuth: true } }
+  { path: '/MonitorModuleManage', name: 'MonitorModuleManage', component: MonitorModuleManage, meta: { title: 'MonitorModuleManage', requiresAuth: true } },
+  { path: '/ManagerMenuRole', name: 'ManagerMenuRole', component: ManagerMenuRole, meta: { title: 'ManagerMenuRole', requiresAuth: true } }
 ];
 
 const router = createRouter({

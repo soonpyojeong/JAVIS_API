@@ -254,6 +254,7 @@ const etlSubMenus = [
   { name: "워크플로우 설계", path: "/EtlWorkflow", iconClass: "pi pi-sitemap" },
   { name: "ETL 작업 관리", path: "/ETLJobList", iconClass: "pi pi-cog" },
   { name: "ETL 실행 관리", path: "/ETLjob-Scheduler", iconClass: "pi pi-list" },
+  { name: "화면/권한 관리", path: "/ManagerMenuRole", iconClass: "pi pi-list" },
 ];
 
 

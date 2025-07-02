@@ -14,38 +14,59 @@ function loadUserFromStorage() {
   }
 }
 
+function loadMenuAuthListFromStorage() {
+  const raw = localStorage.getItem("menuAuthList");
+  if (!raw || raw === "undefined") {
+    return [];
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn("⛔ menuAuthList JSON 파싱 실패", e);
+    return [];
+  }
+}
+
 const store = createStore({
   state() {
     return {
       isLoggedIn: !!localStorage.getItem("accessToken"),
-      user: loadUserFromStorage() || {}, // ✅ null 대신 {}로 기본값 설정
+      user: loadUserFromStorage() || {},
+      menuAuthList: loadMenuAuthListFromStorage(), // ✅ 추가!
     };
   },
   mutations: {
     setUser(state, user) {
-      //console.log("🧩 Vuex setUser 호출:", user);
       state.user = user;
     },
     setLoggedIn(state, status) {
-      //console.log("🧩 Vuex setLoggedIn:", status);
       state.isLoggedIn = status;
+    },
+    setMenuAuthList(state, menuAuthList) { // ✅ 추가!
+      state.menuAuthList = menuAuthList;
+      localStorage.setItem("menuAuthList", JSON.stringify(menuAuthList));
     },
   },
   actions: {
     login({ commit }, payload) {
-      const { user, accessToken, refreshToken } = payload;
+      // payload에서 menuAuthList도 받아야 함!
+      const { user, accessToken, refreshToken, menuAuthList } = payload;
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("menuAuthList", JSON.stringify(menuAuthList)); // ✅ 추가!
       commit("setUser", user);
       commit("setLoggedIn", true);
+      commit("setMenuAuthList", menuAuthList); // ✅ 추가!
     },
     logout({ commit }) {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
-      commit("setUser", {}); // ✅ 빈 객체로 초기화
+      localStorage.removeItem("menuAuthList"); // ✅ 추가!
+      commit("setUser", {});
       commit("setLoggedIn", false);
+      commit("setMenuAuthList", []); // ✅ 추가!
     },
   },
 });

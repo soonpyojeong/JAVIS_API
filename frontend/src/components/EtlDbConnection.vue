@@ -3,32 +3,47 @@
     <h2 class="text-xl font-bold mb-4">DB 연결정보 관리</h2>
     <div class="flex justify-between items-center mb-2">
       <Button label="DB 추가" icon="pi pi-plus" @click="openAddDialog" />
+      <InputText
+        v-model="tableSearch"
+        placeholder="설명 또는 DB명 검색"
+        class="mb-3"
+        style="width: 250px"
+      />
     </div>
-    <DataTable :value="dbList" dataKey="id" class="shadow-2xl" stripedRows responsiveLayout="scroll">
-      <Column field="dbType" header="DB 타입" />
-      <Column field="host" header="호스트" />
-      <Column field="port" header="포트" />
-      <Column field="dbName" header="DB명" />
-      <Column field="username" header="계정" />
-      <Column field="description" header="설명" />
-      <Column header="액션" style="width: 120px">
-        <template #body="slotProps">
-          <Button icon="pi pi-pencil" size="small" text @click="editDb(slotProps.data)" />
-          <Button icon="pi pi-trash" size="small" text severity="danger" class="ml-1" @click="removeDb(slotProps.data)" />
-        </template>
-      </Column>
-    </DataTable>
+<DataTable
+  :value="filteredList"
+  dataKey="id"
+  stripedRows
+  responsiveLayout="scroll"
+  paginator
+  :rows="10"
+  class="shadow-2xl"
+>
+  <Column field="dbType" header="DB 타입" />
+  <Column field="host" header="호스트" />
+  <Column field="port" header="포트" />
+  <Column field="dbName" header="DB명" />
+  <Column field="username" header="계정" />
+  <Column field="description" header="설명" />
+  <Column header="액션" style="width: 120px">
+    <template #body="slotProps">
+      <Button icon="pi pi-pencil" size="small" text @click="editDb(slotProps.data)" />
+      <Button icon="pi pi-trash" size="small" text severity="danger" class="ml-1" @click="removeDb(slotProps.data)" />
+    </template>
+  </Column>
+</DataTable>
 
     <!-- 등록/수정 Modal -->
     <Dialog v-model:visible="showDialog" :header="dialogHeader" modal style="width:400px">
       <form @submit.prevent="submitDb">
         <div class="p-fluid">
+          <Button label="DBLIST 불러오기" icon="pi pi-database" class="ml-2" @click="openDbListLookup" />
           <div class="field mb-2">
             <label class="block mb-1">DB 타입</label>
             <Dropdown v-model="editData.dbType" :options="dbTypeOptions" optionLabel="label" optionValue="value" required />
           </div>
           <div class="field mb-2">
-            <label class="block mb-1">호스트</label>
+            <label class="block mb-1">IP ADRR</label>
             <InputText v-model="editData.host" required />
           </div>
           <div class="field mb-2">
@@ -60,12 +75,30 @@
         </div>
       </form>
     </Dialog>
+
+    <Dialog v-model:visible="showDbListDialog" header="DBLIST에서 불러오기" modal style="width:700px">
+      <div class="mb-3">
+        <InputText v-model="dbListSearch" placeholder="설명, DB명 등으로 검색" style="width: 100%;" />
+      </div>
+      <DataTable :value="filteredDbList" dataKey="id" stripedRows sortField="dbDescript" :sortOrder="1">
+        <Column field="dbType" header="DB 타입" />
+        <Column field="dbDescript" header="설명" />
+        <Column field="dbName" header="DB명" />
+        <Column header="선택">
+          <template #body="slotProps">
+            <Button label="선택" size="small" @click="applyDbList(slotProps.data)" />
+          </template>
+        </Column>
+      </DataTable>
+    </Dialog>
+
+
   </div>
 </template>
 
 <script setup>
 import api from "@/api";
-import { ref, onMounted } from 'vue'
+import { ref, onMounted ,computed } from 'vue'
 import { useDbConnection } from '@/composables/useDbConnection'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -79,23 +112,71 @@ const toast = useToast()
 
 
 const handleTestConn = async () => {
-  console.log('연결테스트 버튼 클릭!');
-  try {
-    // 1. 상세조회(id로 password까지 복호화된 정보 가져오기)
-    const { data: detail } = await api.get(`/api/db-connection/${editData.value.id}`);
+  if (!editData.value.id) {
+    toast.add({ severity: 'warn', summary: 'DB 연결', detail: '먼저 DB를 저장한 후 테스트 가능합니다.', life: 3000 });
+    return;
+  }
 
-    // 2. 복호화된 detail로 커넥션 테스트
+  try {
+    const { data: detail } = await api.get(`/api/db-connection/${editData.value.id}`);
     const res = await testConnection(detail);
-    console.log('연결 성공! 응답:', res);
     toast.add({ severity: 'success', summary: 'DB 연결', detail: '연결 성공!', life: 2000 });
-    alert('연결 성공!');
   } catch (e) {
     console.error('연결 실패:', e);
     toast.add({ severity: 'error', summary: 'DB 연결', detail: e?.response?.data || '연결 실패', life: 3500 });
-    alert('연결 실패: ' + (e?.response?.data || e));
   }
 };
 
+
+const showDbListDialog = ref(false)
+const isNewMode = computed(() => !editData.value.id)
+const dbListAll = ref([])
+const sortField = ref('dbDescript')
+const sortOrder = ref(1) // 1 = ASC, -1 = DESC
+const openDbListLookup = async () => {
+  // 백엔드에서 /api/db-list/all 호출
+  const { data } = await api.get('/api/db-list/all')
+  dbListAll.value = data
+  showDbListDialog.value = true
+}
+
+const applyDbList = (selected) => {
+  editData.value = {
+    dbType: selected.dbType,
+     host: selected.pubIp,
+    port: selected.port,
+    dbName: selected.dbName,
+    username: selected.userid,
+    password: selected.pw,
+    description: selected.dbDescript,
+  }
+  showDbListDialog.value = false
+  showDialog.value = true
+  dialogHeader.value = 'DB 연결정보 등록' // 등록 or 수정 분기도 가능
+}
+
+const dbListSearch = ref('')
+const tableSearch = ref("")
+
+const filteredList = computed(() => {
+  if (!tableSearch.value) return dbList.value
+  const keyword = tableSearch.value.toLowerCase()
+  return dbList.value.filter(item =>
+    (item.description || "").toLowerCase().includes(keyword) ||
+    (item.dbName || "").toLowerCase().includes(keyword)
+  )
+})
+
+
+const filteredDbList = computed(() => {
+  if (!dbListSearch.value) return dbListAll.value
+  const keyword = dbListSearch.value.toLowerCase()
+  return dbListAll.value.filter(item =>
+    (item.dbType || '').toLowerCase().includes(keyword) ||
+    (item.dbDescript || '').toLowerCase().includes(keyword) ||
+    (item.dbName || '').toLowerCase().includes(keyword)
+  )
+})
 
 const dbTypeOptions = [
   { label: 'Oracle', value: 'ORACLE' },
