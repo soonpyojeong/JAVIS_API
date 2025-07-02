@@ -100,6 +100,7 @@ const authForm = ref({
   canDelete: "N"
 });
 
+const authFormMap = ref({});
 
 
 
@@ -107,11 +108,11 @@ const authForm = ref({
 // 최초 로딩
 onMounted(async () => {
   const rolesRes = await api.get("/api/auth/role/all");
-  console.log("rolesRes.data:", rolesRes.data);
+  //console.log("rolesRes.data:", rolesRes.data);
   roleList.value = rolesRes.data;
 
   const menusRes = await api.get("/api/auth/menu/all");
-  console.log("menusRes.data:", menusRes.data);
+  //console.log("menusRes.data:", menusRes.data);
   menuList.value = menusRes.data;
 });
 
@@ -119,6 +120,8 @@ onMounted(async () => {
 const selectRole = async (role) => {
   selectedRole.value = role;
   selectedRoleId.value = role.roleId;
+
+  selectedMenu.value = null; // ✅ 메뉴 선택 해제
 
   const res = await api.get(`/api/auth/role/${role.roleId}/users`);
   usersForRole.value = res.data;
@@ -146,7 +149,12 @@ const onUserRoleChange = async (user) => {
 const selectMenu = async (menu) => {
   selectedMenu.value = menu;
 
-  if (selectedRole.value && menu) {
+  if (!selectedRole.value || !selectedMenu.value) return;
+
+  const key = `${selectedRole.value.roleId}_${selectedMenu.value.menuId}`;
+  if (authFormMap.value[key]) {
+    authForm.value = { ...authFormMap.value[key] }; // 저장된 값 불러오기
+  } else {
     const res = await api.get(`/api/auth/role-menu/auth?roleId=${selectedRole.value.roleId}&menuId=${menu.menuId}`);
     const { canRead, canWrite, canDelete } = res.data || {};
     authForm.value = {
@@ -154,10 +162,10 @@ const selectMenu = async (menu) => {
       canWrite: canWrite || "N",
       canDelete: canDelete || "N"
     };
-  } else {
-    resetAuthForm();
+    authFormMap.value[key] = { ...authForm.value }; // 새로 저장
   }
 };
+
 
 // 권한 초기화
 const resetAuthForm = () => {
@@ -178,8 +186,13 @@ const saveAuth = async () => {
     ...authForm.value
   });
 
+  const key = `${selectedRole.value.roleId}_${selectedMenu.value.menuId}`;
+  authFormMap.value[key] = { ...authForm.value }; // 저장 동기화
+
   alert("저장되었습니다!");
 };
+
+
 </script>
 
 <style scoped>

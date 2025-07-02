@@ -237,7 +237,8 @@ const menuItems = [
   { name: "테이블스페이스관리", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-align-left", hasSub: true, subMenu: "space" },
   { name: "일일점검", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-calendar", hasSub: true, subMenu: "daily" },
   { name: "패스워드관리", path: "/Manager", roles: ["ADMIN", "DBA"], iconClass: "pi pi-key" },
-  { name: "ETL DB관리", path: "#", roles: ["ADMIN"], iconClass: "pi pi-share-alt", hasSub: true, subMenu: "etl" },
+  { name: "ETL DB관리", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-share-alt", hasSub: true, subMenu: "etl" },
+  { name: "JAVIS권한관리", path: "/ManagerMenuRole", roles: ["ADMIN"], iconClass: "pi pi-share-alt"},
 ];
 const SpaceSubMenus = [
   { name: "임계치 리스트", path: "/threshold-list", roles: ["ADMIN", "DBA"], iconClass: "pi pi-sliders-h" },
@@ -253,8 +254,7 @@ const etlSubMenus = [
   { name: "관제 모듈 관리", path: "/MonitorModuleManage", iconClass: "pi pi-sitemap" },
   { name: "워크플로우 설계", path: "/EtlWorkflow", iconClass: "pi pi-sitemap" },
   { name: "ETL 작업 관리", path: "/ETLJobList", iconClass: "pi pi-cog" },
-  { name: "ETL 실행 관리", path: "/ETLjob-Scheduler", iconClass: "pi pi-list" },
-  { name: "화면/권한 관리", path: "/ManagerMenuRole", iconClass: "pi pi-list" },
+  { name: "ETL 실행 관리", path: "/ETLjob-Scheduler", iconClass: "pi pi-list" }
 ];
 
 

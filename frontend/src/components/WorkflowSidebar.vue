@@ -31,9 +31,11 @@ const props = defineProps(['dbList', 'moduleList', 'onDragStart'])
             ...db,
             label: db.dbName,
             type: db.dbType,
-            color: db.color || '#777'
+            color: db.color || '#777',
+            isDbType: true    // ✅ 추가된 라인
           })
         "
+
       >
         {{ db.dbName }}
         <span style="font-size:11px; margin-left:6px;">({{ db.dbType }})</span>

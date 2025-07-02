@@ -17,7 +17,6 @@ function toggleRole(e) {
   let nextRole
   if (!props.data.role || props.data.role === 'source') {
     nextRole = 'target'
-    // Target으로 바뀔 때 모달 자동 오픈
     showTableModal.value = true
     tempTableName.value = props.data.targetTable || ''
   } else {
@@ -57,11 +56,13 @@ function handleDelete(e) {
     }"
     @dblclick="onNodeDblClick"
   >
+    <!-- 삭제 버튼 -->
     <button class="delete-btn" title="노드 삭제" @click="handleDelete">✕</button>
-    <!-- 역할 토글 버튼: DB 노드에만 보임 -->
+
+    <!-- 역할 전환 버튼: DB 노드만 보임 -->
     <div
       class="role-toggle-btn-area"
-      v-if="['ORACLE','TIBERO','MYSQL','MSSQL','POSTGRESQL'].includes(props.data?.type)"
+      v-if="props.data?.isDbType"
       style="margin-bottom:6px; width:100%; display:flex; justify-content:center;"
     >
       <Button
@@ -73,26 +74,31 @@ function handleDelete(e) {
         style="min-width:70px;"
       />
     </div>
+
+    <!-- 핸들 영역 -->
     <Handle type="target" :position="Position.Top" id="top" />
     <Handle type="target" :position="Position.Left" id="left" />
     <Handle type="source" :position="Position.Right" id="right" />
     <Handle type="source" :position="Position.Bottom" id="bottom" />
+
+    <!-- 라벨 + 타입 -->
     <div>
       {{ props.data?.label }}
-      <span v-if="props.data?.type" style="font-size:11px; margin-left:5px;">({{ props.data.type }})</span>
+      <span v-if="props.data?.type" style="font-size:11px; margin-left:5px;">
+        ({{ props.data.type.toUpperCase() }})
+      </span>
     </div>
 
-    <!-- 테이블명 표시(타겟일 때만) -->
-    <div v-if="props.data.role==='target' && props.data.targetTable"
-         style="font-size:11px; margin-top:4px;">
+    <!-- 테이블명 표시 (타겟일 경우만) -->
+    <div v-if="props.data.role === 'target' && props.data.targetTable" style="font-size:11px; margin-top:4px;">
       <b>테이블명:</b> {{ props.data.targetTable }}
     </div>
 
-    <!-- 테이블명 입력 모달 -->
+    <!-- 테이블명 입력 다이얼로그 -->
     <Dialog v-model:visible="showTableModal" header="타겟 테이블명 지정" modal>
-      <InputText v-model="tempTableName" placeholder="테이블명"/>
+      <InputText v-model="tempTableName" placeholder="테이블명" />
       <template #footer>
-        <Button label="저장" @click="saveTableName"/>
+        <Button label="저장" @click="saveTableName" />
       </template>
     </Dialog>
   </div>
@@ -110,11 +116,9 @@ function handleDelete(e) {
   font-weight: 600;
   position: relative;
   box-shadow: 0 2px 8px #0001;
-  transition:
-    box-shadow 0.13s ease,
-    filter 0.13s ease,
-    transform 0.12s cubic-bezier(.23,1,.32,1);
+  transition: box-shadow 0.13s ease, filter 0.13s ease, transform 0.12s cubic-bezier(.23,1,.32,1);
 }
+
 .delete-btn {
   position: absolute;
   top: 5px;
@@ -132,6 +136,7 @@ function handleDelete(e) {
   opacity: 0.6;
   transition: background 0.13s, opacity 0.13s;
 }
+
 .delete-btn:hover {
   background: #ff3d6b;
   color: #fff;

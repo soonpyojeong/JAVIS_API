@@ -238,7 +238,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, markRaw, h,computed } from 'vue'
+import { ref, onMounted, markRaw, h,computed,watch } from 'vue'
 import { useStore } from 'vuex'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
@@ -611,33 +611,42 @@ const { onConnect, addEdges, project } = useVueFlow()
 function onDragStart(e, data) {
   e.dataTransfer.setData('application/node', JSON.stringify(data))
 }
+
 function handleDrop(e) {
   const data = JSON.parse(e.dataTransfer.getData('application/node'))
-  //console.log("드롭된 노드 데이터:", data)
-
   const bounds = e.target.getBoundingClientRect()
   const position = project({
     x: e.clientX - bounds.left,
     y: e.clientY - bounds.top
   })
 
-  // 만약 DB 노드(type이 ORACLE, TIBERO 등)라면 기본 role을 'source'로
-  const dbTypes = ['ORACLE','TIBERO','MYSQL','MSSQL','POSTGRESQL']
-  const isDbNode = dbTypes.includes(data.type)
-  nodes.value.push({
-    id: `n_${Date.now()}`,
-    type: 'custom',
-    label: data.label,
-    position,
-    data: {
-      ...data,
-      role: isDbNode ? 'source' : undefined // DB면 source, 관제모듈은 role 없음
-    }
+  const nodeType = data.type?.toUpperCase() || ''
+  const isDbNode = dbTypes.value.includes(nodeType);
+  const isModuleNode = !!data.queries; // queries가 있으면 관제 모듈
 
-  })
+    nodes.value.push({
+      id: `n_${Date.now()}`,
+      type: 'custom',
+      label: data.label,
+      position,
+      data: {
+        ...data,
+        type: nodeType,
+        isDbType: isDbNode, // ✅ 추가
+        isModule: isModuleNode, // ✅ 추가 (관제모듈 여부)
+        role: isDbNode ? 'source' : undefined
+      }
+    })
 }
 
 
+const dbTypes = computed(() =>
+  [...new Set(dbList.value.map(db => db.dbType?.toUpperCase()).filter(Boolean))]
+)
+
+watch(dbTypes, (types) => {
+  console.log('[✅ 자동 추출된 DB 타입들]', types)
+})
 function handleNodeRoleChange(nodeId, nextRole) {
   const idx = nodes.value.findIndex(n => n.id === nodeId)
   if (idx >= 0) nodes.value[idx].data.role = nextRole
