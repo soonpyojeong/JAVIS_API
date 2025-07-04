@@ -3,9 +3,11 @@ package com.javis.dongkukDBmon.Camel;
 import com.javis.dongkukDBmon.model.DbConnectionInfo;
 import com.javis.dongkukDBmon.model.EtlJob;
 import com.javis.dongkukDBmon.model.MonitorModule;
+import com.javis.dongkukDBmon.service.DbStatusNotifierService;
 import com.javis.dongkukDBmon.service.EtlBatchService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,10 +18,14 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
 
     private final EtlBatchService batchService;
     private final InsertQueryRegistry insertQueryRegistry;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final DbStatusNotifierService dbStatusNotifierService;
 
-    public HealthModuleHandler(@Lazy EtlBatchService batchService, InsertQueryRegistry insertQueryRegistry) {
+    public HealthModuleHandler(@Lazy EtlBatchService batchService, InsertQueryRegistry insertQueryRegistry, SimpMessagingTemplate messagingTemplate, DbStatusNotifierService dbStatusNotifierService) {
         this.batchService = batchService;
         this.insertQueryRegistry = insertQueryRegistry;
+        this.messagingTemplate = messagingTemplate;
+        this.dbStatusNotifierService = dbStatusNotifierService;
     }
 
     @Override
@@ -65,7 +71,7 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
                         message,
                         error
                 );
-
+                messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
                 String baseMessage = src.getDescription();
                 String finalMessage = isSuccess ? baseMessage : (baseMessage + " | " + error);
 
@@ -117,7 +123,7 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
                     message,
                     error
             );
-
+            dbStatusNotifierService.notifyStatusUpdate(src.getDbName());
         } catch (Exception e) {
             isSuccess = false;
             error = "타겟 DB 오류: " + e.getMessage();

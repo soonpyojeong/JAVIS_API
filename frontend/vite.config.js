@@ -13,6 +13,9 @@ export default defineConfig({
     process: { env: {} },
     __BUILD_VERSION__: JSON.stringify(buildVersion),
   },
+    optimizeDeps: {
+      include: ['stompjs']
+    },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

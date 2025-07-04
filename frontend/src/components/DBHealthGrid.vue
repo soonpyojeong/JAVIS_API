@@ -3,7 +3,7 @@
     <template v-for="group in groups" :key="group.status">
       <div v-if="group.instances.length" class="group-section">
         <div class="group-title" :style="{ color: group.color }">
-          <i :class="group.icon" :style="{ marginRight: '8px', fontSize:'1.1em' }" />
+          <i :class="group.icon" style="margin-right: 8px; font-size: 1.1em;" />
           {{ group.label }}
           <span class="count">({{ group.instances.length }})</span>
         </div>
@@ -38,29 +38,57 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted,onBeforeUnmount  } from 'vue'
+import api from '@/api'
+import SockJS from 'sockjs-client'
+import Stomp from 'stompjs'
+import { connectWebSocket, disconnectWebSocket } from '@/websocket' // ✅ 요기!
 
-// 샘플 DB 상태 데이터
-const instances = [
-  { name: 'ORACLE_PRD', status: '정상' },
-  { name: 'TIBERO_DEV', status: '주의' },
-  { name: 'PGSQL_OPS', status: '위험' },
-  { name: 'MSSQL_INT', status: '정상' },
-  { name: 'MONETDB', status: '정상' },
-  { name: 'MYSQL_BI', status: '위험' },
-  { name: 'DM_DB', status: '주의' }
-]
+
+let stompClient = null
+
+const fetchStatuses = async () => {
+  try {
+    const { data } = await api.get('/api/dashboard/live-statuses')
+    //console.log('[✅ 상태 응답]', data)
+    instances.value = data
+  } catch (e) {
+    console.error('[❌ 상태 조회 실패]', e)
+  }
+}
+
+onMounted(async () => {
+  await fetchStatuses()
+
+  connectWebSocket({
+    onDbLiveStatusMessage: async (payload) => {
+      console.log('📡 /topic/db-live-status 수신:', payload)
+      await fetchStatuses()
+    }
+  })
+})
+
+onBeforeUnmount(() => {
+  disconnectWebSocket()
+})
+
+const instances = ref([])
+
+
 
 const groupMeta = [
   { status: '위험', label: '위험', color: '#ef4444', icon: 'pi pi-times-circle' },
   { status: '주의', label: '주의', color: '#f59e0b', icon: 'pi pi-exclamation-circle' },
-  { status: '정상', label: '정상', color: '#10b981', icon: 'pi pi-check-circle' }
+  { status: '정상', label: '정상', color: '#10b981', icon: 'pi pi-check-circle' },
+  { status: '미수집', label: '미수집', color: '#6b7280', icon: 'pi pi-question-circle' }
 ]
 
 const groups = computed(() =>
   groupMeta.map(meta => ({
     ...meta,
-    instances: instances.filter(i => i.status === meta.status)
+    instances: instances.value
+      .filter(i => i.status === meta.status)
+      .sort((a, b) => a.name.localeCompare(b.name))
   }))
 )
 
@@ -69,7 +97,8 @@ const statusClass = (status) => {
     case '정상': return 'status-normal'
     case '주의': return 'status-warning'
     case '위험': return 'status-critical'
-    default: return 'status-unknown'
+    case '미수집': return 'status-unknown'
+    default: return ''
   }
 }
 </script>
@@ -85,7 +114,6 @@ const statusClass = (status) => {
   font-weight: bold;
   font-size: 1.06em;
   margin-bottom: 7px;
-  letter-spacing: 0.01em;
   display: flex;
   align-items: center;
   padding-left: 3px;
@@ -101,34 +129,40 @@ const statusClass = (status) => {
   margin-bottom: 7px;
 }
 
-/* 그리드! (여기서 가로로 나열 & 넘치면 줄바꿈) */
 .db-health-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  /* grid의 최소/최대 크기 조정 가능 */
 }
-
 .instance-box {
-  flex: 0 0 158px;
-  min-width: 0;
-  max-width: 210px;
-  padding: 16px 8px 12px 8px;
-  border-radius: 13px;
-  background-color: #f3f4f6;
-  box-shadow: none;
+  flex: 0 0 80px;  /* 이전의 158px → 80px로 줄임 */
+  max-width: 100px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
   text-align: center;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
-  transition: transform 0.18s, box-shadow 0.18s;
-  position: relative;
+  transition: transform 0.12s;
+  font-size: 0.75rem;
 }
 .instance-box:hover {
-  transform: scale(1.06);
-  box-shadow: 0 2px 12px 0 #d4f3e0aa;
+  transform: scale(1.05);
 }
+
 .instance-icon {
-  margin-bottom: 7px;
+  margin-bottom: 4px;
 }
+
+.instance-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.instance-status {
+  display: none; /* 상태는 툴팁으로 처리하고 안 보이게 */
+}
+
 .status-normal {
   border: 2.5px solid #10b981;
   color: #065f46;
@@ -145,6 +179,7 @@ const statusClass = (status) => {
   border: 2.5px dashed #bbb;
   color: #888;
 }
+
 .instance-name {
   font-size: 1.02em;
   font-weight: bold;
@@ -156,7 +191,6 @@ const statusClass = (status) => {
   letter-spacing: 0.02em;
 }
 
-/* 모바일에서 2개씩만 */
 @media (max-width: 800px) {
   .db-health-grid {
     grid-template-columns: repeat(2, 1fr);
