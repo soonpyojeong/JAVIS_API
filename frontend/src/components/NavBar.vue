@@ -45,6 +45,23 @@
             🔔<span v-if="hasUnread" class="badge">{{ unreadCount }}</span>
           </div>
         </div>
+        <transition name="fade">
+          <div v-if="showModal" class="alert-modal-vertical">
+            <div v-if="alerts.length === 0" class="empty-alert">📭 알림이 없습니다.</div>
+            <div class="alert-scroll-vertical">
+              <div
+                v-for="alert in sortedAlerts"
+                :key="alert.id"
+                class="alert-card-vertical"
+              >
+                <div class="alert-message">{{ alert.message }}</div>
+                <div class="alert-time">{{ formatDate(alert.createdAt) }}</div>
+                <button class="alert-dismiss-btn" @click="dismissAlert(alert)">❌</button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
         <div class="user-info-wrapper">
           <div class="user-info-badge" @click.stop="toggleProfile">
             <span class="emoji">{{ roleEmoji }}</span>
@@ -171,7 +188,7 @@ const handleClickOutside = (event) => {
   // PC 모드: 알림/프로필
   const profileCard = document.querySelector(".profile-card:not(.mobile-modal)");
   const userBadge = document.querySelector(".user-info-badge:not(.mobile)");
-  const alertModal = document.querySelector(".alert-modal-below-nav:not(.mobile-modal)");
+  const alertModal = document.querySelector(".alert-modal-vertical:not(.mobile-modal)");
   const bell = document.querySelector(".bell-icon:not(.mobile)");
 
   if (
@@ -355,6 +372,7 @@ function toggleMobileMenu() {
 
 // --- 알림/유저/로그아웃/프로필 ---
 const toggleProfile = () => (showProfile.value = !showProfile.value);
+
 const toggleModal = () => { if (alerts.value.length > 0) showModal.value = !showModal.value; };
 const logout = () => {
   store.dispatch("logout");
@@ -564,20 +582,66 @@ function handleResize() {
   font-weight: bold;
 }
 
-.alert-modal-below-nav {
+
+.alert-modal-vertical {
   position: absolute;
-  top: 42px;
+  top: 50px;
   right: 0;
-  min-width: 320px;
-  max-width: 370px;
-  background: #fff;
+  width: 420px;
+  max-height: 400px;
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.13);
-  padding: 22px 20px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   z-index: 3000;
-  overflow-y: auto;
-  max-height: 55vh;
+  padding: 20px;
+  overflow-y: auto; /* ✅ 세로 스크롤만 */
+  overflow-x: hidden;
 }
+
+.alert-scroll-vertical {
+  display: flex;
+  flex-direction: column; /* ✅ 세로 정렬 */
+  gap: 14px;
+}
+
+.alert-card-vertical {
+  background: #f8fff9;
+  border: 1px solid #d9efdb;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 14px;
+  color: #2e7d32;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.alert-message {
+  font-weight: 500;
+  font-size: 15px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.alert-time {
+  font-size: 13px;
+  color: #666;
+}
+
+.alert-dismiss-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #d32f2f;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 
 /* --- 사용자/프로필 --- */
 .user-info-wrapper {

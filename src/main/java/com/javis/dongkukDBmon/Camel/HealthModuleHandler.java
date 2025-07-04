@@ -1,20 +1,23 @@
 
 package com.javis.dongkukDBmon.Camel;
 
-import com.javis.dongkukDBmon.config.AesUtil;
 import com.javis.dongkukDBmon.model.DbConnectionInfo;
 import com.javis.dongkukDBmon.model.EtlJob;
 import com.javis.dongkukDBmon.model.MonitorModule;
 import com.javis.dongkukDBmon.service.DbStatusNotifierService;
 import com.javis.dongkukDBmon.service.EtlBatchService;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.user.SimpSession;
+import org.springframework.messaging.simp.user.SimpSubscription;
+import org.springframework.messaging.simp.user.SimpUser;
+import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +30,8 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
     @Autowired
     private final SimpMessagingTemplate messagingTemplate;
     private final DbStatusNotifierService dbStatusNotifierService;
+    @Autowired
+    private SimpUserRegistry simpUserRegistry;
 
     public HealthModuleHandler(@Lazy EtlBatchService batchService,
                                InsertQueryRegistry insertQueryRegistry,
@@ -89,8 +94,32 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
                         message,
                         error);
                 try {
-                    messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
-                    log.info("[✅ WebSocket 메시지 전송 완료] /topic/db-live-status");
+                    Map<String, Object> jsonMsg = new HashMap<>();
+                    jsonMsg.put("status", "OK");
+                    jsonMsg.put("message", "HEALTH 핸들 시작됨");
+                    jsonMsg.put("timestamp", System.currentTimeMillis());
+
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(1000); // 구독 타이밍 확보
+                            messagingTemplate.convertAndSend("/topic/db-live-status", jsonMsg);
+                        } catch (Exception e) {
+                            log.warn("❌ 메시지 전송 실패", e);
+                        }
+                    }).start();
+
+                    log.info("[🧪 디버그] 현재 접속 중인 WebSocket 세션:");
+                    simpUserRegistry.getUsers().forEach(user -> {
+                        log.info("사용자: {}", user.getName());
+                        user.getSessions().forEach(session -> {
+                            log.info("  세션 ID: {}", session.getId());
+                            session.getSubscriptions().forEach(sub -> {
+                                log.info("    구독 대상: {}", sub.getDestination());
+                            });
+                        });
+                    });
+
+                    log.info("[✅ WebSocket 정상 메시지 전송 완료] /topic/db-live-status");
                 } catch (Exception e) {
                     log.warn("[❌ WebSocket 메시지 전송 실패]", e);
                 }
@@ -100,8 +129,31 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
             } catch (Exception e) {
                 batchService.logJobResult(batchId, src.getId(), false, "타겟 DB 오류: " + e.getMessage());
                 try {
-                    messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
-                    log.info("[✅ WebSocket 메시지 전송 완료] /topic/db-live-status");
+                    Map<String, Object> jsonMsg = new HashMap<>();
+                    jsonMsg.put("status", "OK");
+                    jsonMsg.put("message", "HEALTH 핸들 시작됨");
+                    jsonMsg.put("timestamp", System.currentTimeMillis());
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(1000); // 구독 타이밍 확보
+                            messagingTemplate.convertAndSend("/topic/db-live-status", jsonMsg);
+                        } catch (Exception ee) {
+                            log.warn("❌ 메시지 전송 실패", ee);
+                        }
+                    }).start();
+
+                    log.info("[🧪 디버그] 현재 접속 중인 WebSocket 세션:");
+                    simpUserRegistry.getUsers().forEach(user -> {
+                        log.info("사용자: {}", user.getName());
+                        user.getSessions().forEach(session -> {
+                            log.info("  세션 ID: {}", session.getId());
+                            session.getSubscriptions().forEach(sub -> {
+                                log.info("    구독 대상: {}", sub.getDestination());
+                            });
+                        });
+                    });
+
+                    log.info("[✅ WebSocket 정상 메시지 전송 완료] /topic/db-live-status");
                 } catch (Exception ee) {
                     log.warn("[❌ WebSocket 메시지 전송 실패]", ee);
                 }
@@ -179,8 +231,32 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
                     error);
             dbStatusNotifierService.notifyStatusUpdate(src.getDbName());
             try {
-                messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
-                log.info("[✅ WebSocket 메시지 전송 완료] /topic/db-live-status");
+                Map<String, Object> jsonMsg = new HashMap<>();
+                jsonMsg.put("status", "OK");
+                jsonMsg.put("message", "HEALTH 핸들 시작됨");
+                jsonMsg.put("timestamp", System.currentTimeMillis());
+
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(1000); // 구독 타이밍 확보
+                        messagingTemplate.convertAndSend("/topic/db-live-status", jsonMsg);
+                    } catch (Exception e) {
+                        log.warn("❌ 메시지 전송 실패", e);
+                    }
+                }).start();
+
+                log.info("[🧪 디버그] 현재 접속 중인 WebSocket 세션:");
+                simpUserRegistry.getUsers().forEach(user -> {
+                    log.info("사용자: {}", user.getName());
+                    user.getSessions().forEach(session -> {
+                        log.info("  세션 ID: {}", session.getId());
+                        session.getSubscriptions().forEach(sub -> {
+                            log.info("    구독 대상: {}", sub.getDestination());
+                        });
+                    });
+                });
+
+                log.info("[✅ WebSocket 정상 메시지 전송 완료] /topic/db-live-status");
             } catch (Exception e) {
                 log.warn("[❌ WebSocket 메시지 전송 실패]", e);
             }
@@ -188,14 +264,40 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
             isSuccess = false;
             error = "타겟 DB 오류: " + e.getMessage();
             try {
-                messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
-                log.info("[✅ WebSocket 메시지 전송 완료] /topic/db-live-status");
-            } catch (Exception eee) {
-                log.warn("[❌ WebSocket 메시지 전송 실패]", eee);
+                Map<String, Object> jsonMsg = new HashMap<>();
+                jsonMsg.put("status", "OK");
+                jsonMsg.put("message", "HEALTH 핸들 시작됨");
+                jsonMsg.put("timestamp", System.currentTimeMillis());
+
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(1000); // 구독 타이밍 확보
+                        messagingTemplate.convertAndSend("/topic/db-live-status", jsonMsg);
+                    } catch (Exception ee) {
+                        log.warn("❌ 메시지 전송 실패", ee);
+                    }
+                }).start();
+
+                log.info("[🧪 디버그] 현재 접속 중인 WebSocket 세션:");
+                simpUserRegistry.getUsers().forEach(user -> {
+                    log.info("사용자: {}", user.getName());
+                    user.getSessions().forEach(session -> {
+                        log.info("  세션 ID: {}", session.getId());
+                        session.getSubscriptions().forEach(sub -> {
+                            log.info("    구독 대상: {}", sub.getDestination());
+                        });
+                    });
+                });
+
+                log.info("[✅ WebSocket 정상 메시지 전송 완료] /topic/db-live-status");
+            } catch (Exception ee) {
+                log.warn("[❌ WebSocket 메시지 전송 실패]", ee);
             }
         }
 
         String finalMessage = isSuccess ? src.getDescription() : (src.getDescription() + " | " + error);
         batchService.saveJobLog(batchId, src.getId(), isSuccess, finalMessage);
     }
+
+
 }

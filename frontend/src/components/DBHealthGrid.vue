@@ -75,7 +75,7 @@ let stompClient = null
 const fetchStatuses = async () => {
   try {
     const { data } = await api.get('/api/dashboard/live-statuses')
-    console.log('[✅ 상태 응답]', data)
+    //console.log('[✅ 상태 응답]', data)
     instances.value = data
   } catch (e) {
     console.error('[❌ 상태 조회 실패]', e)
@@ -93,17 +93,25 @@ const handleDoubleClick = (group, instance) => {
   }
 }
 
-
-onMounted(async () => {
+const onDbLiveStatusMessage = async (payload) => {
+  //console.log('📡 /topic/db-live-status 수신:', payload)
   await fetchStatuses()
+}
 
-  connectWebSocket({
-    onDbLiveStatusMessage: async (payload) => {
-      console.log('📡 /topic/db-live-status 수신:', payload)
+//console.log('[프론트] 대시보드 onMounted 진입')
+onMounted(async () => {
       await fetchStatuses()
-    }
-  })
+      //console.log('[프론트] connectWebSocket 호출')
+      //console.log('[DEBUG] connectWebSocket 인자:', {
+      //  onDbLiveStatusMessage
+      //})
+connectWebSocket({
+  onDbLiveStatusMessage: onDbLiveStatusMessage
 })
+
+})
+
+
 
 onBeforeUnmount(() => {
   disconnectWebSocket()
