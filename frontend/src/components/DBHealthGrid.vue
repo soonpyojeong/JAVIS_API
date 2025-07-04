@@ -39,7 +39,8 @@
     </template>
     <Dialog v-model:visible="showDialog" header="DB 상세 정보" modal style="width: 500px;">
       <div v-if="selectedInstance">
-        <p><strong>DB 이름:</strong> {{ selectedInstance.name }}</p>
+        <p><strong>DB 이름:</strong> {{ selectedInstance.chkDate }}</p>
+        <p><strong>수집시간:</strong> {{ selectedInstance.name }}</p>
         <p><strong>상태:</strong> {{ selectedInstance.status }}</p>
         <p><strong>에러:</strong></p>
         <pre
