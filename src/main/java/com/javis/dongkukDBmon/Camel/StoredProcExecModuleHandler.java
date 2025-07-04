@@ -26,7 +26,6 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
         return "PROC".equalsIgnoreCase(moduleCode);
     }
 
-
     @Override
     public void handle(EtlJob job, MonitorModule module, Long batchId) throws Exception {
         Map<String, String> procMap = job.getExtractQueries();
@@ -34,7 +33,7 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
         String targetPw = decryptPassword(target.getPassword());
         JdbcTemplate targetJdbc = createJdbc(target, targetPw);
 
-        processSources(job, module, (src, jdbc) -> {
+        processSources(job, module, batchId, (src, jdbc) -> {
             String dbType = src.getDbType().toUpperCase();
             String procName = procMap.get(dbType);
 
@@ -42,12 +41,10 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
                 batchService.logJobResult(batchId, src.getId(), false, "프로시저명 없음");
                 return;
             }
+
             boolean isSuccess = true;
             String error = null;
-
-            String callSql = procName.trim().toUpperCase().startsWith("{CALL")
-                    ? procName.trim()
-                    : "{call " + procName.trim() + "}";
+            String callSql = procName.trim().toUpperCase().startsWith("{CALL") ? procName.trim() : "{call " + procName.trim() + "}";
 
             try {
                 jdbc.update(callSql);
@@ -69,17 +66,42 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
                         src.getDbName(),
                         procName,
                         isSuccess ? "SUCCESS" : "FAIL",
-                        error
-                );
+                        error);
+
                 String finalMessage = isSuccess ? src.getDescription() : (src.getDescription() + " | " + error);
                 batchService.logJobResult(batchId, src.getId(), isSuccess, finalMessage);
             } catch (Exception ex) {
                 batchService.logJobResult(batchId, src.getId(), false, "타겟 DB INSERT 오류: " + ex.getMessage());
-                ex.printStackTrace(); // 콘솔에도 에러 전체 로그
             }
         });
     }
 
+    @Override
+    protected void handleSourceError(EtlJob job, Long batchId, DbConnectionInfo src, Exception e) {
+        try {
+            DbConnectionInfo target = dbRepo.findById(job.getTargetDbId()).orElse(null);
+            if (target == null) return;
+
+            String targetPw = decryptPassword(target.getPassword());
+            JdbcTemplate targetJdbc = createJdbc(target, targetPw);
+
+            String insertSql = insertQueryRegistry.getQuery("PROC", src.getDbType().toUpperCase());
+            if (insertSql != null && !insertSql.isBlank()) {
+                targetJdbc.update(insertSql,
+                        new java.sql.Timestamp(System.currentTimeMillis()),
+                        src.getDbType(),
+                        src.getDbName(),
+                        "(unknown)",
+                        "FAIL",
+                        e.getMessage());
+            }
+        } catch (Exception ex) {
+            // 무시
+        }
+
+        String finalMessage = src.getDescription() + " | " + e.getMessage();
+        batchService.logJobResult(batchId, src.getId(), false, finalMessage);
+    }
 
     @Override
     public void handleSingle(EtlJob job, MonitorModule module, Long batchId, DbConnectionInfo src, JdbcTemplate jdbc) {
@@ -87,7 +109,6 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
         String dbType = src.getDbType().toUpperCase();
         String procName = procMap.get(dbType);
 
-        // ✅ 프로시저명 체크
         if (procName == null || procName.trim().isEmpty()) {
             batchService.saveJobLog(batchId, src.getId(), false, "프로시저명 누락: " + dbType);
             return;
@@ -96,13 +117,10 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
         boolean isSuccess = true;
         String error = null;
 
-        // 👉 callSql 로직 통일: "{call ...}" 형식 사용
-        String callSql = procName.trim().toUpperCase().startsWith("{CALL")
-                ? procName.trim()
-                : "{call " + procName.trim() + "}";
+        String callSql = procName.trim().toUpperCase().startsWith("{CALL") ? procName.trim() : "{call " + procName.trim() + "}";
 
         try {
-            jdbc.update(callSql); // callSql 사용
+            jdbc.update(callSql);
         } catch (Exception e) {
             isSuccess = false;
             error = e.getMessage();
@@ -114,7 +132,7 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
             JdbcTemplate targetJdbc = createJdbc(target, targetPw);
 
             String insertSql = insertQueryRegistry.getQuery("PROC", dbType);
-            if (insertSql == null || insertSql.trim().isEmpty()) {
+            if (insertSql == null || insertSql.isBlank()) {
                 batchService.saveJobLog(batchId, src.getId(), false, "타겟 INSERT 쿼리 미정의: " + dbType);
                 return;
             }
@@ -125,18 +143,14 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
                     src.getDbName(),
                     procName,
                     isSuccess ? "SUCCESS" : "FAIL",
-                    error
-            );
+                    error);
 
         } catch (Exception e) {
             isSuccess = false;
             error = "타겟 DB 오류: " + e.getMessage();
         }
 
-        // ✅ 최종 메시지 조립 및 로그 갱신
         String finalMessage = isSuccess ? src.getDescription() : (src.getDescription() + " | " + error);
         batchService.saveJobLog(batchId, src.getId(), isSuccess, finalMessage);
     }
-
-
 }

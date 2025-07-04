@@ -13,6 +13,8 @@
             :key="instance.name"
             class="instance-box"
             :class="statusClass(group.status)"
+            :title="group.status === '위험' && instance.error ? instance.error : ''"
+            @dblclick="handleDoubleClick(group, instance)"
           >
             <div class="instance-icon">
               <i
@@ -32,8 +34,30 @@
             <div class="instance-status">{{ instance.status }}</div>
           </div>
         </div>
+
       </div>
     </template>
+    <Dialog v-model:visible="showDialog" header="DB 상세 정보" modal style="width: 500px;">
+      <div v-if="selectedInstance">
+        <p><strong>DB 이름:</strong> {{ selectedInstance.name }}</p>
+        <p><strong>상태:</strong> {{ selectedInstance.status }}</p>
+        <p><strong>에러:</strong></p>
+        <pre
+          style="
+            white-space: pre-wrap;
+            color: red;
+            background: #fef2f2;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.87rem;
+            max-height: 240px;
+            overflow-y: auto;
+          "
+        >
+    {{ selectedInstance.error }}
+        </pre>
+      </div>
+    </Dialog>
   </div>
 </template>
 
@@ -43,19 +67,31 @@ import api from '@/api'
 import SockJS from 'sockjs-client'
 import Stomp from 'stompjs'
 import { connectWebSocket, disconnectWebSocket } from '@/websocket' // ✅ 요기!
-
+import Dialog from 'primevue/dialog'
 
 let stompClient = null
 
 const fetchStatuses = async () => {
   try {
     const { data } = await api.get('/api/dashboard/live-statuses')
-    //console.log('[✅ 상태 응답]', data)
+    console.log('[✅ 상태 응답]', data)
     instances.value = data
   } catch (e) {
     console.error('[❌ 상태 조회 실패]', e)
   }
 }
+
+
+const selectedInstance = ref(null)
+const showDialog = ref(false)
+
+const handleDoubleClick = (group, instance) => {
+  if (group.status === '위험') {
+    selectedInstance.value = instance
+    showDialog.value = true
+  }
+}
+
 
 onMounted(async () => {
   await fetchStatuses()

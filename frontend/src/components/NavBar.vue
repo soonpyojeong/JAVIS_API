@@ -268,9 +268,7 @@ const etlSubMenus = [
 
 const subMenuMap = { daily: dailySubMenus, etl: etlSubMenus, space: SpaceSubMenus };
 
-onMounted(() => {
-  console.log('📂 초기 subMenuMap:', subMenuMap);
-});
+
 
 function isMenuActive(item) {
   if (item.hasSub && item.subMenu) {
@@ -309,27 +307,14 @@ function handleMenuClick(item, event) {
 function handleMobileMenuClick(item) {
   if (item.hasSub) {
     const nextMenu = activeSubMenuType.value === item.subMenu ? '' : item.subMenu;
-    console.log('📌 서브메뉴 토글 시도:', nextMenu, '현재:', item.subMenu);
+    //console.log('📌 서브메뉴 토글 시도:', nextMenu, '현재:', item.subMenu);
     activeSubMenuType.value = nextMenu;
   } else {
     navigateToMobileSub(item.path);
   }
 }
 
-watch(activeSubMenuType, (newVal) => {
-  console.log('🔄 activeSubMenuType 변경됨:', newVal);
-});
 
-watch(filteredMenuItems, (newVal) => {
-  console.log('📋 filteredMenuItems:', newVal);
-}, { deep: true });
-
-
-function debugMobileMenuState() {
-  console.log('🧩 activeSubMenuType:', activeSubMenuType.value);
-  console.log('📋 filteredMenuItems:', filteredMenuItems.value);
-  console.log('📂 subMenuMap:', subMenuMap.value);
-}
 
 function closeAllDropdowns() {
   showSubMenu.value = false;

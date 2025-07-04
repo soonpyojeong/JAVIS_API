@@ -15,7 +15,6 @@ import java.util.Map;
 public class InvalidObjectModuleHandler extends AbstractEtlModuleHandler {
 
     private final EtlBatchService batchService;
-
     private final InsertQueryRegistry insertQueryRegistry;
 
     public InvalidObjectModuleHandler(@Lazy EtlBatchService batchService, InsertQueryRegistry insertQueryRegistry) {
@@ -35,7 +34,7 @@ public class InvalidObjectModuleHandler extends AbstractEtlModuleHandler {
         String targetPw = decryptPassword(target.getPassword());
         JdbcTemplate targetJdbc = createJdbc(target, targetPw);
 
-        processSources(job, module, (src, jdbc) -> {
+        processSources(job, module, batchId, (src, jdbc) -> {
             String dbType = src.getDbType().toUpperCase();
             String query = queryMap.get(dbType);
 
@@ -64,6 +63,31 @@ public class InvalidObjectModuleHandler extends AbstractEtlModuleHandler {
                 batchService.logJobResult(batchId, src.getId(), false, e.getMessage());
             }
         });
+    }
+
+    @Override
+    protected void handleSourceError(EtlJob job, Long batchId, DbConnectionInfo src, Exception e) {
+        try {
+            DbConnectionInfo target = dbRepo.findById(job.getTargetDbId()).orElse(null);
+            if (target == null) return;
+
+            String targetPw = decryptPassword(target.getPassword());
+            JdbcTemplate targetJdbc = createJdbc(target, targetPw);
+
+            String insertSql = insertQueryRegistry.getQuery("INVALID_OBJECT", src.getDbType().toUpperCase());
+            if (insertSql != null && !insertSql.isBlank()) {
+                targetJdbc.update(insertSql,
+                        src.getDbType(),
+                        src.getDbName(),
+                        "(unknown)",
+                        "(unknown)",
+                        "(unknown)");
+            }
+        } catch (Exception ex) {
+            // 무시
+        }
+
+        batchService.logJobResult(batchId, src.getId(), false, src.getDescription() + " | " + e.getMessage());
     }
 
     @Override
