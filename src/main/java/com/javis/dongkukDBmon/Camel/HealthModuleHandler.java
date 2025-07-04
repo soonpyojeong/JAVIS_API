@@ -8,6 +8,8 @@ import com.javis.dongkukDBmon.model.MonitorModule;
 import com.javis.dongkukDBmon.service.DbStatusNotifierService;
 import com.javis.dongkukDBmon.service.EtlBatchService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -16,11 +18,13 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class HealthModuleHandler extends AbstractEtlModuleHandler {
 
     private final EtlBatchService batchService;
     private final InsertQueryRegistry insertQueryRegistry;
+    @Autowired
     private final SimpMessagingTemplate messagingTemplate;
     private final DbStatusNotifierService dbStatusNotifierService;
 
@@ -45,6 +49,14 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
         DbConnectionInfo target = dbRepo.findById(job.getTargetDbId()).orElseThrow();
         String targetPw = decryptPassword(target.getPassword());
         JdbcTemplate targetJdbc = createJdbc(target, targetPw);
+
+        try {
+            messagingTemplate.convertAndSend("/topic/db-live-status", "💡HEALTH 핸들 시작됨");
+            log.info("[✅ WebSocket 메시지 핸들 시작됨] /topic/db-live-status");
+        } catch (Exception e) {
+            log.warn("[❌ WebSocket 메시지 전송 실패]", e);
+        }
+
 
         processSources(job, module, batchId, (src, jdbc) -> {
             String dbType = src.getDbType().toUpperCase();
@@ -76,12 +88,23 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
                         src.getDescription(),
                         message,
                         error);
-                messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
+                try {
+                    messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
+                    log.info("[✅ WebSocket 메시지 전송 완료] /topic/db-live-status");
+                } catch (Exception e) {
+                    log.warn("[❌ WebSocket 메시지 전송 실패]", e);
+                }
                 String finalMessage = isSuccess ? src.getDescription() : (src.getDescription() + " | " + error);
                 batchService.logJobResult(batchId, src.getId(), isSuccess, finalMessage);
 
             } catch (Exception e) {
                 batchService.logJobResult(batchId, src.getId(), false, "타겟 DB 오류: " + e.getMessage());
+                try {
+                    messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
+                    log.info("[✅ WebSocket 메시지 전송 완료] /topic/db-live-status");
+                } catch (Exception ee) {
+                    log.warn("[❌ WebSocket 메시지 전송 실패]", ee);
+                }
             }
         });
     }
@@ -155,9 +178,21 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
                     message,
                     error);
             dbStatusNotifierService.notifyStatusUpdate(src.getDbName());
+            try {
+                messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
+                log.info("[✅ WebSocket 메시지 전송 완료] /topic/db-live-status");
+            } catch (Exception e) {
+                log.warn("[❌ WebSocket 메시지 전송 실패]", e);
+            }
         } catch (Exception e) {
             isSuccess = false;
             error = "타겟 DB 오류: " + e.getMessage();
+            try {
+                messagingTemplate.convertAndSend("/topic/db-live-status", "OK");
+                log.info("[✅ WebSocket 메시지 전송 완료] /topic/db-live-status");
+            } catch (Exception eee) {
+                log.warn("[❌ WebSocket 메시지 전송 실패]", eee);
+            }
         }
 
         String finalMessage = isSuccess ? src.getDescription() : (src.getDescription() + " | " + error);
