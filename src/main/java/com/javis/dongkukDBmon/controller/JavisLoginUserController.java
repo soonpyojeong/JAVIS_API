@@ -118,6 +118,25 @@ public class JavisLoginUserController {
         }
     }
 
+    @DeleteMapping("/user/{userId}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
+        Optional<JavisLoginUser> userOpt = userService.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "해당 사용자를 찾을 수 없습니다."
+            ));
+        }
+
+        // ❗️삭제 수행 필요
+        userService.deleteUser(userId);
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "사용자가 삭제되었습니다."
+        ));
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(@RequestBody Map<String, String> tokenData) {
         String refreshToken = tokenData.get("refreshToken");

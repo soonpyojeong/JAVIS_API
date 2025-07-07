@@ -35,5 +35,7 @@ public class DbConnectionInfo {
     private String description;
     @Column(name = "REG_DATE")
     private Date regDate;
+    @Column(name = "DBID")
+    private Long dbid;
     // getter/setter 생략 또는 Lombok @Data
 }

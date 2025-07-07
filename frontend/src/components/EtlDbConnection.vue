@@ -66,6 +66,20 @@
             <label class="block mb-1">설명</label>
             <InputText v-model="editData.description" />
           </div>
+          <div class="field mb-2">
+            <label class="block mb-1">관제 항목</label>
+            <div class="flex flex-wrap gap-2">
+              <template v-for="(val, key) in selectedDbListItem?.monitoringItems" :key="key">
+                <div
+                  class="px-2 py-1 rounded-md text-sm"
+                  :class="val === 'Y' ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'"
+                >
+                  <i class="pi pi-check" v-if="val === 'Y'" style="margin-right: 4px" />
+                  {{ key }}
+                </div>
+              </template>
+            </div>
+          </div>
         </div>
         <div class="flex justify-end mt-4">
           <Button type="button" label="취소" class="mr-2" text @click="closeDialog" />
@@ -98,7 +112,7 @@
 
 <script setup>
 import api from "@/api";
-import { ref, onMounted ,computed } from 'vue'
+import { ref, onMounted ,computed,watch } from 'vue'
 import { useDbConnection } from '@/composables/useDbConnection'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -107,57 +121,84 @@ import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
-const { testConnection } = useDbConnection()
+
 const toast = useToast()
+const { testConnection, getDbList, addDb, updateDb, deleteDb } = useDbConnection()
 
+const editData = ref({})
+const selectedDbListItem = ref(null)
 
+watch(() => editData.value.dbid, async (id) => {
+  if (!id) return
+  const { data } = await api.get(`/api/db-list/${id}`)
+  selectedDbListItem.value = data
+})
+
+// DB 연결 테스트
 const handleTestConn = async () => {
   if (!editData.value.id) {
-    toast.add({ severity: 'warn', summary: 'DB 연결', detail: '먼저 DB를 저장한 후 테스트 가능합니다.', life: 3000 });
-    return;
+    toast.add({ severity: 'warn', summary: 'DB 연결', detail: '먼저 DB를 저장한 후 테스트 가능합니다.', life: 3000 })
+    return
   }
 
   try {
-    const { data: detail } = await api.get(`/api/db-connection/${editData.value.id}`);
-    const res = await testConnection(detail);
-    toast.add({ severity: 'success', summary: 'DB 연결', detail: '연결 성공!', life: 2000 });
+    const { data: detail } = await api.get(`/api/db-connection/${editData.value.id}`)
+    const res = await testConnection(detail)
+    toast.add({ severity: 'success', summary: 'DB 연결', detail: '연결 성공!', life: 2000 })
   } catch (e) {
-    console.error('연결 실패:', e);
-    toast.add({ severity: 'error', summary: 'DB 연결', detail: e?.response?.data || '연결 실패', life: 3500 });
+    console.error('연결 실패:', e)
+    toast.add({ severity: 'error', summary: 'DB 연결', detail: e?.response?.data || '연결 실패', life: 3500 })
   }
-};
-
+}
 
 const showDbListDialog = ref(false)
+const showDialog = ref(false)
+const dialogHeader = ref('DB 연결정보 등록')
 const isNewMode = computed(() => !editData.value.id)
+
+const dbList = ref([])
 const dbListAll = ref([])
+const dbListSearch = ref('')
+const tableSearch = ref('')
 const sortField = ref('dbDescript')
-const sortOrder = ref(1) // 1 = ASC, -1 = DESC
+const sortOrder = ref(1)
+
+const dbTypeOptions = [
+  { label: 'Oracle', value: 'ORACLE' },
+  { label: 'Tibero', value: 'TIBERO' },
+  { label: 'MySQL', value: 'MYSQL' },
+  { label: 'MariaDB', value: 'MARIADB' },
+  { label: 'PostgreSQL', value: 'POSTGRESQL' },
+  { label: 'MSSQL', value: 'MSSQL' },
+  { label: 'Sybase', value: 'SYBASE' },
+  { label: 'SAP HANA', value: 'HANA' }
+]
+
+// DBLIST 불러오기
 const openDbListLookup = async () => {
-  // 백엔드에서 /api/db-list/all 호출
   const { data } = await api.get('/api/db-list/all')
   dbListAll.value = data
   showDbListDialog.value = true
 }
 
+// 👉 선택된 DBLIST 정보 적용
 const applyDbList = (selected) => {
   editData.value = {
+    dbid: selected.id,   // TB_JAVIS_DB_LIST.id → DB_CONNECTION_INFO.dbid
     dbType: selected.dbType,
-     host: selected.pubIp,
+    host: selected.pubIp,
     port: selected.port,
     dbName: selected.dbName,
     username: selected.userid,
     password: selected.pw,
-    description: selected.dbDescript,
+    description: selected.dbDescript
   }
   showDbListDialog.value = false
   showDialog.value = true
-  dialogHeader.value = 'DB 연결정보 등록' // 등록 or 수정 분기도 가능
+  dialogHeader.value = 'DB 연결정보 등록'
 }
 
-const dbListSearch = ref('')
-const tableSearch = ref("")
-
+// DB 목록 필터링
 const filteredList = computed(() => {
   if (!tableSearch.value) return dbList.value
   const keyword = tableSearch.value.toLowerCase()
@@ -167,7 +208,7 @@ const filteredList = computed(() => {
   )
 })
 
-
+// DBLIST 검색 필터
 const filteredDbList = computed(() => {
   if (!dbListSearch.value) return dbListAll.value
   const keyword = dbListSearch.value.toLowerCase()
@@ -178,25 +219,7 @@ const filteredDbList = computed(() => {
   )
 })
 
-const dbTypeOptions = [
-  { label: 'Oracle', value: 'ORACLE' },
-  { label: 'Tibero', value: 'TIBERO' },
-  { label: 'MySQL', value: 'MYSQL' },
-  { label: 'MariaDB', value: 'MARIADB' },
-  { label: 'PostgreSQL', value: 'POSTGRESQL' },
-  { label: 'EDB', value: 'EDB' },
-  { label: 'MSSQL', value: 'MSSQL' },
-  { label: 'Sybase', value: 'SYBASE' },
-  { label: 'SAP HANA', value: 'HANA' }
-]
-
-const { getDbList, addDb, updateDb, deleteDb } = useDbConnection()
-const dbList = ref([])
-const showDialog = ref(false)
-const dialogHeader = ref('DB 연결정보 등록')
-const editData = ref({})
-
-// 최초 DB 목록 불러오기
+// 목록 로딩
 const loadDbList = async () => {
   const { data } = await getDbList()
   dbList.value = data
@@ -206,7 +229,7 @@ onMounted(loadDbList)
 // 등록 다이얼로그 열기
 const openAddDialog = () => {
   dialogHeader.value = 'DB 연결정보 등록'
-  editData.value = { dbType: '', host: '', port: '', dbName: '', username: '', password: '', description: '' }
+  editData.value = { dbType: '', host: '', port: '', dbName: '', username: '', password: '', description: '', dbid: null }
   showDialog.value = true
 }
 
@@ -217,13 +240,19 @@ const editDb = (row) => {
   showDialog.value = true
 }
 
-// 등록/수정 처리
+// 저장
 const submitDb = async () => {
+  if (!editData.value.dbid) {
+    toast.add({ severity: 'warn', summary: 'DB 선택 필요', detail: 'DBLIST에서 DB를 먼저 선택하세요.', life: 3000 })
+    return
+  }
+
   if (!editData.value.id) {
     await addDb(editData.value)
   } else {
     await updateDb(editData.value.id, editData.value)
   }
+
   showDialog.value = false
   await loadDbList()
 }
@@ -236,12 +265,13 @@ const removeDb = async (row) => {
   }
 }
 
-// 다이얼로그 닫기
+// 닫기
 const closeDialog = () => {
   showDialog.value = false
   editData.value = {}
 }
 </script>
+
 <style scoped>
 .db-conn-wrapper {
   max-width: 1200px;

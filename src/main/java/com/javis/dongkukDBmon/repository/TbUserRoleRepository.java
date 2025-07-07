@@ -19,5 +19,6 @@ public interface TbUserRoleRepository extends JpaRepository<TbUserRole, Long> {
     // 복합키로 조회(필요시)
     TbUserRole findByUserIdAndRoleId(Long userId, Long roleId);
 
-    // 필요에 따라 더 추가 가능
+    // 유저롤삭제
+    void deleteByUserId(Long userId);
 }

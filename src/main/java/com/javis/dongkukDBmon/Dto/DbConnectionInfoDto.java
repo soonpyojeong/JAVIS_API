@@ -11,4 +11,5 @@ public class DbConnectionInfoDto {
     private String dbName;
     private String username;
     private String description; // 선택사항
+    private Long dbid; // TB_JAVIS_DB_LIST의 ID
 }

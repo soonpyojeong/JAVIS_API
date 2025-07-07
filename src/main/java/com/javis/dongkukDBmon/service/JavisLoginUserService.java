@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.util.Date;
@@ -41,10 +42,15 @@ public class JavisLoginUserService {
         // 비밀번호 암호화
         String rawPassword = newUser.getPassword();
         String hashedPassword = passwordEncoder.encode(rawPassword);
-
+        JavisLoginUser savedUser = userRepository.save(newUser);
         // 회원가입 시 암호화된 비밀번호를 출력
         //System.out.println("회원가입 - 평문 비밀번호: " + rawPassword);
         //System.out.println("회원가입 - 암호화된 비밀번호: " + hashedPassword);
+        // 2. ✅ ROLE 매핑 (예: 조회전용 VIEW 권한)
+        TbUserRole userRole = new TbUserRole();
+        userRole.setUserId(savedUser.getId());
+        userRole.setRoleId(4L); // ROLE_NAME = VIEW
+        userRoleRepo.save(userRole);
 
         newUser.setPassword(hashedPassword);
         return userRepository.save(newUser);
@@ -111,6 +117,16 @@ public class JavisLoginUserService {
         return userRepository.findAllById(userIds); // 여기가 맞는 코드!
     }
 
+    @Transactional
+    public void deleteUser(Long userId) {
+        // 권한 매핑 먼저 삭제
+        userRoleRepo.deleteByUserId(userId);
+        // 사용자 삭제
+        userRepository.deleteById(userId);
+    }
+    public Optional<JavisLoginUser> findById(Long userId) {
+        return userRepository.findById(userId);
+    }
     public void updateUserRole(Long userId, String userRole, Long roleId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId가 null입니다. 요청을 확인하세요.");

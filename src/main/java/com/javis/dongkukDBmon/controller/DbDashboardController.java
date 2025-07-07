@@ -4,11 +4,11 @@ import com.javis.dongkukDBmon.Dto.DbHealthStatusDto;
 import com.javis.dongkukDBmon.service.DbStatusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -20,5 +20,12 @@ public class DbDashboardController {
     @GetMapping("/live-statuses")
     public ResponseEntity<List<DbHealthStatusDto>> getLiveStatuses() {
         return ResponseEntity.ok(dbStatusService.fetchLiveStatuses());
+    }
+
+    private final SimpMessagingTemplate messagingTemplate;
+
+    @PostMapping("/db-live-status")
+    public void postLiveStatus(@RequestBody Map<String, Object> payload) {
+        messagingTemplate.convertAndSend("/topic/db-live-status", payload);
     }
 }

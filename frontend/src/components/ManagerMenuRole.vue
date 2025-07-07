@@ -64,6 +64,16 @@
             />
           </template>
         </Column>
+        <Column header="삭제">
+          <template #body="slotProps">
+            <Button
+              icon="pi pi-trash"
+              severity="danger"
+              text
+              @click="deleteUser(slotProps.data)"
+            />
+          </template>
+        </Column>
       </DataTable>
 
     </div>
@@ -125,6 +135,22 @@ const selectRole = async (role) => {
 
   const res = await api.get(`/api/auth/role/${role.roleId}/users`);
   usersForRole.value = res.data;
+};
+
+const deleteUser = async (user) => {
+  if (!confirm(`${user.loginId} 사용자를 정말 삭제하시겠습니까?`)) return;
+
+  try {
+    await api.delete(`/api/auth/user/${user.id}`);
+    alert("사용자가 삭제되었습니다!");
+
+    // 사용자 목록 갱신
+    const res = await api.get(`/api/auth/role/${selectedRole.value.roleId}/users`);
+    usersForRole.value = res.data;
+  } catch (err) {
+    console.error(err);
+    alert("사용자 삭제 중 오류 발생!");
+  }
 };
 
 
