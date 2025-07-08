@@ -108,9 +108,10 @@ public class DataSourceUtil {
         }
         config.setMaximumPoolSize(2);
         config.setMinimumIdle(1);
-        config.setIdleTimeout(300_000);
-        config.setMaxLifetime(900_000);
-        config.setConnectionTimeout(30_000);
+        config.setIdleTimeout(300_000); // 유휴 커넥션 5분 후 제거
+        config.setMaxLifetime(900_000); // 커넥션 최대 수명 15분
+        config.setConnectionTimeout(30_000); // 커넥션 요청 제한 30초
+        config.setValidationTimeout(5000);   // 커넥션 유효성 검사 제한 시간 5초
         config.setPoolName("DBMON-Pool");
         return new HikariDataSource(config);
     }

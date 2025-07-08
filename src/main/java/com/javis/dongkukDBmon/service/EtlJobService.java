@@ -8,10 +8,12 @@ import com.javis.dongkukDBmon.model.*;
 import com.javis.dongkukDBmon.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ import com.javis.dongkukDBmon.model.DbConnectionInfo;
 import com.javis.dongkukDBmon.model.EtlJobLog;
 
 import javax.sql.DataSource;
+import org.springframework.data.domain.Pageable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -402,20 +405,30 @@ public class EtlJobService {
         batchService.saveJobLog(jobId, sourceDbId, true, "단건 재수행 성공");
     }
 
-    public List<EtlBatchLogDto> getBatchLogsGrouped(Long jobId) {
-        // 1. 해당 jobId의 모든 실행 로그 조회 (최신순 정렬)
-        List<EtlJobLog> logs = jobLogRepo.findAllByJobIdOrderByBatchIdDescExecutedAtDesc(jobId);
 
-        // 2. 배치별로 그룹핑
+    public Page<EtlBatchLogDto> getBatchLogsGroupedPaged(Long jobId, int page, int size) {
+        int startRow = page * size;
+        int endRow = startRow + size;
+
+        // 1. 배치 ID 목록만 페이징 조회 (네이티브 쿼리로)
+        List<Long> batchIds = jobLogRepo.findPagedBatchIdsByJobId(jobId, startRow, endRow);
+
+        if (batchIds.isEmpty()) {
+            return new PageImpl<>(Collections.emptyList(), PageRequest.of(page, size), 0);
+        }
+
+        // 2. 해당 배치들에 해당하는 로그만 조회
+        List<EtlJobLog> logs = jobLogRepo.findByBatchIdIn(batchIds);
+
+        // 3. 배치별 그룹핑
         Map<Long, List<EtlJobLog>> batchMap = logs.stream()
                 .collect(Collectors.groupingBy(EtlJobLog::getBatchId, LinkedHashMap::new, Collectors.toList()));
 
-        // 3. 변환
+        // 4. 변환
         List<EtlBatchLogDto> result = new ArrayList<>();
         for (Map.Entry<Long, List<EtlJobLog>> entry : batchMap.entrySet()) {
             Long batchId = entry.getKey();
             List<EtlJobLog> batchLogs = entry.getValue();
-            // 배치 실행시간: 가장 첫 로그의 executedAt
             Date executedAt = batchLogs.get(0).getExecutedAt();
 
             List<EtlJobLogDto> logDtos = batchLogs.stream().map(log -> {
@@ -426,9 +439,8 @@ public class EtlJobService {
                 dto.setExecutedAt(log.getExecutedAt());
                 dto.setResult(log.getResult());
                 dto.setMessage(log.getMessage());
-                // DB명 매핑
                 dto.setSourceDbName(
-                        dbRepo.findById(log.getSourceDbId()).map(db -> db.getDbName()).orElse("Unknown")
+                        dbRepo.findById(log.getSourceDbId()).map(DbConnectionInfo::getDbName).orElse("Unknown")
                 );
                 return dto;
             }).collect(Collectors.toList());
@@ -439,8 +451,13 @@ public class EtlJobService {
             batchDto.setLogs(logDtos);
             result.add(batchDto);
         }
-        return result;
+
+        // 총 배치 수는 따로 count 쿼리를 수행해서 가져와야 함
+        int total = batchRepo.countByJobId(jobId); // 또는 별도 count 쿼리 생성
+
+        return new PageImpl<>(result, PageRequest.of(page, size), total);
     }
+
 
 
 }

@@ -16,6 +16,8 @@ public interface EtlBatchRepository extends JpaRepository<EtlBatch, Long> {
     // 🔹 Optional로 가장 최신 배치 (JPA 문법용, 사용 시 주의)
     Optional<EtlBatch> findTop1ByJobIdOrderByStartedAtDesc(Long jobId);
 
+    @Query("SELECT COUNT(DISTINCT b.batchId) FROM EtlBatch b WHERE b.jobId = :jobId")
+    int countByJobId(@Param("jobId") Long jobId);
 
 
     @Query(value = """

@@ -76,12 +76,23 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
             String error = null;
             boolean isSuccess = true;
 
-            try {
-                List<Map<String, Object>> rows = jdbc.queryForList(query);
-            } catch (Exception e) {
-                isSuccess = false;
-                message = "에러";
-                error = e.getMessage();
+            int maxRetry = 2;
+            int attempt = 0;
+            while (attempt < maxRetry) {
+                try {
+                    List<Map<String, Object>> rows = jdbc.queryForList(query);
+                    break; // 성공 시 루프 탈출
+                } catch (Exception e) {
+                    attempt++;
+                    if (attempt == maxRetry) {
+                        isSuccess = false;
+                        message = "에러";
+                        error = e.getMessage();
+                    } else {
+                        log.warn("쿼리 실패, 재시도 시도중... ({}/{}) - {}", attempt, maxRetry, src.getDbName());
+                        Thread.sleep(500); // 너무 빠르게 재시도하지 않도록 약간 대기
+                    }
+                }
             }
 
             try {
@@ -204,12 +215,27 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
         String error = null;
         boolean isSuccess = true;
 
-        try {
-            List<Map<String, Object>> rows = jdbc.queryForList(query);
-        } catch (Exception e) {
-            isSuccess = false;
-            message = "에러";
-            error = e.getMessage();
+        int maxRetry = 2;
+        int attempt = 0;
+        while (attempt < maxRetry) {
+            try {
+                List<Map<String, Object>> rows = jdbc.queryForList(query);
+                break; // 성공 시 루프 탈출
+            } catch (Exception e) {
+                attempt++;
+                if (attempt == maxRetry) {
+                    isSuccess = false;
+                    message = "에러";
+                    error = e.getMessage();
+                } else {
+                    log.warn("쿼리 실패, 재시도 시도중... ({}/{}) - {}", attempt, maxRetry, src.getDbName());
+                    try {
+                        Thread.sleep(500); // 너무 빠르게 재시도하지 않도록 약간 대기
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            }
         }
 
         try {
