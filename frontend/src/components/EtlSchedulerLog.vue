@@ -69,10 +69,11 @@
     <!-- 상세 실행 로그 모달 -->
     <Dialog v-model:visible="showBatchLogDialog" header="실행 로그 상세" width="700" modal>
       <ETLJobLog
-        v-if="showBatchLogDialog"
-        :jobId="selectedJobId"
-        @close="showBatchLogDialog = false"
-      />
+              v-if="logDialogVisible"
+              :jobId="logJobId"
+              @retry="retryJob"
+              @close="logDialogVisible = false"
+            />
     </Dialog>
 
     <!-- 메시지 전체 보기 Dialog -->
@@ -88,7 +89,9 @@ import api from "@/api"
 import { Tag, DataTable, Column, Dialog } from 'primevue'
 import Button from 'primevue/button'
 import ETLJobLog from './ETLJobLog.vue'
+import { useToast } from 'primevue/usetoast';
 
+const toast = useToast();
 const props = defineProps({ schedule: Object })
 
 const logs = ref([])
@@ -128,6 +131,23 @@ function expandAll() {
 function collapseAll() {
   expandedRows.value = []
 }
+
+// 재수행 (로그 Dialog에서 emit 받아서 실행)
+const retryJob = async (log) => {
+  const jobId = log.jobId;
+  const sourceDbId = log.sourceDbId;
+
+  if (!jobId || !sourceDbId) {
+    toast.add({ severity: 'warn', summary: '재수행 불가', detail: '실행 정보를 찾을 수 없습니다.', life: 3000 });
+    return;
+  }
+  try {
+    await api.post(`/api/etl/job/${jobId}/retry/${sourceDbId}`);
+    toast.add({ severity: 'success', summary: '재수행 완료', detail: '해당 작업이 다시 실행되었습니다.', life: 3000 });
+  } catch (e) {
+    toast.add({ severity: 'error', summary: '재수행 실패', detail: e.response?.data?.message || '에러 발생', life: 4000 });
+  }
+};
 
 async function fetchLogs(page = 0, size = 10) {
   loading.value = true

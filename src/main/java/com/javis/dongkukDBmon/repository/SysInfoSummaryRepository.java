@@ -20,7 +20,7 @@ public interface SysInfoSummaryRepository extends JpaRepository<SysInfoSummary, 
             "FROM (SELECT DISTINCT hostname FROM TB_SYSINFO_SUMMARY) SYS, \n" +
             "     (SELECT ID, LOC, ASSETS, DB_DESCRIPT, HOSTNAME, DB_NAME, INSTANCE_NAME, DB_TYPE \n" +
             "      FROM TB_JAVIS_DB_LIST \n" +
-            "      WHERE DB_TYPE IN ('ORACLE', 'TIBERO','EDB')" +
+            "      WHERE DB_TYPE IN ('ORACLE', 'TIBERO','POSTGRESQL')" +
             "      and ID not in(521,520)) DBLIST \n" +
             "WHERE SYS.hostname = DBLIST.DB_NAME", nativeQuery = true)
     List<Object[]> findDistinctHostnames();

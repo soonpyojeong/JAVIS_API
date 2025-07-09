@@ -1,25 +1,29 @@
-//PrimevueDailyChk.vue
+<!-- PrimevueDailyChk.vue -->
 <template>
   <div class="container">
     <!-- PanelMenu 트리 -->
     <div class="db-tree">
-       <h3 class="mb-4 font-bold text-lg">DBMS 목록</h3>
+      <h3 class="mb-4 font-bold text-lg">DBMS 목록</h3>
       <PanelMenu :model="panelMenuData" v-model:expandedKeys="expandedKeys" />
     </div>
     <div class="chart-container">
-        <div class="charts-wrapper">
-		<template v-if="selectedDB && activeMetrics.length > 0">
-            <div
-                v-for="(metric, index) in activeMetrics"
-                :key="metric.key"
-                class="metric-chart"
-			>
+      <div class="charts-wrapper">
+        <h3 class="mb-4 font-bold text-lg">
+          일일점검 DB :
+          <span v-if="selectedDB">{{ selectedDB.instanceName }}</span>
+        </h3>
+        <template v-if="selectedDB && activeMetrics.length > 0">
+          <div
+            v-for="(metric, index) in activeMetrics"
+            :key="metric.key"
+            class="metric-chart"
+          >
             <canvas :ref="setCanvasRef(index)"></canvas>
-            </div>
-		</template>
-	</div>
+          </div>
+        </template>
+      </div>
+    </div>
   </div>
-</div>
 </template>
 
 <script setup>
@@ -29,14 +33,15 @@ import Chart from 'chart.js/auto';
 import api from "@/api";
 
 const expandedKeys = ref({});
-
 const dbTreeData = ref({});
-const selectedDB = ref(null);
+const selectedDB = ref(null);       // { instanceName, dbType, key }
 const selectedDBType = ref(null);
+const selectedKey = ref('');        // 선택된 PanelMenu key
 const canvasRefs = [];
 const dbData = ref([]);
 const tbdbData = ref([]);
 
+// -------- 메트릭 정의 --------
 const metrics = ref([
   { key: 'transaTions', label: 'Transactions' },
   { key: 'totalSess', label: 'Total Sessions' },
@@ -80,14 +85,17 @@ function setCanvasRef(index) {
   }
 }
 
-const selectDB = async (instanceName, dbType) => {
-  selectedDB.value = instanceName;
+// --- 선택 DB 저장 및 강조 ---
+const selectDB = async (instanceName, dbType, key) => {
+  selectedDB.value = { instanceName, dbType, key };
   selectedDBType.value = dbType.toLowerCase();
+  selectedKey.value = key;      // 강조를 위한 key 저장
   canvasRefs.length = 0;
   await fetchData(instanceName, selectedDBType.value);
   await renderCharts();
 };
 
+// -------- DB 트리 불러오기 --------
 const fetchDbList = async () => {
   try {
     const res = await api.get('/api/dailychk/db-list');
@@ -102,6 +110,7 @@ const fetchDbList = async () => {
   }
 };
 
+// -------- DB별 데이터 불러오기 --------
 const fetchData = async (name, type) => {
   const endpoint = type === 'oracle' ? 'oradata' : 'tbdata';
   const res = await api.get(`/api/dailychk/${name}/${endpoint}`);
@@ -109,7 +118,7 @@ const fetchData = async (name, type) => {
   else tbdbData.value = res.data;
 };
 
-// --- PanelMenu 트리구조 변환 ---
+// -------- PanelMenu 트리구조 생성 --------
 const panelMenuData = computed(() => {
   // dbTreeData = { 당진: { TIBERO: ['MEDP', 'MDAC'] }, 부산: ... }
   return Object.entries(dbTreeData.value).map(([loc, dbTypes]) => ({
@@ -120,17 +129,19 @@ const panelMenuData = computed(() => {
       key: `dbtype-${loc}-${dbType}`,
       label: dbType,
       icon: dbTypeIcon(dbType),
-      items: (instances || []).map(instance => ({
-        key: `inst-${loc}-${dbType}-${instance}`,
-        label: instance,
-        icon: 'pi pi-database',
-        command: () => selectDB(instance, dbType)
-      }))
+      items: (instances || []).map(instance => {
+        const key = `inst-${loc}-${dbType}-${instance}`;
+        return {
+          key,
+          label: instance,
+          icon: 'pi pi-database',
+          class: selectedKey.value === key ? 'active-db' : '', // 활성화 상태 강조
+          command: () => selectDB(instance, dbType, key)
+        }
+      })
     }))
   }));
 });
-
-
 
 function dbTypeIcon(type) {
   switch (type.toLowerCase()) {
@@ -279,71 +290,102 @@ function splitYesterdayTodayData(dataList, key) {
 onMounted(() => { fetchDbList(); });
 </script>
 
-<style scoped>
-.metric-chart { width: 100%; height: 300px; }
-.charts-wrapper { flex-grow: 1; overflow-y: auto; padding-right: 10px; }
 
-/* 전체 컨테이너 스타일 */
+<style>
+/* ====== 전체 레이아웃 ====== */
 .container {
   display: flex;
-  height: 100%; /* 전체 컨테이너 높이 100%로 설정, 필요에 따라 조정 가능 */
+  height: 100%;
   background-color: #f4f4f4;
 }
 
-/* DB 트리 스타일 */
+/* ====== DB 트리(왼쪽) ====== */
 .db-tree {
-  width: 250px; /* DB 트리의 너비를 조정 (기본값은 200px) */
+  position: sticky;
+  top: 15px; /* 스크롤 시 상단에서 15px 떨어져 고정 */
+  align-self: flex-start;
+  width: 250px;
+  max-height: 90vh;
+  height: fit-content;
   background-color: #fff;
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
   flex-shrink: 0;
+  z-index: 10;
 }
 
-
-/* 차트 컨테이너 스타일 */
+/* ====== 차트 컨테이너(오른쪽) ====== */
 .chart-container {
   flex-grow: 1;
-  width: 900px; /* 차트 컨테이너의 기본 너비, 필요에 따라 수정 */
+  width: 900px;
   padding: 20px;
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  min-height: 20vh;
   overflow: hidden;
-  min-height: 20vh; /* 컨테이너가 최소 100vh 높이를 갖도록 설정 */
-  /* height: 100vh; */
 }
 
-/* 차트 래퍼 스타일 */
+/* ====== 차트 래퍼 & 개별 차트 ====== */
 .charts-wrapper {
-  flex-grow: 1; /* 내부 요소가 차지할 공간을 자동으로 확장 */
+  flex-grow: 1;
   overflow-y: auto;
   padding-right: 10px;
 }
-
-/* 개별 차트 스타일 */
 .metric-chart {
   width: 100%;
-  height: 300px; /* 차트의 높이 설정 */
+  height: 300px;
   margin-bottom: 20px;
 }
-/* 반응형 스타일 */
+
+/* ====== 선택 DB 강조 스타일 ====== */
+.active-db,
+.active-db:hover,
+.active-db:focus {
+  background: #6366f1 !important;   /* 진한 보라색 */
+  color: #fff !important;
+  font-weight: bold !important;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(99,102,241,0.15);
+}
+
+/* 기본 hover 제거(선택된 DB 제외) */
+.p-panelmenu .p-menuitem-link:not(.active-db):hover {
+  background: transparent !important;
+  color: inherit !important;
+  font-weight: normal !important;
+  box-shadow: none !important;
+}
+
+/* ====== 반응형(모바일) ====== */
 @media (max-width: 768px) {
   .container {
     flex-direction: column;
+    margin-left: 0;
   }
   .db-tree {
-    width: 100%; /* 모바일에서 DB 트리의 너비를 100%로 설정 */
-    height: auto; /* 모바일에서 DB 트리의 높이를 자동으로 조정 */
+    position: static !important;
+    width: 100%;
+    max-height: none;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    z-index: 1;
+    top: unset;
+    left: unset;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+  .chart-container {
+    width: 100%;
+    padding: 10px;
+    min-width: 0;
   }
   .metric-chart {
-    width: 100%; /* 차트의 너비를 100%로 설정 */
+    width: 100%;
   }
 }
-
-
-
 </style>
