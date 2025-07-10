@@ -3,11 +3,12 @@ package com.javis.dongkukDBmon.service;
 
 import com.javis.dongkukDBmon.model.Threshold;
 import com.javis.dongkukDBmon.repository.ThresholdRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -19,6 +20,8 @@ import java.util.List;
 public class ThresholdService {
 
     private final ThresholdRepository thresholdRepository;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     public ThresholdService(ThresholdRepository thresholdRepository) {
@@ -59,5 +62,16 @@ public class ThresholdService {
         threshold.setLastUpdateDate(Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()));
         return thresholdRepository.save(threshold);
     }
+
+    @Transactional
+    public void updateDefaultThreshold(Long id, Long defThresMb, String commt) {
+        String sql = "UPDATE TB_DB_TBS_THRESHOLD SET DEF_THRES_MB = ?, LAST_UPDATE_DATE = SYSDATE, COMMT = ? WHERE ID = ?";
+        entityManager.createNativeQuery(sql)
+                .setParameter(1, defThresMb)
+                .setParameter(2, commt)
+                .setParameter(3, id)
+                .executeUpdate();
+    }
+
 }
 

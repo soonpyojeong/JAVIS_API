@@ -69,11 +69,12 @@
     <!-- 상세 실행 로그 모달 -->
     <Dialog v-model:visible="showBatchLogDialog" header="실행 로그 상세" width="700" modal>
       <ETLJobLog
-              v-if="logDialogVisible"
-              :jobId="logJobId"
-              @retry="retryJob"
-              @close="logDialogVisible = false"
-            />
+        v-if="logDialogVisible"
+        :jobId="logJobId"
+        :initialLog="selectedLog"
+        @retry="retryJob"
+        @close="logDialogVisible = false">
+      </ETLJobLog>
     </Dialog>
 
     <!-- 메시지 전체 보기 Dialog -->
@@ -104,7 +105,7 @@ const groupedLogs = computed(() => {
   }
   return Object.values(groups)
 })
-
+const selectedLog = ref(null)
 const expandedRows = ref([])
 const showBatchLogDialog = ref(false)
 const selectedJobId = ref(null)
@@ -116,6 +117,7 @@ const loading = ref(false)
 function openBatchLog(row) {
   if (!row.jobId) return
   selectedJobId.value = row.jobId
+  selectedLog.value = row              // ← 여기 중요!
   showBatchLogDialog.value = true
 }
 

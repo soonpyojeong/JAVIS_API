@@ -377,7 +377,7 @@ const toggleModal = () => { if (alerts.value.length > 0) showModal.value = !show
 const logout = () => {
   store.dispatch("logout");
   showProfile.value = false;
-  window.location.href = "/";
+  router.push("/");
   router.push("/login");
 };
 const roleEmoji = computed(() => {

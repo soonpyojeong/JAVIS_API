@@ -73,7 +73,7 @@
                         icon="pi pi-refresh"
                         size="small"
                         severity="danger"
-                        @click="$emit('retry', log)"
+                        @click="$emit('retry', { ...log, jobId: props.jobId, sourceDbId: log.sourceDbId ?? props.initialLog?.sourceDbId })"
                       />
                     </td>
                   </tr>
@@ -100,7 +100,10 @@ import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import { useToast } from 'primevue/usetoast'
 
-const props = defineProps({ jobId: Number })
+const props = defineProps({
+  jobId: Number,
+  initialLog: Object
+})
 const emit = defineEmits(['retry', 'close'])
 
 const batchLogs = ref([])

@@ -1,5 +1,6 @@
 package com.javis.dongkukDBmon.controller;
 
+import com.javis.dongkukDBmon.Dto.DefaultThresholdUpdateRequest;
 import com.javis.dongkukDBmon.model.Alert;
 import com.javis.dongkukDBmon.model.Threshold;
 import com.javis.dongkukDBmon.service.AlertService;
@@ -8,6 +9,8 @@ import com.javis.dongkukDBmon.service.ThresholdService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
@@ -87,6 +90,16 @@ public class ThresholdController {
 
         return ResponseEntity.status(404).body(false);
     }
+
+    @PutMapping("/{id}/default")
+    public ResponseEntity<?> updateDefaultThreshold(
+            @PathVariable Long id,
+            @RequestBody DefaultThresholdUpdateRequest dto) {
+
+        thresholdService.updateDefaultThreshold(id, dto.getDefThresMb(), dto.getCommt());
+        return ResponseEntity.ok(true);
+    }
+
 
     @PostMapping("/save")
     public ResponseEntity<Threshold> saveThreshold(@RequestBody Map<String, Object> requestMap) {

@@ -43,7 +43,9 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 "/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk", "/SysInfoDetail", "/TEST",
                                 // ETL 관련
                                 "/ETLJobList", "/etljob-history",
-                                "/ETLjob-Scheduler","/ManagerMenuRole"
+                                "/ETLjob-Scheduler","/ManagerMenuRole",
+                                //Password 관련
+                                "/reset-password","/reset-password/**"
                         ).permitAll()
                         // [그 외에는 인증 필요]
                         .anyRequest().authenticated()
@@ -72,24 +74,7 @@ public class SecurityConfig implements WebMvcConfigurer {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
+
 }
 
-/*
-========= [원본 코드] =========
-
-.requestMatchers(
-        "/", "/index.html",
-        "/favicon.ico", "/static/**", "/assets/**","/fonts/**",
-        "/js/**", "/css/**","/db-list", "/sms-history", "/threshold-list", "/tablespaces", "/dailyChk",
-        "/api/**","/ws/**","/api/alerts/**","/api/auth/**","/api/sysinfo/**","/api/SysInfoDetail/**","/api/sysinfo/by-date/**",
-        "/api/sysinfo/log-summary/**","/SysInfoDetail","/api/pass/**",
-        "/api/sysinfo/collected-dates-by-month/**","/TEST","/api/db-list/save/**",
-        "/api/db-connection","/ETLJobList","/etljob-history",
-        "/api/etl/job/**","/api/etl/run/**",
-        "/api/etl/job/run/**","/api/etl/**"
- ).permitAll()
-
- - "/api/**"로 시작하면 하위 경로는 전부 허용됨.
- - 불필요하게 세부 경로 여러 번 추가할 필요 없음.
- - 예외적으로, "/ws/**", "/ETLJobList" 등만 별도 추가해주면 됨.
- */

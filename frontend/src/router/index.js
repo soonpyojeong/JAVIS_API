@@ -1,4 +1,3 @@
-// router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../components/MainPage.vue';
 import DBList from '../components/PrimevueDBList.vue';
@@ -19,12 +18,12 @@ import EtlJobScheduler from '../components/EtlJobScheduler.vue';
 import EtlSchedulerLog from '../components/EtlSchedulerLog.vue';
 import EtlSchedulerDialog from '../components/EtlSchedulerDialog.vue';
 import ManagerMenuRole from '../components/ManagerMenuRole.vue';
-
+import ResetPasswordPage from '../components/ResetPasswordPage.vue';
 
 import store from '../store';
 
 const routes = [
-  { path: '/login', component: LoginComponent, meta: { title: 'Login', requiresAuth: false } },
+  { path: '/login', component: LoginComponent, meta: { title: 'Login', requiresAuth: false, public: true } },
   { path: '/', component: Dashboard, meta: { title: 'JAVIS Dashboard', requiresAuth: true } },
   { path: '/db-list', name: 'DBList', component: DBList, meta: { title: 'DB List', requiresAuth: true } },
   { path: '/sms-history', name: 'SmsHistory', component: SmsHistory, meta: { title: 'SMS History', requiresAuth: true } },
@@ -40,7 +39,9 @@ const routes = [
   { path: '/EtlWorkflow', name: 'EtlWorkflow', component: EtlWorkflow, meta: { title: 'EtlWorkflow', requiresAuth: true } },
   { path: '/ETLjob-Scheduler', name: 'EtlJobScheduler', component: EtlJobScheduler, meta: { title: 'EtlJobScheduler', requiresAuth: true } },
   { path: '/MonitorModuleManage', name: 'MonitorModuleManage', component: MonitorModuleManage, meta: { title: 'MonitorModuleManage', requiresAuth: true } },
-  { path: '/ManagerMenuRole', name: 'ManagerMenuRole', component: ManagerMenuRole, meta: { title: 'ManagerMenuRole', requiresAuth: true } }
+  { path: '/ManagerMenuRole', name: 'ManagerMenuRole', component: ManagerMenuRole, meta: { title: 'ManagerMenuRole', requiresAuth: true } },
+  // 필요 시 :token 파라미터 방식도 추가 가능
+  { path: '/reset-password', name: 'ResetPasswordPage', component: ResetPasswordPage, meta: { title: 'ResetPasswordPage', requiresAuth: false, public: true } }
 ];
 
 const router = createRouter({
@@ -48,44 +49,55 @@ const router = createRouter({
   routes,
 });
 
+// ✨ 전역 라우터 가드
 router.beforeEach((to, from, next) => {
+  // 🚩 1. /reset-password 경로(파라미터/쿼리스트링 포함) 무조건 통과!
+  if (to.path.startsWith('/reset-password')) {
+    next();
+    return;
+  }
+
+  // 🚩 2. 세션 상태 복원 (SPA 새로고침 시)
   const accessToken = localStorage.getItem("accessToken");
-  //const refreshToken = localStorage.getItem("refreshToken");
   const userRaw = localStorage.getItem("user");
-
-  //console.groupCollapsed(`[🔁 라우터 이동] ${from.path} → ${to.path}`);
-  //console.log("🪪 accessToken:", accessToken);
-  //console.log("🪪 refreshToken:", refreshToken);
-  //console.log("🧑 userRaw:", userRaw);
-  //console.log("📦 Vuex isLoggedIn:", store.state.isLoggedIn);
-  console.groupEnd();
-
   if (!store.state.isLoggedIn && accessToken && userRaw && userRaw !== "undefined") {
     try {
       const user = JSON.parse(userRaw);
       store.commit("setUser", user);
       store.commit("setLoggedIn", true);
-      //console.info("✅ 상태 복원 완료 (user, token)");
-    } catch (e) {
-      //console.warn("❌ user 복원 실패", e);
+      // 상태 복원 로그(선택)
+      // console.log('[상태복원] 로컬스토어에서 user/accessToken');
+    } catch {
       store.dispatch("logout");
     }
   }
 
+  // 🚩 3. 인증 분기
   const isLoggedIn = store.state.isLoggedIn;
 
+  // 로그인 된 사용자가 /login에 접근하면 홈으로 이동
   if (to.path === "/login" && isLoggedIn) {
-    //console.warn("⚠️ 로그인된 사용자가 로그인 페이지 접근 → / 리다이렉트");
     next("/");
-  } else if (to.meta.requiresAuth && !isLoggedIn) {
-   // console.error("❌ 인증 필요 페이지 접근 → 로그인 페이지로 이동");
-    next("/login");
-  } else {
-    next();
+    return;
   }
+
+  // 공개 라우트는 무조건 통과(meta.public)
+  if (to.meta.public) {
+    next();
+    return;
+  }
+
+  // 인증 필요한데 로그인 안 됐으면 로그인으로 이동
+  if (to.meta.requiresAuth && !isLoggedIn) {
+    next("/login");
+    return;
+  }
+
+  // 나머지는 통과
+  next();
 });
 
-
+// ✨ 페이지 타이틀 자동 세팅
 router.afterEach((to) => {
   if (to.meta.title) {
     document.title = to.meta.title;

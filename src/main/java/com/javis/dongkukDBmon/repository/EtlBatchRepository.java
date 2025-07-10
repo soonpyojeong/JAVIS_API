@@ -21,20 +21,12 @@ public interface EtlBatchRepository extends JpaRepository<EtlBatch, Long> {
 
 
     @Query(value = """
-        SELECT * FROM (
-            SELECT * FROM TB_ETL_BATCH 
-            WHERE JOB_ID = :jobId 
-            ORDER BY STARTED_AT DESC
-        ) WHERE ROWNUM = 1
-    """, nativeQuery = true)
-    Long findLatestBatchIdByJobId(Long jobId);
+    SELECT * FROM (
+        SELECT * FROM TB_ETL_BATCH 
+        WHERE JOB_ID = :jobId 
+        ORDER BY STARTED_AT DESC
+    ) WHERE ROWNUM = 1
+""", nativeQuery = true)
+    Optional<EtlBatch> findLatestBatchByJobId(@Param("jobId") Long jobId); // ✅ 이거만 남겨
 
-    @Query(value = """
-        SELECT * FROM (
-            SELECT * FROM TB_ETL_BATCH 
-            WHERE JOB_ID = :jobId 
-            ORDER BY STARTED_AT DESC
-        ) WHERE ROWNUM = 1
-    """, nativeQuery = true)
-    EtlBatch findLatestBatchByJobId(Long jobId);
 }

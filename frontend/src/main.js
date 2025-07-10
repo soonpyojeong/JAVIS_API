@@ -1,32 +1,32 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import store from './store'
-import PrimeVue from 'primevue/config'
-import Aura from '@primeuix/themes/aura'
-import './main.css'
-import 'primeicons/primeicons.css'
-import ToastService from 'primevue/toastservice'
-import Toast from 'primevue/toast'
-import './assets/vue-flow.css'
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router';
+import store from './store';
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
+import './main.css';
+import 'primeicons/primeicons.css';
+import ToastService from 'primevue/toastservice';
+import Toast from 'primevue/toast';
+import './assets/vue-flow.css';
 
-// 토큰/유저 상태 복구 (Vite에서도 동일)
-const token = localStorage.getItem("accessToken");
-const userRaw = localStorage.getItem("user");
-
-if (token && userRaw && userRaw !== "undefined") {
+// ✅ [1] 토큰/유저 상태 복구
+const accessToken = localStorage.getItem('accessToken');
+const userRaw = localStorage.getItem('user');
+if (accessToken && userRaw && userRaw !== "undefined") {
   try {
     const user = JSON.parse(userRaw);
-    store.commit("setUser", user);
-    store.commit("setLoggedIn", true);
+    store.commit('setUser', user);
+    store.commit('setLoggedIn', true);
   } catch (e) {
-    store.dispatch("logout");
+    store.dispatch('logout');
   }
 }
 
-const app = createApp(App)
-app.use(store)
-app.use(router)
+// ✅ [2] 앱 생성 및 플러그인 등록
+const app = createApp(App);
+app.use(store);
+app.use(router);
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
@@ -36,7 +36,8 @@ app.use(PrimeVue, {
       cssLayer: false
     }
   }
-})
-app.use(ToastService)
-app.component('Toast', Toast)
-app.mount('#app')
+});
+app.use(ToastService);
+app.component('Toast', Toast);
+
+app.mount('#app');

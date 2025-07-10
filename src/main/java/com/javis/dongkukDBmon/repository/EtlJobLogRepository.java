@@ -59,22 +59,6 @@ public interface EtlJobLogRepository extends JpaRepository<EtlJobLog, Long> {
 """, nativeQuery = true)
     Optional<EtlJobLog> findTopByBatchIdAndSourceDbId(@Param("batchId") Long batchId, @Param("sourceDbId") Long sourceDbId);
 
-    @Query(value = """
-    SELECT * FROM (
-      SELECT *
-      FROM TB_ETL_JOB_LOG
-      WHERE BATCH_ID = :batchId
-        AND SOURCE_DB_ID = :sourceDbId
-      ORDER BY EXECUTED_AT DESC
-    )
-    WHERE ROWNUM = 1
-""", nativeQuery = true)
-    Optional<EtlJobLog> findLatestLogByBatchIdAndSourceDbId(
-            @Param("batchId") Long batchId,
-            @Param("sourceDbId") Long sourceDbId);
-
-
-
     // 🔹 특정 Job의 가장 최근 로그 조회 (최신 배치 기준으로)
     @Query(value = """
     SELECT *

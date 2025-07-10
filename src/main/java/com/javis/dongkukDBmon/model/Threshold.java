@@ -26,9 +26,11 @@ public class Threshold {
 
     @NotNull(message = "Tablespace name cannot be null")
     private String tablespaceName;
-
     @NotNull(message = "Threshold MB cannot be null")
     private Integer thresMb;
+
+    @Column(name = "DEF_THRES_MB")
+    private Integer defThresMb;
 
     private String chkFlag;
     private String commt;

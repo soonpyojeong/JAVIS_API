@@ -248,10 +248,11 @@ public class EtlJobService {
     public EtlJob getJob(Long id) { return etlJobRepo.findById(id).orElseThrow(); }
     public List<EtlJob> listJobs() { return etlJobRepo.findAll(); }
     public List<EtlJobLog> getJobLogs(Long jobId) {
-        EtlBatch latest = batchRepo.findLatestBatchByJobId(jobId);
-        if (latest == null) return List.of();
+        EtlBatch latest = batchRepo.findLatestBatchByJobId(jobId)
+                .orElseThrow(() -> new IllegalStateException("최근 배치 없음: jobId=" + jobId));
         return jobLogRepo.findByBatchId(latest.getBatchId());
     }
+
 
     public EtlJobLog getLastLog(Long jobId) {
         return jobLogRepo.findLatestLogByJobId(jobId);
@@ -326,7 +327,9 @@ public class EtlJobService {
         List<EtlJob> jobs = etlJobRepo.findAll();
 
         return jobs.stream().map(job -> {
-            EtlBatch latestBatch = batchRepo.findLatestBatchByJobId(job.getId());
+            EtlBatch latestBatch = batchRepo.findLatestBatchByJobId(job.getId())
+                    .orElseThrow(() -> new IllegalStateException("최근 배치 정보를 찾을 수 없습니다. jobId=" + job.getId()));
+
 
             String lastResult = null;
             Date lastRunAt = null;

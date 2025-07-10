@@ -291,7 +291,7 @@ onMounted(() => { fetchDbList(); });
 </script>
 
 
-<style>
+<style scoped>
 /* ====== 전체 레이아웃 ====== */
 .container {
   display: flex;
@@ -338,7 +338,7 @@ onMounted(() => { fetchDbList(); });
 }
 .metric-chart {
   width: 100%;
-  height: 300px;
+  height: 200px;
   margin-bottom: 20px;
 }
 
@@ -384,8 +384,6 @@ onMounted(() => { fetchDbList(); });
     padding: 10px;
     min-width: 0;
   }
-  .metric-chart {
-    width: 100%;
-  }
+
 }
 </style>

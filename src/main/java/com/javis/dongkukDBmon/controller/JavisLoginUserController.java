@@ -10,9 +10,10 @@ import com.javis.dongkukDBmon.service.JavisLoginUserService;
 import com.javis.dongkukDBmon.service.JavisUserTokenService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import com.javis.dongkukDBmon.service.MailService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,12 @@ public class JavisLoginUserController {
     private TbRoleMenuRepository roleMenuRepo;
     @Autowired
     private TbUserRoleRepository userRoleRepo;
+
+    @Autowired
+    private MailService mailService;
+
+    @Value("${custom.api-url}")
+    private String apiUrl;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
@@ -266,6 +273,59 @@ public class JavisLoginUserController {
 
 
 
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<?> passwordResetRequest(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        log.info("[패스워드재설정] 요청 이메일: {}", email);
+
+        Optional<JavisLoginUser> userOpt = userRepo.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            log.info("[패스워드재설정] 해당 이메일 없음(응답은 success=true)");
+            // 메일 존재여부 노출 방지
+            return ResponseEntity.ok(Map.of("success", true));
+        }
+
+        // 1. 랜덤 토큰 생성 및 저장
+        String resetToken = userTokenService.createResetToken(userOpt.get());
+        String resetLink = apiUrl + "/reset-password?token=" + resetToken;
+        log.info("[패스워드재설정] 토큰 생성 완료, resetLink: {}", resetLink);
+
+        try {
+            mailService.sendResetPasswordMail(email, resetLink);
+            log.info("[패스워드재설정] 메일 전송 완료");
+        } catch (Exception e) {
+            log.error("[패스워드재설정] 메일 발송 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "메일 발송 실패: " + e.getMessage()));
+        }
+
+        log.info("[패스워드재설정] 정상 종료 (success=true)");
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<?> passwordResetConfirm(@RequestBody Map<String, String> req) {
+        String resetToken = req.get("token");
+        String newPassword = req.get("newPassword");
+
+        // 1. 토큰 검증(존재, 만료, 사용 여부 등)
+        Optional<JavisLoginUser> userOpt = userTokenService.findByResetToken(resetToken);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "유효하지 않거나 만료된 토큰입니다."
+            ));
+        }
+
+        // 2. 새 비밀번호 해싱 저장, 토큰 만료 처리
+        userTokenService.updatePassword(userOpt.get(), newPassword);
+        userTokenService.expireResetToken(resetToken);
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "비밀번호가 변경되었습니다."
+        ));
+    }
 
 
 

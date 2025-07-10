@@ -6,10 +6,14 @@ import com.javis.dongkukDBmon.model.DbConnectionInfo;
 import com.javis.dongkukDBmon.model.EtlJob;
 import com.javis.dongkukDBmon.model.MonitorModule;
 import com.javis.dongkukDBmon.repository.DbConnectionInfoRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.Optional;
+
+@Slf4j
 public abstract class AbstractEtlModuleHandler implements EtlModuleHandler {
 
     @Autowired
@@ -41,7 +45,12 @@ public abstract class AbstractEtlModuleHandler implements EtlModuleHandler {
 
     protected void processSources(EtlJob job, MonitorModule module, Long batchId, SourceHandler sourceHandler) throws Exception {
         for (Long srcId : job.getSourceDbIds()) {
-            DbConnectionInfo src = dbRepo.findById(srcId).orElseThrow();
+            Optional<DbConnectionInfo> optionalSrc = dbRepo.findById(srcId);
+            if (optionalSrc.isEmpty()) {
+                log.warn("❌ Source DB 정보 없음 - srcId={}, jobId={}", srcId, job.getId());
+                continue; // 또는 throw 예외
+            }
+            DbConnectionInfo src = optionalSrc.get();
             try {
                 JdbcTemplate jdbc = createJdbc(src);
                 sourceHandler.handle(src, jdbc);
@@ -50,6 +59,7 @@ public abstract class AbstractEtlModuleHandler implements EtlModuleHandler {
             }
         }
     }
+
 
     protected JdbcTemplate getTargetJdbc(EtlJob job) throws Exception {
         DbConnectionInfo target = dbRepo.findById(job.getTargetDbId()).orElseThrow();

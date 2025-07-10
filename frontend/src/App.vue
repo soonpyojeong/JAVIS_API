@@ -1,27 +1,36 @@
 <template>
   <div id="app">
-  <Toast position="center" />
-    <!-- 로그인 상태 복원 후에만 NavBar 표시 -->
-    <NavBar v-if="isNavReady" @logout="handleLogout" />
-    <div class="main-content">
+    <Toast position="center" />
+    <!-- NavBar/메인레이아웃은 로그인 등 일반 화면에서만 노출 -->
+    <NavBar v-if="isNavReady && showNav" @logout="handleLogout" />
+    <div class="main-content" v-if="showNav">
       <router-view />
     </div>
+    <!-- NavBar 등 없이 그냥 이 페이지만 뜨게 -->
+    <router-view v-else />
+    <footer></footer>
   </div>
-    <footer>
-
-    </footer>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import NavBar from "./components/NavBar.vue";
 import api from "@/api";
 const store = useStore();
 const router = useRouter();
+const route = useRoute();
 
 const isNavReady = ref(false);
+
+// 여기에 reset-password name 추가! (라우트 name 반드시 맞춰야 함)
+const hideNavForRoutes = ["ResetPasswordPage"]; // 확장 가능
+const showNav = computed(() => !hideNavForRoutes.includes(route.name));
+
+// 경로 자체로도 예외처리 가능 (더 확실하게!)
+const isResetPasswordPath = computed(() => route.path.startsWith("/reset-password"));
+
 const handleLogout = () => {
   store.dispatch("logout");
   router.push("/login");
@@ -47,9 +56,11 @@ onMounted(async () => {
     }
   }
 
-  if (!accessToken && refreshToken) {
+  // ✅ 리프레시 토큰 처리도 reset-password 경로는 예외!
+  if (!accessToken && refreshToken && !isResetPasswordPath.value) {
     try {
-      const res = await api.post("/auth/refresh", { refreshToken });
+      // refresh API는 항상 /api/auth/refresh 형태로 호출!
+      const res = await api.post("/api/auth/refresh", { refreshToken });
       const newToken = res.data.accessToken;
       localStorage.setItem("accessToken", newToken);
       store.commit("setLoggedIn", true);
@@ -61,17 +72,27 @@ onMounted(async () => {
     }
   }
 
-  if (!accessToken && !refreshToken && router.currentRoute.value.path !== "/login") {
+  // ✅ 로그인 강제 이동도 reset-password에서는 하지 않음!
+  if (
+    !accessToken &&
+    !refreshToken &&
+    router.currentRoute.value.path !== "/login" &&
+    !isResetPasswordPath.value
+  ) {
     router.push("/login");
   }
 
-  if (sessionRestored && router.currentRoute.value.path === "/login") {
+  // 로그인 상태 복구 후 /login에 있다면 홈으로 이동 (예외: reset-password)
+  if (
+    sessionRestored &&
+    router.currentRoute.value.path === "/login" &&
+    !isResetPasswordPath.value
+  ) {
     router.replace("/");
   }
 
   isNavReady.value = true;
 });
-
 </script>
 
 <style>
@@ -79,8 +100,4 @@ onMounted(async () => {
   margin-top: 55px;
   padding: 10px;
 }
-
-
-
 </style>
-

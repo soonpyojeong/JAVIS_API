@@ -1,8 +1,9 @@
 import axios from "axios";
 import store from "@/store";
+import router from "@/router";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_APP_BASE_URL, // ✅ Vite 환경변수 방식!
+  baseURL: import.meta.env.VITE_APP_BASE_URL, // ✅ Vite 환경변수
   timeout: 600000,
   withCredentials: true,
   headers: {
@@ -19,11 +20,16 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-// ✅ 응답 인터셉터 - accessToken 만료 시 자동 재발급
+// ✅ 응답 인터셉터 - accessToken 만료 시 자동 재발급 & reset-password 예외처리
 api.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
+
+    // ✅ reset-password 화면/요청 예외처리 (리다이렉트 금지)
+    const isResetPassword =
+      originalRequest.url?.includes("/reset-password") ||
+      window.location.pathname.startsWith("/reset-password");
 
     if (
       error.response &&
@@ -32,16 +38,20 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
+        // 토큰 재발급 요청
         const res = await api.post('/api/auth/refresh', {
           refreshToken: localStorage.getItem('refreshToken'),
         });
         const newAccessToken = res.data.accessToken;
         localStorage.setItem('accessToken', newAccessToken);
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        return api(originalRequest); // axios(originalRequest) → api(originalRequest)
+        return api(originalRequest);
       } catch (refreshError) {
         store.dispatch("logout");
-        window.location.href = "/login";
+        if (!isResetPassword) {
+          // SPA 방식 라우터 이동 (새로고침 X)
+          router.push("/login");
+        }
         return Promise.reject(refreshError);
       }
     }
@@ -51,4 +61,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-

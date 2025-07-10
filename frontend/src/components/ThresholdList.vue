@@ -17,62 +17,70 @@
       <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-              @click="sortData('dbName')" > DB 이름 </th>
-            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-              @click="sortData('tablespaceName')">Tablespace</th>
-            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-              @click="sortData('thresMb')"> 임계치 (MB) </th>
-            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-              @click="sortData('dbType')" > DB 타입 </th>
-            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100"
-             @click="sortData('imsiDel')" > 관제임시해제(3일) </th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100" @click="sortData('dbName')">DB 이름</th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100" @click="sortData('tablespaceName')">Tablespace</th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100" @click="sortData('thresMb')">임계치 (MB)</th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100">기본 임계치 (MB)</th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100" @click="sortData('dbType')">DB 타입</th>
+            <th class="px-4 py-2 text-center text-sm font-semibold text-gray-600 cursor-pointer hover:bg-gray-100" @click="sortData('imsiDel')">관제임시해제(3일)</th>
           </tr>
         </thead>
         <tbody>
-          <!-- 필터링된 데이터를 표시 -->
-          <tr
-            v-for="(threshold, index) in filteredData"
-            :key="index"
-            class="hover:bg-gray-50"
-          >
-            <td class="px-4 py-2 text-sm text-gray-700">{{ threshold.dbName }}</td>
-            <td class="px-4 py-2 text-sm text-gray-700">{{ threshold.tablespaceName }}</td>
+          <tr v-for="(threshold, index) in filteredData" :key="index" class="hover:bg-gray-50">
+            <td class="px-4 py-2 text-sm text-gray-700 text-center">{{ threshold.dbName }}</td>
+            <td class="px-4 py-2 text-sm text-gray-700 text-center">{{ threshold.tablespaceName }}</td>
             <td class="px-4 py-2 text-sm text-gray-700 text-right">
-              <!-- 클릭하면 인라인 편집 가능 -->
-              <span
-                v-if="!threshold.isEditing"
-                @click="startEditing(threshold)"
-                class="cursor-pointer text-orange-500 hover:underline"
-              >
-                {{ formatNumber(threshold.thresMb) }}
-              </span>
-              <input
-                v-else
-                v-model="threshold.editedValue"
-                @keyup.enter="updateThreshold(threshold)"
-                @blur="cancelEditing(threshold)"
-                type="number"
-                class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
+              <div class="flex justify-end items-center gap-2">
+                <span v-if="!threshold.isEditing" @click="startEditing(threshold)" class="cursor-pointer text-orange-500 hover:underline">
+                  {{ formatNumber(threshold.thresMb) }}
+                </span>
+                <input
+                  v-else
+                  v-model="threshold.editedValue"
+                  @keyup.enter="updateThreshold(threshold)"
+                  @blur="cancelEditing(threshold)"
+                  type="number"
+                  class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <button
+                  v-if="threshold.isEditing"
+                  @click="resetToDefault(threshold)"
+                  class="text-sm text-blue-500 hover:underline"
+                >
+                  기본값
+                </button>
+              </div>
             </td>
-            <td class="px-4 py-2 text-sm text-gray-700">{{ threshold.dbType }}</td>
+            <td class="px-4 py-2 text-sm text-gray-700 text-right">
+              <div class="flex justify-end items-center gap-2">
+                <span
+                  v-if="!threshold.editingDefault"
+                  @click="startEditingDefault(threshold)"
+                  class="cursor-pointer text-blue-600 hover:underline"
+                >
+                  {{ formatNumber(threshold.defThresMb) }}
+                </span>
+                <input
+                  v-if="threshold.editingDefault"
+                  v-model="threshold.editedDefault"
+                  @keyup.enter="updateDefaultThreshold(threshold)"
+                  @blur="cancelEditingDefault(threshold)"
+                  type="number"
+                  class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </td>
+            <td class="px-4 py-2 text-sm text-gray-700 text-center">{{ threshold.dbType }}</td>
             <td class="px-4 py-2 text-sm text-gray-700 text-center">
               <template v-if="threshold.imsiDel">
-                <div class="text-center">
-                  {{ new Date(threshold.imsiDel).toLocaleDateString() }}
-                </div>
+                <div>{{ new Date(threshold.imsiDel).toLocaleDateString() }}</div>
               </template>
               <template v-else>
                 <div class="flex justify-center">
-                  <button class="text-blue-500 hover:underline">
-                    해제
-                  </button>
+                  <button class="text-blue-500 hover:underline" @click="releaseThreshold(threshold.id)">해제</button>
                 </div>
               </template>
             </td>
-
-
           </tr>
         </tbody>
       </table>
@@ -81,138 +89,189 @@
     <p v-if="filteredData.length === 0" class="mt-4 text-sm text-gray-500">검색 결과가 없습니다.</p>
   </div>
 </template>
-<script>
-import api from "@/api"; // 공통 axios 인스턴스 가져오기
 
-export default {
-  data() {
-    return {
-      thresholds: [],
-      searchQuery: "",
-      sortBy: "",
-      sortOrder: "asc",
-    };
-  },
-  computed: {
-    filteredData() {
-      const query = this.searchQuery.toLowerCase();
-      const filtered = this.thresholds.filter((t) => {
-        return (
-          t.dbName.toLowerCase().includes(query) ||
-          t.tablespaceName.toLowerCase().includes(query)
-        );
-      });
-      return this.sortDataBy(filtered);
-    },
-  },
-  methods: {
-    formatNumber(num) {
-      return num.toLocaleString();
-    },
 
-    startEditing(threshold) {
-      threshold.isEditing = true;
-      threshold.editedValue = threshold.thresMb;
-    },
 
-    cancelEditing(threshold) {
-      threshold.isEditing = false;
-      threshold.editedValue = null;
-    },
 
-    updateThreshold(threshold) {
-      const username = this.$store.state.user.username;
-      const updatedThreshold = {
-        id: threshold.id,
-        thresMb: threshold.editedValue,
-        username,
-      };
 
-      api.put(`/api/threshold/${updatedThreshold.id}`, updatedThreshold)
-        .then((res) => {
-          if (res.data) {
-            threshold.thresMb = threshold.editedValue;
-            threshold.isEditing = false;
-          } else {
-            console.error("임계치 업데이트 실패");
-          }
-        })
-        .catch((err) => {
-          console.error("임계치 업데이트 오류:", err);
-        });
-    },
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useStore } from 'vuex';
+import api from '@/api';
 
-    releaseThreshold(id) {
-      api.put(`/api/threshold/${id}/release`)
-        .then((res) => {
-          if (res.data) {
-            alert("임시해제가 완료되었습니다.");
-            this.refreshThresholds();
-          }
-        })
-        .catch((err) => {
-          console.error("임시해제 실패:", err);
-        });
-    },
+const store = useStore();
 
-    refreshThresholds() {
-      api.get("/api/threshold/all")
-        .then((res) => {
-          this.thresholds = res.data.map((t) => ({
-            ...t,
-            isEditing: false,
-            editedValue: null,
-          }));
-        })
-        .catch((err) => {
-          console.error("데이터 로딩 실패:", err);
-        });
-    },
+const thresholds = ref([]);
+const searchQuery = ref('');
+const sortBy = ref('');
+const sortOrder = ref('asc');
 
-    sortData(column) {
-      if (this.sortBy === column) {
-        this.sortOrder = this.sortOrder === "asc" ? "desc" : "asc";
-      } else {
-        this.sortBy = column;
-        this.sortOrder = "asc";
-      }
-    },
+// 포맷 숫자
+const formatNumber = (num) => num.toLocaleString();
 
-    sortDataBy(data) {
-      return data.sort((a, b) => {
-        const valA = a[this.sortBy];
-        const valB = b[this.sortBy];
+// 정렬 필드 설정
+function sortData(column) {
+  if (sortBy.value === column) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortBy.value = column;
+    sortOrder.value = 'asc';
+  }
+}
 
-        // 날짜 타입 (imsiDel 혼합) 정렬
-        if (this.sortBy === "imsiDel") {
-          const timeA = valA ? new Date(valA).getTime() : 0; // null일 경우 0 또는 Infinity로 바꿀 수 있음
-          const timeB = valB ? new Date(valB).getTime() : 0;
+// 정렬 로직
+function sortDataBy(data) {
+  return [...data].sort((a, b) => {
+    const valA = a[sortBy.value];
+    const valB = b[sortBy.value];
 
-          return this.sortOrder === "asc" ? timeA - timeB : timeB - timeA;
-        }
-
-        // 숫자 정렬
-        if (typeof valA === "number" && typeof valB === "number") {
-          return this.sortOrder === "asc" ? valA - valB : valB - valA;
-        }
-
-        // 문자열 정렬
-        if (typeof valA === "string" && typeof valB === "string") {
-          return this.sortOrder === "asc"
-            ? valA.localeCompare(valB)
-            : valB.localeCompare(valA);
-        }
-
-        return 0;
-      });
+    if (sortBy.value === 'imsiDel') {
+      const timeA = valA ? new Date(valA).getTime() : 0;
+      const timeB = valB ? new Date(valB).getTime() : 0;
+      return sortOrder.value === 'asc' ? timeA - timeB : timeB - timeA;
     }
 
-,
-  },
-  mounted() {
-    this.refreshThresholds();
-  },
-};
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return sortOrder.value === 'asc' ? valA - valB : valB - valA;
+    }
+
+    if (typeof valA === 'string' && typeof valB === 'string') {
+      return sortOrder.value === 'asc'
+        ? valA.localeCompare(valB)
+        : valB.localeCompare(valA);
+    }
+
+    return 0;
+  });
+}
+
+// 필터된 데이터
+const filteredData = computed(() => {
+  if (!Array.isArray(thresholds.value)) return [];
+  const query = searchQuery.value.toLowerCase();
+  const filtered = thresholds.value.filter((t) => {
+    return (
+      t.dbName?.toLowerCase().includes(query) ||
+      t.tablespaceName?.toLowerCase().includes(query)
+    );
+  });
+  return sortDataBy(filtered);
+});
+
+// 편집 시작
+function startEditing(threshold) {
+  threshold.isEditing = true;
+  threshold.editedValue = threshold.thresMb;
+}
+
+// 편집 취소
+function cancelEditing(threshold) {
+  threshold.isEditing = false;
+  threshold.editedValue = null;
+}
+
+// 기본값으로 초기화
+function resetToDefault(threshold) {
+  if (!threshold) return;
+  threshold.editedValue = threshold.defThresMb;
+}
+
+// 업데이트 실행
+function updateThreshold(threshold) {
+  const username = store.state.user.username;
+
+  const updatedThreshold = {
+    id: threshold.id,
+    thresMb: threshold.editedValue,
+    username,
+  };
+
+  api.put(`/api/threshold/${updatedThreshold.id}`, updatedThreshold)
+    .then((res) => {
+      if (res.data) {
+        threshold.thresMb = threshold.editedValue;
+        threshold.isEditing = false;
+      } else {
+        console.error('임계치 업데이트 실패');
+      }
+    })
+    .catch((err) => {
+      console.error('임계치 업데이트 오류:', err);
+    });
+}
+
+// 임시 해제
+function releaseThreshold(id) {
+  api.put(`/api/threshold/${id}/release`)
+    .then((res) => {
+      if (res.data) {
+        alert('임시해제가 완료되었습니다.');
+        refreshThresholds();
+      }
+    })
+    .catch((err) => {
+      console.error('임시해제 실패:', err);
+    });
+}
+
+// 데이터 새로고침
+function refreshThresholds() {
+  api.get('/api/threshold/all')
+    .then((res) => {
+      thresholds.value = res.data.map((t) => ({
+        ...t,
+        isEditing: false,
+        editedValue: null,
+      }));
+    })
+    .catch((err) => {
+      console.error('데이터 로딩 실패:', err);
+    });
+}
+
+function startEditingDefault(threshold) {
+  threshold.editingDefault = true;
+  threshold.editedDefault = threshold.defThresMb;
+}
+
+function cancelEditingDefault(threshold) {
+  threshold.editingDefault = false;
+  threshold.editedDefault = null;
+}
+
+function updateDefaultThreshold(threshold) {
+  const username = store.state.user.username || '';
+  const newValue = threshold.editedDefault;
+
+  if (newValue === threshold.defThresMb) {
+    threshold.editingDefault = false;
+    return;
+  }
+
+  const payload = {
+    defThresMb: newValue,
+    commt: username,
+  };
+
+  api.put(`/api/threshold/${threshold.id}/default`, payload)
+    .then((res) => {
+      if (res.data) {
+        threshold.defThresMb = newValue;
+        threshold.editingDefault = false;
+      } else {
+        console.error('기본 임계치 업데이트 실패');
+      }
+    })
+    .catch((err) => {
+      console.error('기본 임계치 업데이트 오류:', err);
+    });
+}
+
+
+// 마운트 시 초기 로딩
+onMounted(() => {
+  refreshThresholds();
+});
 </script>
 
 <style scoped>

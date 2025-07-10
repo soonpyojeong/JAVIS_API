@@ -32,4 +32,14 @@ public class JavisUserToken {
     @OneToOne
     @JoinColumn(name = "USER_ID", insertable = false, updatable = false)
     private JavisLoginUser user;
+
+    @Column(name = "RESET_TOKEN", length = 100)
+    private String resetToken;
+
+    @Column(name = "RESET_TOKEN_EXPIRES_AT")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date resetTokenExpiresAt;
+
+    @Column(name = "RESET_TOKEN_USED", length = 1)
+    private String resetTokenUsed = "N";
 }

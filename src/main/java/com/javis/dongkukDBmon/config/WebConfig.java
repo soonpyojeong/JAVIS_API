@@ -9,8 +9,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        // SPA 라우팅을 위해 모든 경로를 index.html로 포워딩
-        registry.addViewController("/{path:[^\\.]+}")
+        // /, /reset-password, /db-list 등 1단계 경로
+        registry.addViewController("/{spring:[^\\.]+}")
+                .setViewName("forward:/index.html");
+        // /reset-password/step2 등 2단계 이상 경로도 모두 index.html로!
+        registry.addViewController("/**/{spring:[^\\.]+}")
                 .setViewName("forward:/index.html");
     }
+
 }

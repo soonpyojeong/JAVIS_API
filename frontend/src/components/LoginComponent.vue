@@ -14,9 +14,26 @@
         <button type="submit" class="btn-primary">로그인</button>
         <div class="switch-page">
           <button type="button" @click="navigateTo('register')" class="btn-secondary">회원가입</button>
+          <button type="button" class="btn-link" @click="showResetModal = true">비밀번호 재설정</button>
+
         </div>
       </form>
     </div>
+        <!-- 🔽🔽 모달 팝업 구조 추가 -->
+        <div v-if="showResetModal" class="modal-overlay">
+          <div class="modal-content">
+            <h2>비밀번호 재설정</h2>
+            <form @submit.prevent="resetPassword">
+              <div class="input-group">
+                <label for="reset-email">이메일</label>
+                <input v-model="resetEmail" id="reset-email" type="email" placeholder="가입 시 등록한 이메일을 입력하세요" required />
+              </div>
+              <button type="submit" class="btn-primary" style="width:100%;">재설정 링크 전송</button>
+              <button type="button" class="btn-secondary" style="margin-top:10px;width:100%;" @click="showResetModal = false">닫기</button>
+            </form>
+          </div>
+        </div>
+        <!-- 🔼🔼 모달 팝업 구조 추가 끝 -->
 
     <div v-if="isRegisterPage" class="form-card">
       <h2>회원가입</h2>
@@ -53,93 +70,116 @@
     </div>
   </div>
 </template>
-<script>
+
+<script setup>
 import { useStore } from "vuex";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "@/api";
 
-export default {
-  setup() {
-    const store = useStore();
-    const router = useRouter();
+const store = useStore();
+const router = useRouter();
 
-    const isRegisterPage = ref(false);
-    const loginForm = ref({
-      loginId: "",
-      password: "",
-    });
+const isRegisterPage = ref(false);
+const loginForm = ref({
+  loginId: "",
+  password: "",
+});
 
-    const registerForm = ref({
-      loginId: "",
-      username: "",
-      email: "",
-      userRole: "VIEW",
-      password: "",
-      confirmPassword: "",
-    });
+const registerForm = ref({
+  loginId: "",
+  username: "",
+  email: "",
+  userRole: "VIEW",
+  password: "",
+  confirmPassword: "",
+});
 
-    const navigateTo = (page) => {
-      isRegisterPage.value = page === "register";
-    };
+const showResetModal = ref(false);  // 모달 상태
+const resetEmail = ref("");
 
-    const login = async () => {
-      try {
-        const response = await api.post("/api/auth/login", loginForm.value);
-        const { user, accessToken, refreshToken, menuAuthList } = response.data;
+const navigateTo = (page) => {
+  if (page === "register") {
+    isRegisterPage.value = true;
+  } else {
+    isRegisterPage.value = false;
+  }
+};
 
-        // 1. Vuex에 menuAuthList 저장 (mutation/action 만들어놨을 것)
-        store.commit("setMenuAuthList", menuAuthList);
-        // 만약 store.dispatch("login", ...)에서 menuAuthList도 저장하도록 되어 있다면 아래 코드 필요 없음
-        // store.dispatch("login", { user, accessToken, refreshToken, menuAuthList });
+const resetPassword = async () => {
+  try {
+    console.log("[resetPassword] 요청 시작, 입력 이메일:", resetEmail.value);
 
-        // 2. localStorage에도 저장(새로고침 후에도 권한 정보 유지!)
-        localStorage.setItem("menuAuthList", JSON.stringify(menuAuthList));
+    const response = await api.post("/api/auth/password-reset/request", { email: resetEmail.value });
+    console.log("[resetPassword] 서버 응답:", response);
 
-        // 3. 기존과 동일하게 나머지 처리
-        store.dispatch("login", { user, accessToken, refreshToken, menuAuthList });
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", refreshToken);
-        localStorage.setItem("user", JSON.stringify(user));
+    if (response.data.success) {
+      console.log("[resetPassword] 비밀번호 재설정 성공: 이메일로 링크 전송 완료");
+      alert("비밀번호 재설정 링크가 이메일로 전송되었습니다.");
+      showResetModal.value = false;  // 전송 후 모달 닫기
+    } else {
+      console.warn("[resetPassword] 비밀번호 재설정 요청 실패:", response.data);
+      alert("비밀번호 재설정 요청 실패");
+    }
+  } catch (error) {
+    // axios의 에러 응답 객체를 더 자세히 콘솔에 남김
+    if (error.response) {
+      console.error("[resetPassword] 서버 응답 에러:", error.response);
+      alert(error.response?.data?.message || "비밀번호 재설정 요청 중 문제가 발생했습니다.");
+    } else if (error.request) {
+      console.error("[resetPassword] 서버에 요청 자체가 가지 않음:", error.request);
+      alert("네트워크 또는 서버 연결 문제로 요청이 실패했습니다.");
+    } else {
+      console.error("[resetPassword] 예기치 않은 에러:", error.message);
+      alert("예상치 못한 오류가 발생했습니다.");
+    }
+  }
+};
 
-        // 3. 홈으로 이동
-        router.push("/");
-        window.location.href = "/";
-      } catch (error) {
-        alert(error.response?.data?.message || "로그인 중 문제가 발생했습니다.");
-      }
-    };
 
-    const register = async () => {
-      if (registerForm.value.password !== registerForm.value.confirmPassword) {
-        alert("비밀번호가 일치하지 않습니다.");
-        return;
-      }
+const openResetModal = () => {
+  resetEmail.value = "";
+  showResetModal.value = true;
+};
 
-      try {
-        const response = await api.post("/api/auth/register", registerForm.value);
-        if (response.data.success) {
-          alert("회원가입 성공! 로그인 해주세요.");
-          navigateTo("login");
-        } else {
-          alert("회원가입 실패: " + response.data.message);
-        }
-      } catch (error) {
-        alert(error.response?.data?.message || "회원가입 중 문제가 발생했습니다.");
-      }
-    };
+const login = async () => {
+  try {
+    const response = await api.post("/api/auth/login", loginForm.value);
+    const { user, accessToken, refreshToken, menuAuthList } = response.data;
 
-    return {
-      isRegisterPage,
-      loginForm,
-      registerForm,
-      navigateTo,
-      login,
-      register,
-    };
-  },
+    store.commit("setMenuAuthList", menuAuthList);
+    localStorage.setItem("menuAuthList", JSON.stringify(menuAuthList));
+    store.dispatch("login", { user, accessToken, refreshToken, menuAuthList });
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    router.push("/");
+  } catch (error) {
+    alert(error.response?.data?.message || "로그인 중 문제가 발생했습니다.");
+  }
+};
+
+const register = async () => {
+  if (registerForm.value.password !== registerForm.value.confirmPassword) {
+    alert("비밀번호가 일치하지 않습니다.");
+    return;
+  }
+
+  try {
+    const response = await api.post("/api/auth/register", registerForm.value);
+    if (response.data.success) {
+      alert("회원가입 성공! 로그인 해주세요.");
+      navigateTo("login");
+    } else {
+      alert("회원가입 실패: " + response.data.message);
+    }
+  } catch (error) {
+    alert(error.response?.data?.message || "회원가입 중 문제가 발생했습니다.");
+  }
 };
 </script>
+
 
 
 
@@ -233,5 +273,36 @@ h2 {
 
 .switch-page button:hover {
   text-decoration: underline;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.btn-link:hover {
+  color: #0056b3;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+.modal-content {
+  background: white;
+  border-radius: 10px;
+  padding: 30px 30px 20px 30px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.15);
+  width: 350px;
+  text-align: center;
 }
 </style>
