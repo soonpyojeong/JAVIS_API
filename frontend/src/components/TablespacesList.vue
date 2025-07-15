@@ -11,7 +11,7 @@
           :key="db.dbName"
           :value="db.dbName"
         >
-          {{ db.dbName }}{{ db.sizeChk === 'N' ? ' (미수집)' : '' }}
+          {{ db.dbName === 'NIRIS' ? 'IRIS3.0' : db.dbName }} {{ db.sizeChk === 'N' ? ' (미수집)' : '' }}
         </option>
       </select>
         <div class="refresh-wrapper" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
@@ -52,8 +52,9 @@
       </thead>
       <tbody>
         <tr v-for="ts in sortedTablespaces" :key="ts.id.dbName + '-' + ts.id.tsName">
-          <td>{{ ts.id.dbName }}</td>
-          <td>{{ ts.id.tsName }}</td>
+          <td v-if="ts.id.dbName=='NIRIS'">IRIS3.0</td>
+          <td v-else>{{ts.id.dbName}}</td>
+          <td >{{ ts.id.tsName }}</td>
           <td>{{ formatNumber(ts.totalSize) }}</td>
           <td>{{ formatNumber(ts.usedSize) }}</td>
           <td :class="{ 'text-red-500 font-bold bg-red-100': Number(ts.usedRate) >= 85 }">
