@@ -1,255 +1,570 @@
 <template>
   <div class="container">
-    <h2>{{ selectedDb }} DB - 테이블스페이스 리스트</h2>
+    <h2 class="text-2xl font-bold text-orange-600 mb-4">DB 테이블스페이스 및 임계치 통합 뷰</h2>
 
+    <!-- DB 선택 드롭다운 -->
     <div class="select-container">
-      <select v-model="selectedDb" @change="fetchTablespaces(selectedDb)">
-        <option value="DB 선택" disabled>DB 선택</option>
-        <option v-for="(db, index) in tbList" :key="index" :value="db">
-          {{ db }}
+      <select v-model="selectedDb" @change="handleDbChange">
+        <option value="">임계치만보기</option>
+        <option
+          v-for="db in sortedDbList"
+          :key="db.dbName"
+          :value="db.dbName"
+        >
+          {{ db.dbName }}{{ db.sizeChk === 'N' ? ' (미수집)' : '' }}
         </option>
       </select>
-       <!-- ✅ wrapper div에 hover 이벤트 정확히 추가 -->
-       <div
-         class="refresh-wrapper"
-         @mouseenter="showTooltip = true"
-         @mouseleave="showTooltip = false"
-       >
-         <button
-           class="refresh-btn"
-           :class="{ rotating: isRotating }"
-           @click="handleRefreshClick"
-         >
-           <svg class="refresh-icon" viewBox="0 0 24 24">
-             <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.41 3.59 8 8 8s8-3.59 8-8-3.59-8-8-8z" fill="currentColor"/>
-           </svg>
-         </button>
-
-         <!-- ✅ 툴팁 카드 표시 -->
-         <div v-if="showTooltip" class="tooltip-card">
-           DB 정보 새로고침
-           <div class="tooltip-arrow"></div> <!-- 화살표 -->
-         </div>
-       </div>
+        <div class="refresh-wrapper" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
+          <button class="refresh-btn" :class="{ rotating: isRotating }" @click="handleRefreshClick">
+            <svg class="refresh-icon" viewBox="0 0 24 24">
+              <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.41 3.59 8 8 8s8-3.59 8-8-3.59-8-8-8z" fill="currentColor"/>
+            </svg>
+          </button>
+          <div v-if="showTooltip" class="tooltip-card">
+            DB 정보 새로고침
+            <div class="tooltip-arrow"></div>
+          </div>
+        </div>
     </div>
-    <!-- 메시지 모달 팝업 -->
+
+    <!-- 검색 필드 -->
+    <div class="mb-4">
+      <input v-model="searchQuery" type="text" placeholder="Tablespace 검색"
+        class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500" />
+    </div>
+
+    <!-- 테이블 -->
+    <!-- 기존 v-if="filteredTablespaces.length" → 조건 제거 -->
+    <table class="tablespace-table" v-if="filteredTablespaces.length || showAllThresholds">
+      <thead>
+        <tr>
+        <th @click="setSort('dbName')">DB명<span v-if="sortKey === 'dbName'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        <th @click="setSort('tsName')">Tablespace<span v-if="sortKey === 'tsName'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        <th @click="setSort('totalSize')">Total(MB)<span v-if="sortKey === 'totalSize'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        <th @click="setSort('usedSize')">Used(MB)<span v-if="sortKey === 'usedSize'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        <th @click="setSort('usedRate')">사용률<span v-if="sortKey === 'usedRate'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        <th @click="setSort('freeSize')">Free(MB)<span v-if="sortKey === 'freeSize'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        <th @click="setSort('dbType')">DB TYPE<span v-if="sortKey === 'dbType'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        <th @click="setSort('thresMb')">임계치<span v-if="sortKey === 'thresMb'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        <th @click="setSort('defThresMb')">기본 임계치<span v-if="sortKey === 'defThresMb'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        <th @click="setSort('imsiDel')">관제3일조용<span v-if="sortKey === 'imsiDel'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="ts in sortedTablespaces" :key="ts.id.dbName + '-' + ts.id.tsName">
+          <td>{{ ts.id.dbName }}</td>
+          <td>{{ ts.id.tsName }}</td>
+          <td>{{ formatNumber(ts.totalSize) }}</td>
+          <td>{{ formatNumber(ts.usedSize) }}</td>
+          <td :class="{ 'text-red-500 font-bold bg-red-100': Number(ts.usedRate) >= 85 }">
+            {{ formatNumber(ts.usedRate) }}%
+          </td>
+
+          <!-- <td><canvas :id="'chart-' + ts.id.tsName" class="rate-chart"></canvas></td> -->
+          <td>{{ formatNumber(ts.freeSize) }}</td>
+          <td>{{ ts.dbType }}</td>
+          <td>
+            <div class="flex justify-end items-center gap-2">
+              <template v-if="!ts.isEditing">
+                <span
+                  v-if="ts.thresMb != null"
+                  @click="startEditing(ts)"
+                  class="cursor-pointer text-orange-500 hover:underline"
+                >
+                  {{ formatNumber(ts.thresMb) }}
+                </span>
+                <button
+                  v-else
+                  class="add-threshold-button"
+                  @click="openAddThresholdModal(ts)"
+                >
+                  +
+                </button>
+              </template>
+
+              <input
+                v-else
+                v-model="ts.editedValue"
+                @keyup.enter="updateThreshold(ts)"
+                @blur="cancelEditing(ts)"
+                type="number"
+                class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <button
+                v-if="ts.isEditing"
+                @click="resetToDefault(ts)"  >
+                기본값
+              </button>
+            </div>
+          </td>
+          <td>
+            <div class="flex justify-end items-center gap-2">
+              <span v-if="!ts.editingDefault" @click="startEditingDefault(ts)" class="cursor-pointer text-blue-600 hover:underline">
+                {{ formatNumber(ts.defThresMb) }}
+              </span>
+              <input v-if="ts.editingDefault" v-model="ts.editedDefault" @keyup.enter="updateDefaultThreshold(ts)" @blur="cancelEditingDefault(ts)"
+                type="number" class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </td>
+          <td>
+            <template v-if="ts.imsiDel">
+              <div>{{ new Date(ts.imsiDel).toLocaleDateString() }}</div>
+            </template>
+            <template v-else-if="ts.thresMb != null && ts.defThresMb != null">
+              <div class="flex justify-center">
+                <button
+                  @click="releaseThreshold(ts.thresholdId)"
+                >
+                  해제
+                </button>
+              </div>
+            </template>
+          </td>
+
+
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 아래처럼 남아있으면 안 됨 -->
+    <p v-if="tablespaces.length === 0 && selectedDb">테이블스페이스 정보가 없습니다.</p>
+
+    <!-- 아래처럼 바꿔야 함 -->
+    <p v-if="tablespaces.length === 0">임계치 설정된 테이블스페이스가 없습니다.</p>
+
+
+    <!-- 모달 -->
     <div v-if="showMessageModal" class="modal-overlay">
       <div class="modal">
         <p>{{ messageModalText }}</p>
         <button @click="closeMessageModal" class="modal-close-btn">확인</button>
       </div>
     </div>
-    <table class="tablespace-table">
-      <thead>
-        <tr>
-          <th>Tablespace 이름</th>
-          <th>TOTAL(MB)</th>
-          <th>USED(MB)</th>
-          <th>사용률 (%)</th>
-          <th>FREE(MB)</th>
-          <th>DB TYPE</th>
-          <th>임계치</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="ts in filteredTablespaces" :key="ts.id.tsName">
-          <td>{{ ts.id.tsName }}</td>
-          <td>{{ formatNumber(ts.totalSize) }}</td>
-          <td>{{ formatNumber(ts.usedSize) }}</td>
-          <td class="used-rate-td">
-            <div class="used-rate-container">
-              <canvas :id="'chart-' + ts.id.tsName" class="rate-chart" width="600" height="150"></canvas>
-            </div>
-          </td>
-          <td>{{ formatNumber(ts.freeSize) }}</td>
-          <td>{{ ts.dbType }}</td>
-          <td>
-            <template v-if="ts.thresMb != null">
-              {{ formatNumber(ts.thresMb) }}
-            </template>
-            <template v-else>
-              <button @click="handleAddThreshold(ts)" class="add-threshold-button">+</button>
-            </template>
-          </td>
-        </tr>
-      </tbody>
-    </table>
 
-    <p v-if="filteredTablespaces.length === 0">검색 결과가 없습니다.</p>
-
-    <div v-if="isModalVisible" class="modal-overlay">
-      <div class="modal">
-        <h3>임계치 추가 설정</h3>
-        <form @submit.prevent="saveThreshold">
-          <div class="form-group">
-            <label>DB 이름:</label>
-            <input type="text" v-model="modalData.dbName" readonly />
+     <!-- 임계치 추가 모달 -->
+        <div v-if="isAddModalVisible" class="modal-overlay">
+          <div class="modal">
+            <h3 class="font-bold text-lg mb-4">임계치 추가</h3>
+            <form @submit.prevent="saveNewThreshold">
+              <div class="form-group mb-2">
+                <label class="block font-medium">DB 이름</label>
+                <input type="text" v-model="addModalData.dbName" readonly class="w-full border p-2 rounded" />
+              </div>
+              <div class="form-group mb-2">
+                <label class="block font-medium">Tablespace</label>
+                <input type="text" v-model="addModalData.tablespaceName" readonly class="w-full border p-2 rounded" />
+              </div>
+              <div class="form-group mb-2">
+                <label class="block font-medium">DB 타입</label>
+                <input type="text" v-model="addModalData.dbType" readonly class="w-full border p-2 rounded" />
+              </div>
+              <div class="form-group mb-2">
+                <label class="block font-medium">임계치 (MB)</label>
+                <input type="number" v-model="addModalData.thresMb" required class="w-full border p-2 rounded" />
+              </div>
+              <div class="form-group mb-2">
+                <label class="block font-medium">체크 여부</label>
+                <select v-model="addModalData.chkFlag" class="w-full border p-2 rounded">
+                  <option value="Y">Y</option>
+                  <option value="N">N</option>
+                </select>
+              </div>
+              <div class="form-group mb-2">
+                <label class="block font-medium">코멘트</label>
+                <textarea v-model="addModalData.commt" class="w-full border p-2 rounded"></textarea>
+              </div>
+              <div class="flex justify-end gap-2 mt-4">
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">저장</button>
+                <button type="button" @click="closeAddModal" class="bg-gray-400 text-white px-4 py-2 rounded">취소</button>
+              </div>
+            </form>
           </div>
-          <div class="form-group">
-            <label>Tablespace 이름:</label>
-            <input type="text" v-model="modalData.tablespaceName" readonly />
-          </div>
-          <div class="form-group">
-            <label>DB 타입:</label>
-            <input type="text" v-model="modalData.dbType" readonly />
-          </div>
-          <div class="form-group">
-            <label>Threshold MB:</label>
-            <input type="number" v-model="modalData.thresMb" required />
-          </div>
-          <div class="form-group">
-            <label>체크 플래그:</label>
-            <select v-model="modalData.chkFlag">
-              <option value="Y">Y</option>
-              <option value="N">N</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>컨먼트:</label>
-            <textarea v-model="modalData.commt"></textarea>
-          </div>
-          <button type="submit">저장</button>
-          <button type="button" @click="closeModal">닫기</button>
-        </form>
+        </div>
       </div>
-    </div>
-  </div>
-</template>
+    </template>
+<script setup>
+import { ref, computed, onMounted, nextTick } from 'vue';
+import { useStore } from 'vuex';
+import api from '@/api';
+import Chart from 'chart.js/auto';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-<script>
-import Chart from "chart.js/auto";
-import ChartDataLabels from "chartjs-plugin-datalabels";
-import api from "@/api";
+const store = useStore();
+const selectedDb = ref('DB 선택');
+const dbList = ref([]);
+const tablespaces = ref([]);
+const searchQuery = ref('');
+const chartInstances = ref({});
+const showTooltip = ref(false);
+const isRotating = ref(false);
+const showMessageModal = ref(false);
+const messageModalText = ref('');
+const message = ref('');
+const isAddModalVisible = ref(false);
+const addModalData = ref({ dbName: '', tablespaceName: '', dbType: '', thresMb: 0, chkFlag: 'Y', commt: '' });
+const sortKey = ref('');
+const sortOrder = ref(1); // 1: 오름차순, -1: 내림차순
 
-export default {
-  data() {
-    return {
-      selectedDb: "DB조회중",
-      tbList: [],
-      tablespaces: [],
-      searchQuery: "",
-      isModalVisible: false,
-      modalData: { chkFlag: 'Y' },
-      chartInstances: {},
-      isRotating: false, // ✅ 회전 상태 추가
-      showMessageModal: false, // ✅ 모달 알림용 데이터
-      messageModalText: "",
-      showTooltip: false, // ✅ 툴팁 표시 여부
-    };
-  },
-  computed: {
-    filteredTablespaces() {
-      return this.tablespaces.filter(ts =>
-        ts.id.tsName.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
-    },
-  },
-  methods: {
-    formatNumber(number) {
-      return number.toLocaleString();
-    },
-    handleRefreshClick() {
-          this.isRotating = true;
-          this.refreshDbList();
+const allThresholds = ref([]);
 
-          // 1초 후에 회전 멈추기 (자연스럽게)
-          setTimeout(() => {
-            this.isRotating = false;
-          }, 1000);
-    },
-    refreshDbList() {
-      api.post("/api/tb/dbList/refresh").then(() => {
-        this.openMessageModal("DB 목록이 새로고침되었습니다!");
-        this.fetchDbList();
-      }).catch(() => {
-        this.openMessageModal("DB 목록 새로고침 실패!");
-      });
-    },
-    fetchDbList() {
-      api.get("/api/tb/list").then((res) => {
-        this.tbList = res.data.sort((a, b) => a.localeCompare(b));
-        this.selectedDb = "DB 선택";
-      });
-    },
-    fetchTablespaces(dbName) {
-      api.get(`/api/tb/${dbName}/tablespaces`).then((res) => {
-        this.tablespaces = res.data || [];
-        this.$nextTick(() => {
-          this.tablespaces.forEach(ts => this.drawBarChart(ts));
-        });
-      });
-    },
-    openMessageModal(message) {
-      this.messageModalText = message;
-      this.showMessageModal = true;
-    },
+function fetchAllThresholds() {
+  api.get('/api/threshold/all').then((res) => {
+    //console.log('전체 임계치 목록:', res.data); // 🔍 콘솔 확인
+    allThresholds.value = res.data || [];
 
-    closeMessageModal() {
-      this.showMessageModal = false;
-    },
-    drawBarChart(ts) {
-      const canvasId = `chart-${ts.id.tsName.replace(/\s+/g, '_')}`;
-      const canvas = document.getElementById(canvasId);
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (this.chartInstances[ts.id.tsName]) {
-        this.chartInstances[ts.id.tsName].destroy();
-      }
-      const roundedUsedRate = parseFloat(ts.usedRate.toFixed(1));
-      this.chartInstances[ts.id.tsName] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['사용률'],
-          datasets: [{
-            label: '사용률',
-            data: [roundedUsedRate],
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            borderColor: 'rgb(75, 192, 192)',
-            borderRadius: 1,
-            borderWidth: 1,
-          }]
-        },
-        options: {
-          responsive: true,
-          indexAxis: 'y',
-          scales: { x: { min: 0, max: 100, ticks: { display: false }, grid: { display: false } }, y: { display: false } },
-          plugins: {
-            legend: { display: false },
-            datalabels: {
-              display: true,
-              align: (ctx) => ctx.dataset.data[0] >= 56 ? 'center' : 'end',
-              anchor: (ctx) => ctx.dataset.data[0] >= 56 ? 'center' : 'end',
-              formatter: (value) => `${value.toFixed(1)}%`,
-              color: (ctx) => ctx.dataset.data[0] >= 85 ? 'red' : 'rgb(75, 192, 192)',
-              font: { weight: 'bold', size: 12 },
-            },
-          },
-        },
-        plugins: [ChartDataLabels],
-      });
-    },
-    handleAddThreshold(ts) {
-      this.modalData = { dbType: ts.dbType, dbName: ts.id.dbName, tablespaceName: ts.id.tsName, thresMb: ts.freeSize, chkFlag: 'Y', commt: '' };
-      this.isModalVisible = true;
-    },
-    closeModal() {
-      this.isModalVisible = false;
-    },
-    saveThreshold() {
-      const username = this.$store.state.user.username;
-      api.post("/api/threshold/save", { ...this.modalData, username })
-        .then(() => {
-          alert("Threshold 설정이 저장되어왔습니다.");
-          this.closeModal();
-          this.fetchTablespaces(this.selectedDb);
-        });
-    }
-  },
-  mounted() {
-    this.fetchDbList();
+  });
+}
+
+const sortedTablespaces = computed(() => {
+  const list = [...filteredTablespaces.value];
+
+  if (sortKey.value) {
+    list.sort((a, b) => {
+      const aVal = getSortValue(a, sortKey.value);
+      const bVal = getSortValue(b, sortKey.value);
+
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      if (typeof aVal === 'number') return (aVal - bVal) * sortOrder.value;
+      return String(aVal).localeCompare(String(bVal)) * sortOrder.value;
+    });
   }
-};
+
+  return list;
+});
+
+function getSortValue(obj, key) {
+  if (key === 'dbName') return obj.id.dbName;
+  if (key === 'tsName') return obj.id.tsName;
+  return obj[key];
+}
+
+function setSort(key) {
+  if (sortKey.value === key) {
+    sortOrder.value *= -1; // 같은 키 다시 누르면 정렬 반전
+  } else {
+    sortKey.value = key;
+    sortOrder.value = 1;
+  }
+}
+
+
+const showAllThresholds = ref(true); // 기본값: 전체 표시
+
+function fetchThresholdsWithUsage() {
+  api.get('/api/threshold/with-usage').then((res) => {
+    const result = res.data || [];
+    console.log('[임계치 리스트 확인]', result);
+    tablespaces.value = result.map((item) => ({
+      id: {
+        dbName: item.dbName,
+        tsName: item.tablespaceName,
+      },
+      dbType: item.dbType,
+      totalSize: item.totalSize,
+      usedSize: item.usedSize,
+      usedRate: item.usedRate,
+      freeSize: item.freeSize,
+      thresholdId: item.id, // 없어도 괜찮음 (id가 없으면 임계치 없는 상태로 처리)
+      thresMb: item.thresMb,
+      defThresMb: item.defThresMb,
+      imsiDel: item.imsiDel,
+      isEditing: false,
+      editingDefault: false,
+      editedValue: null,
+      editedDefault: null,
+    }));
+  });
+}
+
+
+
+
+onMounted(async () => {
+  await fetchDbList();
+  await fetchThresholdsWithUsage();
+  await fetchAllThresholds();
+
+  // 전체 threshold 목록 기반으로 tablespaces 구성
+  const mapped = allThresholds.value.map((thr) => ({
+    id: {
+      dbName: thr.dbName,
+      tsName: thr.tablespaceName
+    },
+    dbType: thr.dbType,
+    totalSize: thr.totalSize,      // 필요한 경우 API로 채움
+    usedSize: thr.usedSize,
+    usedRate: thr.usedRate,
+    freeSize: thr.freeSize,
+    thresholdId: thr.id,
+    thresMb: thr.thresMb,
+    defThresMb: thr.defThresMb,
+    imsiDel: thr.imsiDel,
+    isEditing: false,
+    editingDefault: false,
+    editedValue: null,
+    editedDefault: null,
+  }));
+
+  tablespaces.value = mapped;
+});
+
+function fetchDbList() {
+  api.get('/api/db-list').then((res) => {
+    dbList.value = Array.isArray(res.data) ? res.data : [];
+  });
+}
+
+
+function handleDbChange() {
+      if (!selectedDb.value) {
+        // ✅ '임계치만보기' 선택 시, 사용률 포함된 최신 임계치 목록 재조회
+        fetchThresholdsWithUsage();  // 👈 여기 추가
+        return;
+      }
+
+    const selected = dbList.value.find((d) => d.dbName === selectedDb.value);
+    if (!selected || selected.sizeChk === 'N') {
+    message.value = '해당 DB는 테이블스페이스 수집이 되지 않았습니다.';
+    tablespaces.value = [];
+    return;
+    }
+
+  message.value = '';
+  api.get(`/api/tb/${selectedDb.value}/tablespaces`).then((res) => {
+    const data = res.data.map((ts) => {
+      const match = allThresholds.value.find(
+        (thr) =>
+          thr.dbName === ts.id.dbName &&
+          thr.dbType === ts.dbType &&
+          thr.tablespaceName === ts.id.tsName
+      );
+
+      //console.log('[매칭 결과]', match, 'for ts:', ts);
+
+      return {
+        ...ts,
+        thresholdId: match?.id ?? null,
+        thresMb: match?.thresMb ?? null,
+        defThresMb: match?.defThresMb ?? null,
+        imsiDel: match?.imsiDel ?? null,
+        isEditing: false,
+        editingDefault: false,
+        editedValue: null,
+        editedDefault: null,
+      };
+    });
+
+
+    tablespaces.value = data;
+
+    // 차트 갱신
+    nextTick(() => data.forEach(drawBarChart));
+  });
+}
+
+
+
+const filteredTablespaces = computed(() => {
+  const keyword = (searchQuery.value || '').toLowerCase();
+  return tablespaces.value.filter(ts =>
+    `${ts.id.dbName}.${ts.id.tsName}`.toLowerCase().includes(keyword)
+  );
+});
+
+
+function formatNumber(num) {
+  return num != null ? num.toLocaleString() : '-';
+}
+
+function handleRefreshClick() {
+  isRotating.value = true;
+  api.post('/api/tb/dbList/refresh')
+    .then(() => {
+      openMessageModal('DB 목록이 새로고침되었습니다!');
+      fetchDbList();
+    })
+    .finally(() => setTimeout(() => (isRotating.value = false), 1000));
+}
+
+function openMessageModal(message) {
+  messageModalText.value = message;
+  showMessageModal.value = true;
+}
+
+function closeMessageModal() {
+  showMessageModal.value = false;
+}
+
+function drawBarChart(ts) {
+  const canvasId = `chart-${ts.id.tsName.replace(/\s+/g, '_')}`;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (chartInstances.value[ts.id.tsName]) {
+    chartInstances.value[ts.id.tsName].destroy();
+  }
+  const roundedUsedRate = ts.usedRate != null ? parseFloat(ts.usedRate.toFixed(1)) : 0;
+  chartInstances.value[ts.id.tsName] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['사용률'],
+      datasets: [{
+        label: '사용률',
+        data: [roundedUsedRate],
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderColor: 'rgb(75, 192, 192)',
+        borderRadius: 1,
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      indexAxis: 'y',
+      scales: {
+        x: { min: 0, max: 100, ticks: { display: false }, grid: { display: false } },
+        y: { display: false },
+      },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          display: true,
+          align: (ctx) => ctx.dataset.data[0] >= 56 ? 'center' : 'end',
+          anchor: (ctx) => ctx.dataset.data[0] >= 56 ? 'center' : 'end',
+          formatter: (value) => `${value.toFixed(1)}%`,
+          color: (ctx) => ctx.dataset.data[0] >= 85 ? 'red' : 'rgb(75, 192, 192)',
+          font: { weight: 'bold', size: 12 },
+        },
+      },
+    },
+    plugins: [ChartDataLabels],
+  });
+}
+// DB 목록 정렬된 computed
+const sortedDbList = computed(() => {
+  return [...dbList.value].sort((a, b) => a.dbName.localeCompare(b.dbName))
+})
+
+function startEditing(ts) {
+  if (ts.thresMb == null) return openAddThresholdModal(ts);
+  ts.isEditing = true;
+  ts.editedValue = ts.thresMb;
+}
+
+function cancelEditing(ts) {
+  ts.isEditing = false;
+  ts.editedValue = null;
+}
+
+function resetToDefault(ts) {
+  ts.editedValue = ts.defThresMb;
+}
+
+function updateThreshold(tablespace) {
+  const username = store.state.user?.username || 'unknown';
+  if (!tablespace.thresholdId) return;
+
+  api.put(`/api/threshold/${tablespace.thresholdId}`, {
+    id: tablespace.thresholdId,
+    thresMb: tablespace.editedValue,
+    username
+  }).then((res) => {
+    if (res.data) {
+      tablespace.thresMb = tablespace.editedValue;
+      tablespace.isEditing = false;
+    }
+  });
+}
+
+function startEditingDefault(ts) {
+  ts.editingDefault = true;
+  ts.editedDefault = ts.defThresMb;
+}
+
+function cancelEditingDefault(ts) {
+  ts.editingDefault = false;
+  ts.editedDefault = null;
+}
+
+function updateDefaultThreshold(tablespace) {
+  const username = store.state.user?.username || 'unknown';
+  if (!tablespace.thresholdId) return;
+
+  api.put(`/api/threshold/${tablespace.thresholdId}/default`, {
+    defThresMb: tablespace.editedDefault,
+    commt: username
+  }).then((res) => {
+    if (res.data) {
+      tablespace.defThresMb = tablespace.editedDefault;
+      tablespace.editingDefault = false;
+    }
+  });
+}
+
+
+function releaseThreshold(thresholdId) {
+  if (!thresholdId || typeof thresholdId !== 'number') {
+    //console.warn('[임시해제] 잘못된 thresholdId:', thresholdId);
+    return;
+  }
+
+  api.put(`/api/threshold/${thresholdId}/release`)
+    .then((res) => {
+      if (res.data) {
+        alert('임시해제가 완료되었습니다.');
+        refreshThresholds();
+      }
+    })
+    .catch((err) => {
+      console.error('임시해제 실패:', err);
+    });
+}
+
+
+// 데이터 새로고침
+function refreshThresholds() {
+  api.get('/api/threshold/all')
+    .then((res) => {
+      thresholds.value = res.data.map((t) => ({
+        ...t,
+        isEditing: false,
+        editedValue: null,
+      }));
+    })
+    .catch((err) => {
+      console.error('데이터 로딩 실패:', err);
+    });
+}
+
+function openAddThresholdModal(ts) {
+  addModalData.value = {
+    dbName: ts.id.dbName,
+    tablespaceName: ts.id.tsName,
+    dbType: ts.dbType,
+    thresMb: ts.freeSize,
+    chkFlag: 'Y',
+    commt: '',
+  };
+  isAddModalVisible.value = true;
+}
+
+function saveNewThreshold() {
+  const username = store.state.user?.username || 'unknown';
+  const payload = { ...addModalData.value, username };
+  api.post('/api/threshold/save', payload)
+    .then(() => {
+      isAddModalVisible.value = false;
+      openMessageModal('임계치가 저장되었습니다.');
+      handleDbChange();
+    });
+}
+
+function closeAddModal() {
+  isAddModalVisible.value = false;
+}
 </script>
+
 
 
 <style scoped>
@@ -257,7 +572,7 @@ export default {
 .container {
   font-family: 'Arial', sans-serif;
   padding: 30px;
-  max-width: 1250px;
+  max-width: 1450px;
   margin: 0 auto;
   background-color: #ffffff;
   border-radius: 12px;
@@ -277,6 +592,7 @@ h2 {
   font-weight: 600;
   letter-spacing: 0.5px;
   transition: color 0.3s;
+  padding: 30px;
 }
 
 h2:hover {
@@ -348,7 +664,7 @@ select:focus {
 button {
   padding: 12px 20px;
   font-size: 16px;
-  border-radius: 8px;
+  border-radius: 5px;
   background-color: #4caf50;
   color: #fff;
   border: none;
@@ -395,7 +711,7 @@ button:focus {
 }
 
 .tablespace-table td {
-  font-size: 14px;
+  font-size: 16px;
   color: #555;
   padding: 3px 10px; /* 패딩을 줄여서 높이를 조정 */
 }
@@ -437,9 +753,9 @@ button:focus {
 }
 
 .used-rate-td {
-  width: 150px; /* ✅ td 너비를 원하는 크기로 지정 */
-  min-width: 180px; /* ✅ 최소 크기 설정 (선택) */
-  max-width: 220px; /* ✅ 최대 크기 제한 (선택) */
+  width: 100px; /* ✅ td 너비를 원하는 크기로 지정 */
+  min-width: 100px; /* ✅ 최소 크기 설정 (선택) */
+  max-width: 100px; /* ✅ 최대 크기 제한 (선택) */
   padding: 4px 8px; /* ✅ 패딩 여유 */
   text-align: left; /* ✅ 안쪽 내용 왼쪽 정렬 */
 }
@@ -456,7 +772,7 @@ button:focus {
 
   .tablespace-table th, .tablespace-table td {
     padding: 1px;
-    font-size: 12px;
+    font-size: 15px;
   }
 
   button {
@@ -605,5 +921,4 @@ button:hover {
   border-right: 6px solid transparent;
   border-top: 6px solid white;
 }
-
 </style>

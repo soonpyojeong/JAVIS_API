@@ -1,6 +1,7 @@
 package com.javis.dongkukDBmon.controller;
 
 import com.javis.dongkukDBmon.Dto.DefaultThresholdUpdateRequest;
+import com.javis.dongkukDBmon.Dto.ThresholdWithUsageDto;
 import com.javis.dongkukDBmon.model.Alert;
 import com.javis.dongkukDBmon.model.Threshold;
 import com.javis.dongkukDBmon.service.AlertService;
@@ -13,6 +14,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +123,7 @@ public class ThresholdController {
         threshold.setDbType(dbType);  // ✅ dbType도 꼭 세팅해야 함
         threshold.setTablespaceName(tablespaceName);
         threshold.setThresMb(thresMb);
+        threshold.setDefThresMb(thresMb);
         threshold.setChkFlag(chkFlag);
 
         Threshold savedThreshold = thresholdService.saveThreshold(threshold);
@@ -139,6 +144,19 @@ public class ThresholdController {
 
 
 
+    @GetMapping("/with-usage")
+    public ResponseEntity<List<ThresholdWithUsageDto>> getThresholdsWithUsage() {
+        // 현재 시간에서 seoul기준
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // "yyyy/MM/dd HH:mm:ss" 형식으로 변환
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+        String formattedTimeLimit = now.format(formatter);
+        // 쿼리 실행
+
+        List<ThresholdWithUsageDto> result = thresholdService.findThresholdsWithUsage(formattedTimeLimit);
+        return ResponseEntity.ok(result);
+    }
 
 
 }

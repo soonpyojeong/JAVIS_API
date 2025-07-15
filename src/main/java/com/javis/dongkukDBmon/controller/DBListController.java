@@ -1,5 +1,6 @@
 package com.javis.dongkukDBmon.controller;
 
+import com.javis.dongkukDBmon.Dto.DbListDto;
 import com.javis.dongkukDBmon.model.Alert;
 import com.javis.dongkukDBmon.model.DBList;
 import com.javis.dongkukDBmon.service.AlertService;
@@ -30,6 +31,12 @@ public class DBListController {
     @GetMapping("/all")
     public List<DBList> getAllDBList() {
         return dbListService.getAllDBList();
+    }
+
+    // ✅ Vue에서 사용할 드롭다운 리스트용 API
+    @GetMapping
+    public List<DbListDto> getDbListForDropdown() {
+        return dbListService.getOracleAndTiberoDbList();
     }
 
     @PostMapping("/save")

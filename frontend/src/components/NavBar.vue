@@ -259,16 +259,13 @@ const menuItems = [
   { name: "첫화면", path: "/", roles: ["ADMIN", "DBA", "EAI", "VIEW"], iconClass: "pi pi-home" },
   { name: "DB 전체 리스트", path: "/db-list", roles: ["ADMIN", "DBA", "EAI"], iconClass: "pi pi-database" },
   { name: "SMS 전송 내역", path: "/sms-history", roles: ["ADMIN", "DBA", "EAI", "VIEW"], iconClass: "pi pi-send" },
-  { name: "테이블스페이스관리", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-align-left", hasSub: true, subMenu: "space" },
+  { name: "테이블스페이스관리", path: "/tablespaces", roles: ["ADMIN", "DBA"], iconClass: "pi pi-align-left" },
   { name: "일일점검", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-calendar", hasSub: true, subMenu: "daily" },
   { name: "패스워드관리", path: "/Manager", roles: ["ADMIN", "DBA"], iconClass: "pi pi-key" },
   { name: "ETL DB관리", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-share-alt", hasSub: true, subMenu: "etl" },
   { name: "JAVIS권한관리", path: "/ManagerMenuRole", roles: ["ADMIN"], iconClass: "pi pi-share-alt"},
 ];
-const SpaceSubMenus = [
-  { name: "임계치 리스트", path: "/threshold-list", roles: ["ADMIN", "DBA"], iconClass: "pi pi-sliders-h" },
-  { name: "테이블스페이스 리스트", path: "/tablespaces", roles: ["ADMIN", "DBA"], iconClass: "pi pi-align-left" },
-];
+
 const dailySubMenus = [
   { name: "일일 점검(hit율)", path: "/dailyChk", iconClass: "pi pi-chart-bar" },
   { name: "일일 점검(SYS)", path: "/SysInfoDetail", iconClass: "pi pi-chart-line" },
@@ -283,7 +280,7 @@ const etlSubMenus = [
 ];
 
 
-const subMenuMap = { daily: dailySubMenus, etl: etlSubMenus, space: SpaceSubMenus };
+const subMenuMap = { daily: dailySubMenus, etl: etlSubMenus };
 
 
 

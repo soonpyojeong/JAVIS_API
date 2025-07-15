@@ -1,5 +1,6 @@
 package com.javis.dongkukDBmon.service;
 
+import com.javis.dongkukDBmon.Dto.DbListDto;
 import com.javis.dongkukDBmon.model.DBList;
 import com.javis.dongkukDBmon.repository.DBListRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,9 @@ public class DBListService {
         dbListRepository.save(dbList);
 
     }
-
+    public List<DbListDto> getOracleAndTiberoDbList() {
+        return dbListRepository.findOracleAndTiberoDbList();
+    }
 
     // DB 리스트 삭제
     public void deleteDBList(Long id) {

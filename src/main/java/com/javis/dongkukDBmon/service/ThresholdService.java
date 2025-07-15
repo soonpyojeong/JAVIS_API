@@ -1,6 +1,7 @@
 // ThresholdService.java
 package com.javis.dongkukDBmon.service;
 
+import com.javis.dongkukDBmon.Dto.ThresholdWithUsageDto;
 import com.javis.dongkukDBmon.model.Threshold;
 import com.javis.dongkukDBmon.repository.ThresholdRepository;
 import jakarta.persistence.EntityManager;
@@ -72,6 +73,12 @@ public class ThresholdService {
                 .setParameter(3, id)
                 .executeUpdate();
     }
+
+
+    public List<ThresholdWithUsageDto> findThresholdsWithUsage(String formattedTime) {
+        return thresholdRepository.findWithUsage(formattedTime);
+    }
+
 
 }
 
