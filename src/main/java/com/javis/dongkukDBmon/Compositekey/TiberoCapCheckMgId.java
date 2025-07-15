@@ -9,11 +9,7 @@ import java.io.Serializable;
 @Embeddable
 public class TiberoCapCheckMgId implements Serializable {
 
-    @Column(name = "chk_date", insertable = false, updatable = false)
-    private String chkDate;
 
-    @Column(name = "chk_time", insertable = false, updatable = false)
-    private String chkTime;
 
     @Column(name = "db_name")
     private String dbName;

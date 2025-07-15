@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "VW_DB_CAP_CHECK_MG")
+@Table(name = "VW_DB_CAP_THRES")
 public class TiberoCap_Check_Mg {
 
     @EmbeddedId
@@ -24,15 +24,6 @@ public class TiberoCap_Check_Mg {
 
     @Column(name = "USED_RATE")
     private Double usedRate;
-
-    @Column(name = "AUTOEXTENS_CNT_FILE")
-    private Integer autoExtensCntFile;
-
-    @Column(name = "MAXMBBYTES")
-    private Double maxMbBytes;
-
-    @Column(name = "CREATE_TIMESTAMP")
-    private java.util.Date createTimestamp;
 
     @Column(name = "DB_TYPE")
     private String dbType;
@@ -54,9 +45,6 @@ public class TiberoCap_Check_Mg {
                 ", usedSize=" + usedSize +
                 ", freeSize=" + freeSize +
                 ", usedRate=" + usedRate +
-                ", autoExtensCntFile=" + autoExtensCntFile +
-                ", maxMbBytes=" + maxMbBytes +
-                ", createTimestamp=" + createTimestamp +
                 ", dbType=" + dbType +
                 ", thresMb=" + thresMb +
                 ", chkFlag=" + chkFlag +

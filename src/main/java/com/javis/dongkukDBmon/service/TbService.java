@@ -69,7 +69,7 @@ public class TbService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         String formattedTimeLimit = now.format(formatter);
         // 쿼리 실행
-        List<TiberoCap_Check_Mg> results = tbRepository.findTablespacesByDbName(dbName, formattedTimeLimit);
+        List<TiberoCap_Check_Mg> results = tbRepository.findTablespacesByDbName(dbName);
         results.forEach(System.out::println);
 
         return results;
