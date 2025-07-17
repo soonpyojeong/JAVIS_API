@@ -45,7 +45,7 @@ public class InvalidObjectModuleHandler extends AbstractEtlModuleHandler {
 
             try {
                 List<Map<String, Object>> result = jdbc.queryForList(query);
-                String insertSql = insertQueryRegistry.getQuery("INVALID_OBJECT", dbType);
+                String insertSql = insertQueryRegistry.getQuery("INVALID_OBJECT");
 
                 for (Map<String, Object> row : result) {
                     targetJdbc.update(insertSql,
@@ -74,7 +74,7 @@ public class InvalidObjectModuleHandler extends AbstractEtlModuleHandler {
             String targetPw = decryptPassword(target.getPassword());
             JdbcTemplate targetJdbc = createJdbc(target, targetPw);
 
-            String insertSql = insertQueryRegistry.getQuery("INVALID_OBJECT", src.getDbType().toUpperCase());
+            String insertSql = insertQueryRegistry.getQuery("INVALID_OBJECT");
             if (insertSql != null && !insertSql.isBlank()) {
                 targetJdbc.update(insertSql,
                         src.getDbType(),
@@ -107,7 +107,7 @@ public class InvalidObjectModuleHandler extends AbstractEtlModuleHandler {
             DbConnectionInfo target = dbRepo.findById(job.getTargetDbId()).orElseThrow();
             String targetPw = decryptPassword(target.getPassword());
             JdbcTemplate targetJdbc = createJdbc(target, targetPw);
-            String insertSql = insertQueryRegistry.getQuery("INVALID_OBJECT", dbType);
+            String insertSql = insertQueryRegistry.getQuery("INVALID_OBJECT");
 
             for (Map<String, Object> row : result) {
                 targetJdbc.update(insertSql,

@@ -54,7 +54,7 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
             }
 
             try {
-                String insertSql = insertQueryRegistry.getQuery("PROC", dbType);
+                String insertSql = insertQueryRegistry.getQuery("PROC");
                 if (insertSql == null || insertSql.trim().isEmpty()) {
                     batchService.logJobResult(batchId, src.getId(), false, "타겟 INSERT 쿼리 미정의: " + dbType);
                     return;
@@ -85,7 +85,7 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
             String targetPw = decryptPassword(target.getPassword());
             JdbcTemplate targetJdbc = createJdbc(target, targetPw);
 
-            String insertSql = insertQueryRegistry.getQuery("PROC", src.getDbType().toUpperCase());
+            String insertSql = insertQueryRegistry.getQuery("PROC");
             if (insertSql != null && !insertSql.isBlank()) {
                 targetJdbc.update(insertSql,
                         new java.sql.Timestamp(System.currentTimeMillis()),
@@ -131,7 +131,7 @@ public class StoredProcExecModuleHandler extends AbstractEtlModuleHandler {
             String targetPw = decryptPassword(target.getPassword());
             JdbcTemplate targetJdbc = createJdbc(target, targetPw);
 
-            String insertSql = insertQueryRegistry.getQuery("PROC", dbType);
+            String insertSql = insertQueryRegistry.getQuery("PROC");
             if (insertSql == null || insertSql.isBlank()) {
                 batchService.saveJobLog(batchId, src.getId(), false, "타겟 INSERT 쿼리 미정의: " + dbType);
                 return;

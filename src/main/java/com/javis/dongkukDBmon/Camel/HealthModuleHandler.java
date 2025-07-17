@@ -96,7 +96,7 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
             }
 
             try {
-                String insertSql = insertQueryRegistry.getQuery("HEALTH", dbType);
+                String insertSql = insertQueryRegistry.getQuery("HEALTH");
 
                 targetJdbc.update(insertSql,
                         src.getDbType(),
@@ -182,7 +182,7 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
             JdbcTemplate targetJdbc = createJdbc(target, targetPw);
 
             String dbType = src.getDbType().toUpperCase();
-            String insertSql = insertQueryRegistry.getQuery("HEALTH", dbType);
+            String insertSql = insertQueryRegistry.getQuery("HEALTH");
             if (insertSql != null && !insertSql.isBlank()) {
                 targetJdbc.update(insertSql,
                         src.getDbType(),
@@ -243,7 +243,7 @@ public class HealthModuleHandler extends AbstractEtlModuleHandler {
             String targetPw = decryptPassword(target.getPassword());
             JdbcTemplate targetJdbc = createJdbc(target, targetPw);
 
-            String insertSql = insertQueryRegistry.getQuery("HEALTH", dbType);
+            String insertSql = insertQueryRegistry.getQuery("HEALTH");
             if (insertSql == null || insertSql.isBlank()) {
                 batchService.saveJobLog(batchId, src.getId(), false, "타겟 INSERT 쿼리 미정의: " + dbType);
                 return;
