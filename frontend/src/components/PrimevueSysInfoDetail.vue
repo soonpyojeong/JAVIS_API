@@ -54,6 +54,17 @@
               </tr>
             </tbody>
           </table>
+          <!-- 여기에 DB 버전 정보 카드 추가! -->
+          <div class="db-version-card" v-if="summary.dbMajor || summary.dbEdition || summary.dbBuild || summary.dbStableVersion || summary.dbOs">
+            <h3>DB 버전 정보</h3>
+            <div class="version-list">
+              <div v-if="summary.dbMajor"><span class="version-key">메이저:</span> {{ summary.dbMajor }}</div>
+              <div v-if="summary.dbEdition"><span class="version-key">에디션:</span> {{ summary.dbEdition }}</div>
+              <div v-if="summary.dbBuild"><span class="version-key">빌드:</span> {{ summary.dbBuild }}</div>
+              <div v-if="summary.dbStableVersion"><span class="version-key">스테이블 버전:</span> {{ summary.dbStableVersion }}</div>
+              <div v-if="summary.dbOs"><span class="version-key">OS:</span> {{ summary.dbOs }}</div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="syslog-area">
@@ -496,5 +507,30 @@ onBeforeUnmount(() => {
 .uptime-display .pi-clock {
   font-size: 1.3em;
 }
-
+.db-version-card {
+  margin: 18px 0 8px 0;
+  padding: 14px 18px;
+  background: #fff7e6;
+  border-radius: 11px;
+  border: 1px solid #ffe1b4;
+  box-shadow: 0 2px 8px #fffbe2;
+  font-size: 1.03em;
+}
+.db-version-card h3 {
+  margin-bottom: 7px;
+  font-size: 1.07em;
+  color: #c27c1a;
+  font-weight: 700;
+}
+.version-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+}
+.version-key {
+  display: inline-block;
+  min-width: 85px;
+  color: #eab308;
+  font-weight: 600;
+}
 </style>

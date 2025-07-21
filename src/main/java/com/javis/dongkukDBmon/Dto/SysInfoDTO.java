@@ -12,6 +12,12 @@ public class SysInfoDTO {
     private HostInfo hostInfo;
     private List<DiskInfo> diskInfo;
     private LogCheck logCheck;
+    private String dbMajor;
+    private String dbEdition;
+    private String dbBuild;
+    private String dbStableVersion;
+    private String dbOs;
+
 
     @Data
     public static class HostInfo {
@@ -40,6 +46,11 @@ public class SysInfoDTO {
         s.setDiskUsage(this.hostInfo.getDiskUsage());
         s.setUptime(this.hostInfo.getUptime()); // ✅ 추가
         s.setCheckDate(java.sql.Date.valueOf(LocalDate.now()));
+        s.setDbMajor(this.dbMajor);
+        s.setDbEdition(this.dbEdition);
+        s.setDbBuild(this.dbBuild);
+        s.setDbStableVersion(this.dbStableVersion);
+        s.setDbOs(this.dbOs);
         return s;
     }
     @Data

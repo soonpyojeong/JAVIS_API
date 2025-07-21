@@ -26,4 +26,19 @@ public class SysInfoSummary {
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date regTime = new Date();
+
+    @Column(name = "DB_MAJOR")
+    private String dbMajor;
+
+    @Column(name = "DB_EDITION")
+    private String dbEdition;
+
+    @Column(name = "DB_BUILD")
+    private String dbBuild;
+
+    @Column(name = "DB_STABLE_VERSION")
+    private String dbStableVersion;
+
+    @Column(name = "DB_OS")
+    private String dbOs;
 }
