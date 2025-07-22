@@ -430,24 +430,28 @@ async function saveWorkflow() {
     });
     return;
   }
-
-  // 4. 필수 엣지 연결 체크 (소스→모듈, 모듈→타겟)
-  const hasSourceToModule = edges.value.some(e => {
-    const sourceNode = nodes.value.find(n => n.id === e.source);
-    const targetNode = nodes.value.find(n => n.id === e.target);
-    return sourceNode?.data.role === 'source' && targetNode?.data.isModule;
-  });
-  const hasModuleToTarget = edges.value.some(e => {
-    const sourceNode = nodes.value.find(n => n.id === e.source);
-    const targetNode = nodes.value.find(n => n.id === e.target);
-    return sourceNode?.data.isModule && targetNode?.data.role === 'target';
-  });
-
-  if (!hasSourceToModule || !hasModuleToTarget) {
+  console.log('nodes', nodes.value.map(n => ({id: n.id, data: n.data})));
+  console.log('edges', edges.value);
+  // 4. 필수 엣지 연결 체크
+  const allConnected = nodes.value.every(node =>
+    edges.value.some(e => e.source === node.id || e.target === node.id)
+  );
+  if (!allConnected) {
     toast.add({
       severity: 'warn',
       summary: '알림',
-      detail: '소스 → 관제모듈, 관제모듈 → 타겟 DB 연결(엣지)이 모두 필요합니다!',
+      detail: '모든 노드는 최소 1개 엣지와 연결되어야 저장됩니다!',
+      life: 4000
+    });
+    return;
+  }
+
+  const hasTargetNode = nodes.value.some(n => n.data.role === 'target');
+  if (!hasTargetNode) {
+    toast.add({
+      severity: 'warn',
+      summary: '알림',
+      detail: '타겟 노드는 반드시 포함되어야 합니다!',
       life: 4000
     });
     return;

@@ -19,36 +19,56 @@
     </section>
 
     <!-- 알람 요약 -->
-    <section>
-      <div class="section-title">
-        <i class="pi pi-bell" style="color:#ef4444;font-size:1.1em;margin-right:8px;"/>
-        최근 알람
-      </div>
-      <AlertSummary :alerts="alerts" />
-    </section>
+     <section>
+          <div class="section-title">
+            <i class="pi pi-bell" style="color:#ef4444;font-size:1.1em;margin-right:8px;"/>
+            최근 알람
+          </div>
+          <!--<Button @click="fetchAlerts">새로고침</Button>-->
+          <AlertSummary :alerts="alertsData" :collectedAt="collectedAt" />
+        </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import TopKPICards from '@/components/TopKPICards.vue'
-import ResourceGauges from '@/components/ResourceGauges.vue'
 import DBHealthGrid from '@/components/DBHealthGrid.vue'
 import AlertSummary from '@/components/AlertSummary.vue'
-//import api from '@/api'
+
+import { ref, onMounted } from 'vue'
+import api from '@/api'
+import Button from 'primevue/button'
 
 const stats = ref({ totalDBs: 0, normal: 0, warning: 0, critical: 0 })
 const summary = ref({ cpuUsage: 0, memUsage: 0, diskUsage: 0 })
 const instanceStatuses = ref([])
-const alerts = ref([])
+const alertsData = ref([])      // 반드시 빈 배열로 초기화!
+const collectedAt = ref('')     // 빈 문자열로 초기화
 
-onMounted(async () => {
-  // const { data } = await api.get('/dashboard/summary')
-  // stats.value = data.stats
-  // summary.value = data.summary
-  // instanceStatuses.value = data.instances
-  // alerts.value = data.alerts
+function fetchAlerts() {
+  api.get('/api/alerts/summary')
+    .then(res => {
+      // TIME 내림차순(최신순) 정렬
+      alertsData.value = res.data.alerts.sort((a, b) => {
+        // 날짜 파싱 (YYYY/MM/DD HH24:MI:SS → Date)
+        const ta = new Date(a.time.replace(/\//g, '-'));
+        const tb = new Date(b.time.replace(/\//g, '-'));
+        return tb - ta; // 최신순
+      });
+      collectedAt.value = res.data.collectedAt;
+    })
+    .catch(() => {
+      alertsData.value = [];
+      collectedAt.value = '';
+    })
+}
+
+
+onMounted(() => {
+  fetchAlerts()
+  setInterval(fetchAlerts, 600000)
 })
+
+
 </script>
 
 <style scoped>

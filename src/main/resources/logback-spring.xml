@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- =================== [개발 환경: dev] =================== -->
+    <springProfile name="dev">
+        <!-- 1. 콘솔 로그 -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- 2. 일반 서버 로그 (개발용) -->
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>D:/JAVIS/dongkukDBmon/logs/javis-server.log</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>D:/JAVIS/dongkukDBmon/logs/javis-server.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>30</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <!-- 3. 엔진 로그 (개발용) -->
+        <appender name="ENGINE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>D:/JAVIS/dongkukDBmon/logs/engine.log</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>D:/JAVIS/dongkukDBmon/logs/engine.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>14</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.javis.engine" level="INFO" additivity="false">
+            <appender-ref ref="ENGINE"/>
+        </logger>
+    </springProfile>
+
+    <!-- =================== [운영 환경: prod] =================== -->
+    <springProfile name="prod">
+        <!-- 1. 콘솔 로그 (운영도 콘솔 필요 시, 미사용 시 제거 가능) -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- 2. 일반 서버 로그 (운영용) -->
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>/u01/app/oracle/JAVIS/javis-server.log</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>/u01/app/oracle/JAVIS/javis-server.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>60</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <!-- 3. 엔진 로그 (운영용) -->
+        <appender name="ENGINE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>/u01/app/oracle/JAVIS/engine.log</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>/u01/app/oracle/JAVIS/engine.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <maxHistory>30</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.javis.engine" level="INFO" additivity="false">
+            <appender-ref ref="ENGINE"/>
+        </logger>
+    </springProfile>
+
+</configuration>
