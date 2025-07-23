@@ -1,5 +1,7 @@
 <template>
+
   <div id="app">
+
     <Toast position="center" />
     <!-- NavBar/메인레이아웃은 로그인 등 일반 화면에서만 노출 -->
     <NavBar v-if="isNavReady && showNav" @logout="handleLogout" />
@@ -8,8 +10,14 @@
     </div>
     <!-- NavBar 등 없이 그냥 이 페이지만 뜨게 -->
     <router-view v-else />
-    <footer></footer>
+    <footer style="text-align: center; font-size: 12px; color: #888; margin-top: 40px;">
+      Made by <strong style="color: #555;">soonpyo.jeong</strong> ·
+      <a href="mailto:jsp5247@gmail.com" style="color: #666; text-decoration: underline;">
+        jsp5247@gmail.com
+      </a>
+    </footer>
   </div>
+
 </template>
 
 <script setup>
