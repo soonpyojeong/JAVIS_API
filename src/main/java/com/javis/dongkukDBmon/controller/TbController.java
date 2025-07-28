@@ -1,6 +1,7 @@
 // TbController.java
 
 package com.javis.dongkukDBmon.controller;
+import com.javis.dongkukDBmon.Dto.TablespaceUsageDto;
 import com.javis.dongkukDBmon.model.TiberoCap_Check_Mg;
 import com.javis.dongkukDBmon.service.TbService;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,16 @@ public class TbController {
             @PathVariable String tsName) {
         List<TiberoCap_Check_Mg> recentData = tbService.getRecentTablespaceDataForChat(dbName, tsName);
         return ResponseEntity.ok(recentData);
+    }
+    // 월간 테이블스페이스 증가량
+    @GetMapping("/tablespaces/increase/monthly")
+    public ResponseEntity<List<TablespaceUsageDto>> getMonthlyIncrease() {
+        return ResponseEntity.ok(tbService.getMonthlyTsIncrease());
+    }
+
+    @GetMapping("/tablespaces/increase/weekly")
+    public ResponseEntity<List<TablespaceUsageDto>> getWeeklyIncrease() {
+        return ResponseEntity.ok(tbService.getWeeklyTsIncrease());
     }
 
 }

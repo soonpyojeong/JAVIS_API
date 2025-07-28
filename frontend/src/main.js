@@ -10,6 +10,9 @@ import ToastService from 'primevue/toastservice';
 import Toast from 'primevue/toast';
 import './assets/vue-flow.css';
 import '@/assets/styles/main.css';
+import ConfirmationService from 'primevue/confirmationservice'
+import TabView from 'primevue/tabview';
+import TabPanel from 'primevue/tabpanel';
 
 // ✅ [1] 토큰/유저 상태 복구
 const accessToken = localStorage.getItem('accessToken');
@@ -38,7 +41,9 @@ app.use(PrimeVue, {
     }
   }
 });
+app.use(ConfirmationService)
 app.use(ToastService);
 app.component('Toast', Toast);
-
+app.component('TabView', TabView);
+app.component('TabPanel', TabPanel)
 app.mount('#app');

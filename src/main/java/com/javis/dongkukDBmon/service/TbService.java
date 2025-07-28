@@ -1,8 +1,10 @@
 // TbService.java
 package com.javis.dongkukDBmon.service;
 
+import com.javis.dongkukDBmon.Dto.TablespaceUsageDto;
 import com.javis.dongkukDBmon.model.TiberoCap_Check_Mg;
 import com.javis.dongkukDBmon.Compositekey.TiberoCapCheckMgId;
+import com.javis.dongkukDBmon.repository.TablespaceUsageRepository;
 import com.javis.dongkukDBmon.repository.TbRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,6 +28,10 @@ public class TbService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private TablespaceUsageRepository tablespaceUsageRepository;
+
 
     // ID로 TiberoCap_Check_Mg 조회
     public Optional<TiberoCap_Check_Mg> getTbById(TiberoCapCheckMgId id) {
@@ -79,5 +85,12 @@ public class TbService {
         return tbRepository.findRecentDataForChat(dbName, tsName);
     }
 
+    public List<TablespaceUsageDto> getMonthlyTsIncrease() {
+        return tablespaceUsageRepository.getMonthlyUsage();
+    }
+
+    public List<TablespaceUsageDto> getWeeklyTsIncrease() {
+        return tablespaceUsageRepository.getWeeklyUsage();
+    }
 
 }
