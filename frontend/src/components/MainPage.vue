@@ -1,38 +1,54 @@
 <template>
-<div class="dashboard-summary">
-    <!--
-    <section>
-      <div class="section-title">
-        <i class="pi pi-database" style="color:#1778e7;font-size:1.3em;margin-right:8px;"/>
-        DBMS 관제 내역
-      </div>
-      <TopKPICards :stats="stats" />
-    </section>
-    -->
-    <!-- DB 상태 그리드 (아이콘 관제) -->
-    <section>
-      <div class="section-title">
-        <i class="pi pi-database" style="color:#1778e7;font-size:1.3em;margin-right:8px;"/>
-        데이터베이스 상태
-      </div>
-      <DBHealthGrid :instances="instanceStatuses" />
-    </section>
+  <div class="dashboard-tab-wrapper">
+    <TabView>
+      <TabPanel header="DB 관제 대시보드">
+        <div class="dashboard-summary">
+          <!-- 기존 내용 유지 -->
+          <section>
+            <div class="section-title">
+              <i class="pi pi-database" style="color:#1778e7;font-size:1.3em;margin-right:8px;" />
+              데이터베이스 상태
+            </div>
+            <DBHealthGrid :instances="instanceStatuses" />
+          </section>
 
-    <!-- 알람 요약 -->
-     <section>
+          <section>
+            <div class="section-title">
+              <i class="pi pi-bell" style="color:#ef4444;font-size:1.1em;margin-right:8px;" />
+              최근 알람
+            </div>
+            <AlertSummary :alerts="alertsData" :collectedAt="collectedAt" />
+          </section>
+        </div>
+      </TabPanel>
+
+      <TabPanel header="통계 요약">
+        <div class="dashboard-summary">
           <div class="section-title">
-            <i class="pi pi-bell" style="color:#ef4444;font-size:1.1em;margin-right:8px;"/>
-            최근 알람
+            <i class="pi pi-chart-bar" style="color:#10b981;font-size:1.2em;margin-right:8px;" />
+            통계 요약
           </div>
-          <!--<Button @click="fetchAlerts">새로고침</Button>-->
-          <AlertSummary :alerts="alertsData" :collectedAt="collectedAt" />
-        </section>
+          <!-- 추가: 테이블스페이스 사용량 -->
+          <section>
+            <div class="section-title">
+              <i class="pi pi-hdd" style="color:#8b5cf6;font-size:1.2em;margin-right:8px;" />
+              테이블스페이스 사용량 추이
+            </div>
+            <TablespaceUsage />
+          </section>
+          <TopKPICards :stats="stats" />
+        </div>
+      </TabPanel>
+    </TabView>
   </div>
 </template>
+
 
 <script setup>
 import DBHealthGrid from '@/components/DBHealthGrid.vue'
 import AlertSummary from '@/components/AlertSummary.vue'
+import TablespaceUsage from '@/components/TablespaceUsage.vue'
+
 
 import { ref, onMounted } from 'vue'
 import api from '@/api'
@@ -118,4 +134,5 @@ section {
     padding: 14px 5vw;
   }
 }
+
 </style>
