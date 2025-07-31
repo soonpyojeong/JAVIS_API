@@ -25,7 +25,8 @@ const dbTypeOptions = [
 const moduleCodeOptions = [
   { label: 'HEALTH', value: 'HEALTH' },
   { label: 'INVALID_OBJECT', value: 'INVALID_OBJECT' },
-  { label: 'PROC', value: 'PROC' }
+  { label: 'PROC', value: 'PROC' },
+  { label: 'SELECT', value: 'SELECT' }
 ]
 
 // 모듈 목록 불러오기

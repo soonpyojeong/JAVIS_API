@@ -1,0 +1,20 @@
+server:
+  port: 8813
+
+custom:
+  api-url: http://10.90.4.60:8813
+
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@//172.31.1.176:1521/xe
+    username: javis
+    password: javis_2022
+    driver-class-name: oracle.jdbc.OracleDriver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+

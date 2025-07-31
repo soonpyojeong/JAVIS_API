@@ -38,29 +38,27 @@
     </div>
     <!-- interval 선택시 -->
     <div v-if="form.type==='interval'" class="mb-4">
-      <label class="block mb-2 font-semibold">주기(Interval)</label>
+       <div class="flex items-center gap-2 mb-2">
+        <span>시작시각</span>
+        <InputText v-model="form.intervalHour" type="number" min="0" max="23" class="w-12" placeholder="시" />
+        <span>:</span>
+        <InputText v-model="form.intervalMinute" type="number" min="0" max="59" class="w-12" placeholder="분" />
+        <span>:</span>
+        <InputText v-model="form.intervalSecond" type="number" min="0" max="59" class="w-12" placeholder="초" />
+      </div>
       <div class="flex items-center gap-2">
-        <InputText
-          v-model.number="form.intervalStart"
-          type="number"
-          min="0"
-          max="59"
-          class="w-16"
-          placeholder="시작분 (예: 40)"
+        <span>반복주기</span>
+        <InputText v-model.number="form.intervalValue" type="number" min="1" max="59" class="w-16" placeholder="간격" />
+        <Dropdown
+          v-model="form.intervalUnit"
+          :options="intervalUnitOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="w-20"
         />
-        <span>분부터</span>
-        <InputText
-          v-model.number="form.intervalValue"
-          type="number"
-          min="1"
-          max="59"
-          class="w-16"
-          placeholder="간격 (예: 10)"
-        />
-        <span>분 간격으로 실행</span>
+        <span>간격으로 실행</span>
       </div>
     </div>
-
     <!-- 매일: 시간 선택만 -->
     <div v-if="form.type==='daily'" class="mb-4">
       <label class="block mb-2 font-semibold">시간 선택</label>
@@ -217,9 +215,11 @@ const form = ref({
   weekNo: 1,
   dayOfWeek: 'MON',
   updatedUser: user.value.userId || user.value.username,
-  intervalStart: 0, // 몇 분부터
-  intervalValue: 10, // 몇 분 간격
-  intervalUnit: 'minute', // 앞으로도 확장 대비 기본값 유지
+  intervalHour: 0,
+  intervalMinute: 0,
+  intervalSecond: 0,
+  intervalValue: 10,
+  intervalUnit: 'minute',
 })
 
 
@@ -242,6 +242,29 @@ const weekNos = [
   { label: '다섯째', value: 5 }
 ]
 
+const intervalUnitOptions = [
+  { label: '초', value: 'second' },
+  { label: '분', value: 'minute' },
+  { label: '시', value: 'hour' }
+]
+
+// 단위별 라벨
+const unitLabel = computed(() => {
+  if (form.value.intervalUnit === 'second') return '초'
+  if (form.value.intervalUnit === 'minute') return '분'
+  if (form.value.intervalUnit === 'hour') return '시'
+  return '분'
+})
+
+// 단위별 시작/간격 min-max
+const intervalMin = computed(() => form.value.intervalUnit === 'hour' ? 0 : 0)
+const intervalMax = computed(() => {
+  if (form.value.intervalUnit === 'second' || form.value.intervalUnit === 'minute') return 59
+  if (form.value.intervalUnit === 'hour') return 23
+  return 59
+})
+
+
 function addTime() {
   form.value.times.push(new Date(new Date().setHours(0, 0, 0, 0)))
 }
@@ -258,13 +281,15 @@ const isValid = computed(() => {
   if (!form.value.jobIds.length) return false
   if (form.value.type === 'interval') {
     if (!form.value.intervalValue || form.value.intervalValue < 1 || !form.value.intervalUnit) return false
+    // 범위 체크
+    if (form.value.intervalStart < intervalMin.value || form.value.intervalStart > intervalMax.value) return false
+    if (form.value.intervalValue < 1 || form.value.intervalValue > intervalMax.value) return false
   }
   if (form.value.type === 'daily' && !form.value.times.length) return false
   if (form.value.type === 'weekly' && !form.value.days.length) return false
   if (form.value.type === 'monthly' && !form.value.dayOfWeek) return false
   return true
 })
-
 const previewText = computed(() => {
   if (form.value.type === 'daily') {
     return `매일 ${form.value.times.map(formatTime).join(', ')}에 실행됩니다.`
@@ -279,10 +304,17 @@ const previewText = computed(() => {
     return `매월 ${weekLabel} ${dayLabel}요일 ${form.value.times.map(formatTime).join(', ')}에 실행됩니다.`
   }
   if (form.value.type === 'interval') {
-    return `${form.value.intervalStart}분부터 ${form.value.intervalValue}분 간격으로 반복 실행됩니다.`
+    // 시:분:초 포맷
+    const hh = String(form.value.intervalHour).padStart(2, '0')
+    const mm = String(form.value.intervalMinute).padStart(2, '0')
+    const ss = String(form.value.intervalSecond).padStart(2, '0')
+    const unitMap = { second: '초', minute: '분', hour: '시간' }
+    const unit = unitMap[form.value.intervalUnit] || form.value.intervalUnit
+    return `${hh}:${mm}:${ss}부터 ${form.value.intervalValue}${unit} 간격으로 반복 실행`
   }
   return ''
 })
+
 
 
 function formatTime(date) {
@@ -297,7 +329,11 @@ function makeScheduleExpr(form) {
   // 여러 시간 지원(문자열로 합치기)
   const times = form.times.map(formatTime).join(',')
     if (form.type === 'interval') {
-      return `${form.intervalStart}/${form.intervalValue} minute`
+      // "시작시:분:초|간격 단위" (예: "13:05:00|10 minute")
+      const hh = form.intervalHour.toString().padStart(2, '0')
+      const mm = form.intervalMinute.toString().padStart(2, '0')
+      const ss = form.intervalSecond.toString().padStart(2, '0')
+      return `${hh}:${mm}:${ss}|${form.intervalValue} ${form.intervalUnit}`
     }
   if (form.type === 'daily') {
     return times
@@ -393,18 +429,18 @@ watch(
       }
       // scheduleExpr 파싱
       if (val.scheduleType === 'INTERVAL') {
-        // "40/10 minute" → 40분부터 10분 간격
-        const [startAndStep, unitStr] = val.scheduleExpr.split(' ')
-        if (startAndStep && startAndStep.includes('/')) {
-          const [start, step] = startAndStep.split('/')
-          form.value.intervalStart = Number(start)
-          form.value.intervalValue = Number(step)
-          form.value.intervalUnit = unitStr // 'minute'
-        } else {
-          // 예전 방식 호환
-          form.value.intervalStart = 0
-          form.value.intervalValue = Number(startAndStep)
-          form.value.intervalUnit = unitStr
+        // "13:05:00|10 minute"
+        const [start, intervalPart] = val.scheduleExpr.split('|')
+        if (start) {
+          const [hh, mm, ss] = start.split(':')
+          form.value.intervalHour = Number(hh)
+          form.value.intervalMinute = Number(mm)
+          form.value.intervalSecond = Number(ss)
+        }
+        if (intervalPart) {
+          const [value, unit] = intervalPart.trim().split(' ')
+          form.value.intervalValue = Number(value)
+          form.value.intervalUnit = unit
         }
       }
       if (val.scheduleType === 'DAILY') {

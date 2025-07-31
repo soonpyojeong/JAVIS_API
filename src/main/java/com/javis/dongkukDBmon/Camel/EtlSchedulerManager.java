@@ -190,25 +190,27 @@ public class EtlSchedulerManager {
             }
         }
         else if ("INTERVAL".equalsIgnoreCase(sch.getScheduleType())) {
-            String expr = sch.getScheduleExpr(); // "40/10 minute"
-            if (expr != null) {
-                String[] arr = expr.trim().split(" ");
-                if (arr.length == 2) {
-                    String unit = arr[1];
-                    if (unit.equalsIgnoreCase("minute") && arr[0].contains("/")) {
-                        String[] startAndStep = arr[0].split("/");
-                        int start = Integer.parseInt(startAndStep[0]);
-                        int step = Integer.parseInt(startAndStep[1]);
-                        // ==> "0 40/10 * * * ?"
-                        result.add(String.format("0 %d/%d * * * ?", start, step));
-                    } else if (unit.equalsIgnoreCase("minute")) {
-                        // "0/10 minute" 호환
-                        int step = Integer.parseInt(arr[0]);
-                        result.add(String.format("0 0/%d * * * ?", step));
-                    }
+            String expr = sch.getScheduleExpr(); // "13:05:00|10 minute"
+            String[] arr = expr.split("\\|");
+            if (arr.length == 2) {
+                String[] hms = arr[0].split(":");
+                int hour = Integer.parseInt(hms[0]);
+                int minute = Integer.parseInt(hms[1]);
+                int second = Integer.parseInt(hms[2]);
+                String[] intervalParts = arr[1].trim().split(" ");
+                int step = Integer.parseInt(intervalParts[0]);
+                String unit = intervalParts[1].toLowerCase();
+
+                if (unit.startsWith("sec")) {
+                    result.add(String.format("%d/%d %d %d * * ?", second, step, minute, hour));
+                } else if (unit.startsWith("min")) {
+                    result.add(String.format("%d %d/%d %d * * ?", second, minute, step, hour));
+                } else if (unit.startsWith("hour")) {
+                    result.add(String.format("%d %d %d/%d * * ?", second, minute, hour, step));
                 }
             }
         }
+
         return result;
     }
 }

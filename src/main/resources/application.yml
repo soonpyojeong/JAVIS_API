@@ -1,0 +1,65 @@
+spring:
+  profiles:
+    active: prod
+    #active: dev
+
+  application:
+    name: dongkukDBmon
+
+  jpa:
+    database-platform: org.hibernate.dialect.OracleDialect
+    hibernate:
+      ddl-auto: none
+      show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 1000
+
+  web:
+    resources:
+      static-locations: classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/,file:src/main/frontend/dist/
+    cors:
+      enabled: false
+
+  jackson:
+    time-zone: Asia/Seoul
+
+  main:
+    banner-mode: off
+
+  mail:
+    host: smtp.worksmobile.com
+    port: 587
+    username: infra.team@dongkuk.com
+    password: initpw1!
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    default-encoding: UTF-8
+  mvc:
+    pathmatch:
+          matching-strategy: ant_path_matcher
+
+aes:
+  key: 0123456789abcde@#$CDEF0123456789
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: info
+        type:
+          descriptor:
+            sql: TRACE
+    oracle:
+      jdbc: DEBUG
+
+security:
+  protocol: false
+
