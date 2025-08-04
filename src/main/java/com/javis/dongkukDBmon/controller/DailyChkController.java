@@ -1,5 +1,6 @@
 package com.javis.dongkukDBmon.controller;
 
+import com.javis.dongkukDBmon.Dto.DailyStatDto;
 import com.javis.dongkukDBmon.model.Dailychk;
 import com.javis.dongkukDBmon.model.TbDailychk;
 import com.javis.dongkukDBmon.service.DailyChkService;
@@ -48,5 +49,15 @@ public class DailyChkController {
     public List<TbDailychk> getTbDbDataForChart(@PathVariable String instanceName) {
         List<TbDailychk> data = dailyChkService.getTbDailyChkData(instanceName);
         return data;
+    }
+
+    @GetMapping("/summary/weekly")
+    public List<DailyStatDto> getWeeklySummary() {
+        return dailyChkService.getDailyStatsLast7Days();
+    }
+
+    @GetMapping("/summary/monthly")
+    public List<DailyStatDto> getMonthlySummary() {
+        return dailyChkService.getDailyStatsLast30Days();
     }
 }

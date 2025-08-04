@@ -36,10 +36,18 @@
             </div>
             <TablespaceUsage />
           </section>
+          <section>
+          <div class="section-title">
+            <i class="pi pi-hdd" style="color:#8b5cf6;font-size:1.2em;margin-right:8px;" />
+            아카이브 및 Active Session TOP 100( 세션수, 아카이브수 클릭 정렬 가능)
+          </div>
+          <DailyStatSummary />
+        </section>
           <TopKPICards :stats="stats" />
         </div>
       </TabPanel>
     </TabView>
+
   </div>
 </template>
 
@@ -48,9 +56,10 @@
 import DBHealthGrid from '@/components/DBHealthGrid.vue'
 import AlertSummary from '@/components/AlertSummary.vue'
 import TablespaceUsage from '@/components/TablespaceUsage.vue'
+import DailyStatSummary from '@/components/DailyStatSummary.vue'
 
-
-import { ref, onMounted } from 'vue'
+let alertTimer = null
+import { ref, onMounted,onUnmounted } from 'vue'
 import api from '@/api'
 import Button from 'primevue/button'
 
@@ -81,7 +90,11 @@ function fetchAlerts() {
 
 onMounted(() => {
   fetchAlerts()
-  setInterval(fetchAlerts, 600000)
+  alertTimer = setInterval(fetchAlerts, 600000)
+})
+
+onUnmounted(() => {
+  clearInterval(alertTimer)
 })
 
 
