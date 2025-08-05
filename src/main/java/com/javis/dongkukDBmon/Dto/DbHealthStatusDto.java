@@ -5,5 +5,6 @@ public record DbHealthStatusDto(
         String status,       // 상태: 정상, 주의, 위험, 미수집
         String chkDate,
         String message,
-        String error
+        String error,
+        String dbType
 ) {}

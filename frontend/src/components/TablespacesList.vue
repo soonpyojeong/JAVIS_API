@@ -35,38 +35,38 @@
 
     <!-- 테이블 -->
     <!-- 기존 v-if="filteredTablespaces.length" → 조건 제거 -->
+    <!-- 테이블 -->
+    <!-- 기존 v-if="filteredTablespaces.length" → 조건 제거 -->
     <table class="tablespace-table" v-if="filteredTablespaces.length || showAllThresholds">
       <thead>
         <tr>
-        <th @click="setSort('dbName')">DB명<span v-if="sortKey === 'dbName'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
-        <th @click="setSort('tsName')">Tablespace<span v-if="sortKey === 'tsName'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
-        <th @click="setSort('totalSize')">Total(MB)<span v-if="sortKey === 'totalSize'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
-        <th @click="setSort('usedSize')">Used(MB)<span v-if="sortKey === 'usedSize'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
-        <th @click="setSort('usedRate')">사용률<span v-if="sortKey === 'usedRate'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
-        <th @click="setSort('freeSize')">Free(MB)<span v-if="sortKey === 'freeSize'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
-        <th @click="setSort('dbType')">DB TYPE<span v-if="sortKey === 'dbType'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
-        <th @click="setSort('thresMb')">임계치<span v-if="sortKey === 'thresMb'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
-        <th @click="setSort('defThresMb')">기본 임계치<span v-if="sortKey === 'defThresMb'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
-        <th @click="setSort('imsiDel')">관제3일조용<span v-if="sortKey === 'imsiDel'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('dbName')">DB명<span v-if="sortKey === 'dbName'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('tsName')">Tablespace<span v-if="sortKey === 'tsName'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('totalSize')">Total(MB)<span v-if="sortKey === 'totalSize'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('usedSize')">Used(MB)<span v-if="sortKey === 'usedSize'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('usedRate')">사용률<span v-if="sortKey === 'usedRate'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('freeSize')">Free(MB)<span v-if="sortKey === 'freeSize'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('dbType')">DB TYPE<span v-if="sortKey === 'dbType'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('thresMb')">임계치<span v-if="sortKey === 'thresMb'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('defThresMb')">기본 임계치<span v-if="sortKey === 'defThresMb'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
+          <th @click="setSort('imsiDel')">관제3일조용<span v-if="sortKey === 'imsiDel'">{{ sortOrder === 1 ? '▲' : '▼' }}</span> </th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="ts in sortedTablespaces" :key="ts.id.dbName + '-' + ts.id.tsName">
           <td v-if="ts.id.dbName=='NIRIS'">IRIS3.0</td>
           <td v-else>{{ts.id.dbName}}</td>
-          <td >{{ ts.id.tsName }}</td>
+          <td>{{ ts.id.tsName }}</td>
           <td>{{ formatNumber(ts.totalSize) }}</td>
           <td>{{ formatNumber(ts.usedSize) }}</td>
           <td :class="{ 'text-red-500 font-bold bg-red-100': Number(ts.usedRate) >= 85 }">
             {{ formatNumber(ts.usedRate) }}%
           </td>
-
-          <!-- <td><canvas :id="'chart-' + ts.id.tsName" class="rate-chart"></canvas></td> -->
           <td>{{ formatNumber(ts.freeSize) }}</td>
           <td>{{ ts.dbType }}</td>
           <td>
             <div class="flex justify-end items-center gap-2">
-              <template v-if="!ts.isEditing">
+              <div v-show="!ts.isEditing">
                 <span
                   v-if="ts.thresMb != null"
                   @click="startEditing(ts)"
@@ -81,29 +81,29 @@
                 >
                   +
                 </button>
-              </template>
+              </div>
 
-              <input
-                v-else
-                v-model="ts.editedValue"
-                @keyup.enter="updateThreshold(ts)"
-                @blur="cancelEditing(ts)"
-                type="number"
-                class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              <button
-                v-if="ts.isEditing"
-                @click="resetToDefault(ts)"  >
-                기본값
-              </button>
+              <div v-show="ts.isEditing">
+                <input
+                  :ref="el => thresInputMap.value.set(ts.id.dbName + '_' + ts.id.tsName, el)"
+                  v-model="ts.editedValue"
+                  @keyup.enter="handleEnter(ts)"
+                  @blur="handleBlur(ts)"
+                  type="number"
+                  class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <button @click="resetToDefault(ts)">기본값</button>
+                <button @click="updateThreshold(ts)" class="bg-blue-500 text-white px-2 py-1 rounded">저장</button>
+              </div>
             </div>
           </td>
+
           <td>
             <div class="flex justify-end items-center gap-2">
-              <span v-if="!ts.editingDefault" @click="startEditingDefault(ts)" class="cursor-pointer text-blue-600 hover:underline">
+              <span v-show="!ts.editingDefault" @click="startEditingDefault(ts)" class="cursor-pointer text-blue-600 hover:underline">
                 {{ formatNumber(ts.defThresMb) }}
               </span>
-              <input v-if="ts.editingDefault" v-model="ts.editedDefault" @keyup.enter="updateDefaultThreshold(ts)" @blur="cancelEditingDefault(ts)"
+              <input v-show="ts.editingDefault" v-model="ts.editedDefault" @keyup.enter="updateDefaultThreshold(ts)" @blur="cancelEditingDefault(ts)"
                 type="number" class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </td>
@@ -121,8 +121,6 @@
               </div>
             </template>
           </td>
-
-
         </tr>
       </tbody>
     </table>
@@ -207,6 +205,15 @@ const sortKey = ref('');
 const sortOrder = ref(1); // 1: 오름차순, -1: 내림차순
 
 const allThresholds = ref([]);
+const thresInputMap = ref(new Map());
+
+
+
+function handleEnter(ts) {
+  console.log('ENTER PRESSED FOR:', ts);
+  updateThreshold(ts);
+}
+
 
 function fetchAllThresholds() {
   api.get('/api/threshold/all').then((res) => {
@@ -360,8 +367,6 @@ function handleDbChange() {
 
     tablespaces.value = data;
 
-    // 차트 갱신
-    nextTick(() => data.forEach(drawBarChart));
   });
 }
 
@@ -398,50 +403,6 @@ function closeMessageModal() {
   showMessageModal.value = false;
 }
 
-function drawBarChart(ts) {
-  const canvasId = `chart-${ts.id.tsName.replace(/\s+/g, '_')}`;
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if (chartInstances.value[ts.id.tsName]) {
-    chartInstances.value[ts.id.tsName].destroy();
-  }
-  const roundedUsedRate = ts.usedRate != null ? parseFloat(ts.usedRate.toFixed(1)) : 0;
-  chartInstances.value[ts.id.tsName] = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['사용률'],
-      datasets: [{
-        label: '사용률',
-        data: [roundedUsedRate],
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        borderColor: 'rgb(75, 192, 192)',
-        borderRadius: 1,
-        borderWidth: 1,
-      }],
-    },
-    options: {
-      responsive: true,
-      indexAxis: 'y',
-      scales: {
-        x: { min: 0, max: 100, ticks: { display: false }, grid: { display: false } },
-        y: { display: false },
-      },
-      plugins: {
-        legend: { display: false },
-        datalabels: {
-          display: true,
-          align: (ctx) => ctx.dataset.data[0] >= 56 ? 'center' : 'end',
-          anchor: (ctx) => ctx.dataset.data[0] >= 56 ? 'center' : 'end',
-          formatter: (value) => `${value.toFixed(1)}%`,
-          color: (ctx) => ctx.dataset.data[0] >= 85 ? 'red' : 'rgb(75, 192, 192)',
-          font: { weight: 'bold', size: 12 },
-        },
-      },
-    },
-    plugins: [ChartDataLabels],
-  });
-}
 // DB 목록 정렬된 computed
 const sortedDbList = computed(() => {
   return [...dbList.value].sort((a, b) => a.dbName.localeCompare(b.dbName))
@@ -451,6 +412,14 @@ function startEditing(ts) {
   if (ts.thresMb == null) return openAddThresholdModal(ts);
   ts.isEditing = true;
   ts.editedValue = ts.thresMb;
+
+  nextTick(() => {
+    const input = thresInputMap.value.get(ts.id.dbName + '_' + ts.id.tsName);
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  });
 }
 
 function cancelEditing(ts) {
@@ -497,6 +466,7 @@ function updateDefaultThreshold(tablespace) {
     commt: username
   }).then((res) => {
     if (res.data) {
+      console.log('임계치 변경 결과:', res.data);
       tablespace.defThresMb = tablespace.editedDefault;
       tablespace.editingDefault = false;
     }

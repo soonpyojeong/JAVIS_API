@@ -22,7 +22,8 @@ public interface DbStatusRepository extends JpaRepository<DBList, Long> {
             END, '미수집') AS status,
             TO_CHAR(c.CHK_DATE, 'YYYY-MM-DD HH24:MI:SS') AS chkDate,
             c.MESSAGE AS message,
-            c.ERROR AS error
+            c.ERROR AS error,
+            d.DB_TYPE
         FROM JAVIS.TB_JAVIS_DB_LIST d
         LEFT JOIN (
             SELECT *

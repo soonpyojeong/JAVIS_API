@@ -12,6 +12,8 @@ import org.apache.camel.Route;
 import org.apache.camel.builder.RouteBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.net.URLEncoder;
@@ -24,7 +26,8 @@ import com.javis.dongkukDBmon.repository.EtlSchLogRepository;
 @Component
 @RequiredArgsConstructor
 public class EtlSchedulerManager {
-
+    @Value("${camel.routes.etljob.enabled:true}")
+    private boolean schedulerEnabled;
     private static final Logger log = LoggerFactory.getLogger(EtlSchedulerManager.class);
 
     private final CamelContext camelContext;
@@ -33,12 +36,18 @@ public class EtlSchedulerManager {
     private final EtlSchLogRepository schLogRepo;
 
     // 서버 시작 시 DB 스케줄 전체 등록
+    @Profile("prod")
     @PostConstruct
     public void init() throws Exception {
+        if (!schedulerEnabled) {
+            log.info("[스케줄러 비활성화됨] 설정값 camel.routes.etljob.enabled=false");
+            return;
+        }
+
         List<EtlSchedule> schedules = scheduleRepo.findByEnabledYn("Y");
         for (EtlSchedule sch : schedules) {
             try {
-                addOrUpdateScheduleRoute(etlScheduleService.toDto(sch)); // DTO로 변환해서 넘기기!
+                addOrUpdateScheduleRoute(etlScheduleService.toDto(sch));
             } catch (Exception e) {
                 log.error("스케줄러 등록 실패! scheduleId={}, e={}", sch.getScheduleId(), e.toString());
             }

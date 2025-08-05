@@ -34,92 +34,65 @@
             <div class="instance-status">{{ instance.status }}</div>
           </div>
         </div>
-
       </div>
     </template>
-    <Dialog v-model:visible="showDialog" header="DB 상세 정보" modal style="width: 500px;">
-      <div v-if="selectedInstance">
-        <p><strong>수집시간:</strong> {{ selectedInstance.chkDate }}</p>
-        <p><strong>DB 이름:</strong> {{ selectedInstance.name }}</p>
-        <p><strong>상태:</strong> {{ selectedInstance.status }}</p>
-        <p><strong>에러:</strong></p>
-        <pre
-          style="
-            white-space: pre-wrap;
-            color: red;
-            background: #fef2f2;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 0.87rem;
-            max-height: 240px;
-            overflow-y: auto;
-          "
-        >
-    {{ selectedInstance.error }}
-        </pre>
-      </div>
-    </Dialog>
+
+    <Suspense>
+      <template #default>
+       <Dialog v-model:visible="showDialog" modal style="width: 1000px;">
+         <template #header v-if="selectedInstance && ['ORACLE', 'TIBERO', 'POSTGRESQL', 'EDB'].includes(selectedInstance.dbType)">
+           세션 락 상세
+         </template>
+         <SessionLockMonitor
+           v-if="selectedInstance"
+           :instance="selectedInstance"
+           :allInstances="instances"
+         />
+       </Dialog>
+
+      </template>
+    </Suspense>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted,onBeforeUnmount  } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/api'
-import SockJS from 'sockjs-client'
-import Stomp from 'stompjs'
-import { connectWebSocket, disconnectWebSocket } from '@/websocket' // ✅ 요기!
+import { connectWebSocket, disconnectWebSocket } from '@/websocket'
 import Dialog from 'primevue/dialog'
+import SessionLockMonitor from '@/components/SessionLockMonitor.vue'
 
-let stompClient = null
+const selectedInstance = ref(null)
+const showDialog = ref(false)
+const instances = ref([])
 
 const fetchStatuses = async () => {
   try {
     const { data } = await api.get('/api/dashboard/live-statuses')
-    //console.log('[✅ 상태 응답]', data)
     instances.value = data
+    console.log('live Data ',instances.value)
   } catch (e) {
     console.error('[❌ 상태 조회 실패]', e)
   }
 }
 
-
-const selectedInstance = ref(null)
-const showDialog = ref(false)
-
 const handleDoubleClick = (group, instance) => {
-  if (group.status === '위험') {
-    selectedInstance.value = instance
-    showDialog.value = true
-  }
+  selectedInstance.value = instance
+  showDialog.value = true
 }
 
 const onDbLiveStatusMessage = async (payload) => {
-  //console.log('📡 /topic/db-live-status 수신:', payload)
   await fetchStatuses()
 }
 
-//console.log('[프론트] 대시보드 onMounted 진입')
 onMounted(async () => {
-      await fetchStatuses()
-      //console.log('[프론트] connectWebSocket 호출')
-      //console.log('[DEBUG] connectWebSocket 인자:', {
-      //  onDbLiveStatusMessage
-      //})
-connectWebSocket({
-  onDbLiveStatusMessage: onDbLiveStatusMessage
+  await fetchStatuses()
+  connectWebSocket({ onDbLiveStatusMessage })
 })
-
-})
-
-
 
 onBeforeUnmount(() => {
   disconnectWebSocket()
 })
-
-const instances = ref([])
-
-
 
 const groupMeta = [
   { status: '위험', label: '위험', color: '#ef4444', icon: 'pi pi-times-circle' },
@@ -127,6 +100,7 @@ const groupMeta = [
   { status: '정상', label: '정상', color: '#10b981', icon: 'pi pi-check-circle' },
   { status: '미수집', label: '미수집', color: '#6b7280', icon: 'pi pi-question-circle' }
 ]
+
 
 const groups = computed(() =>
   groupMeta.map(meta => ({
@@ -180,7 +154,7 @@ const statusClass = (status) => {
   gap: 12px;
 }
 .instance-box {
-  flex: 0 0 80px;  /* 이전의 158px → 80px로 줄임 */
+  flex: 0 0 80px;
   max-width: 100px;
   padding: 8px 4px;
   border-radius: 10px;
@@ -199,13 +173,17 @@ const statusClass = (status) => {
 }
 
 .instance-name {
-  font-size: 0.72rem;
-  font-weight: 600;
-  word-break: break-all;
+  font-size: 1.02em;
+  font-weight: bold;
+  margin-bottom: 3px;
+  word-break: break-word;
 }
 
 .instance-status {
-  display: none; /* 상태는 툴팁으로 처리하고 안 보이게 */
+  display: none;
+  font-size: 0.98em;
+  margin-top: 2px;
+  letter-spacing: 0.02em;
 }
 
 .status-normal {
@@ -223,17 +201,6 @@ const statusClass = (status) => {
 .status-unknown {
   border: 2.5px dashed #bbb;
   color: #888;
-}
-
-.instance-name {
-  font-size: 1.02em;
-  font-weight: bold;
-  margin-bottom: 3px;
-}
-.instance-status {
-  font-size: 0.98em;
-  margin-top: 2px;
-  letter-spacing: 0.02em;
 }
 
 @media (max-width: 800px) {

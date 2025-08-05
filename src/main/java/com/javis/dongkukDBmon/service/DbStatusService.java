@@ -22,7 +22,8 @@ public class DbStatusService {
                         String.valueOf(row.get("status")),
                         String.valueOf(row.get("chkDate")),
                         String.valueOf(row.get("message")),
-                        clobToString(row.get("error"))  // ✅ 핵심 수정
+                        clobToString(row.get("error")), // ✅ 핵심 수정
+                        String.valueOf(row.get("dbType"))
                 ))
                 .toList();
     }

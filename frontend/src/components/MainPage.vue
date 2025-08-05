@@ -43,7 +43,6 @@
           </div>
           <DailyStatSummary />
         </section>
-          <TopKPICards :stats="stats" />
         </div>
       </TabPanel>
     </TabView>

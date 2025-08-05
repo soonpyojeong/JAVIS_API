@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.sql.ResultSetMetaData;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,14 +54,7 @@ public class SelectQueryExecModuleHandler extends AbstractEtlModuleHandler {
                 return;
             }
 
-            boolean isSuccess = true;
-            String error = null;
-
             try {
-                // 1. 소스 쿼리 결과 여러 row 조회
-                List<Map<String, Object>> rows = srcJdbc.queryForList(selectQuery);
-
-                // 2. 타겟 테이블 컬럼 정보 동적 조회
                 List<Map<String, Object>> columns = targetJdbc.queryForList(
                         "SELECT COLUMN_NAME, COLUMN_ID FROM USER_TAB_COLUMNS WHERE TABLE_NAME = ? ORDER BY COLUMN_ID",
                         targetTable.toUpperCase());
@@ -72,27 +66,31 @@ public class SelectQueryExecModuleHandler extends AbstractEtlModuleHandler {
                 String bindsSql = colNames.stream().map(c -> "?").collect(Collectors.joining(", "));
                 String insertSql = String.format("INSERT INTO %s (%s) VALUES (%s)", targetTable, columnsSql, bindsSql);
 
-                // 3. row별 파라미터 매핑
                 List<Object[]> paramList = new ArrayList<>();
-                for (Map<String, Object> row : rows) {
-                    Map<String, Object> std = new HashMap<>();
-                    std.put("COLLECT_TIME", new Timestamp(System.currentTimeMillis()));
-                    std.put("DB_TYPE", src.getDbType());
-                    std.put("DB_NAME", src.getDbName());
-                    std.put("COLLECT_SQL", selectQuery);
-                    std.put("STATUS", "SUCCESS");
-                    std.put("ERROR_MSG", null);
+                Timestamp collectTime = new Timestamp(System.currentTimeMillis());
 
-                    // select 결과 컬럼 upper-case로 넣기
-                    for (String key : row.keySet()) {
-                        std.put(key.toUpperCase(), row.get(key));
+                srcJdbc.query(selectQuery, rs -> {
+                    while (rs.next()) {
+                        Map<String, Object> std = new HashMap<>();
+                        std.put("COLLECT_TIME", collectTime);
+                        std.put("DB_TYPE", src.getDbType());
+                        std.put("DB_NAME", src.getDbName());
+                        std.put("COLLECT_SQL", selectQuery);
+                        std.put("STATUS", "SUCCESS");
+                        std.put("ERROR_MSG", null);
+
+                        ResultSetMetaData meta = rs.getMetaData();
+                        for (int i = 1; i <= meta.getColumnCount(); i++) {
+                            String col = meta.getColumnName(i).toUpperCase();
+                            std.put(col, rs.getObject(i));
+                        }
+
+                        Object[] vals = colNames.stream()
+                                .map(col -> std.getOrDefault(col, null))
+                                .toArray();
+                        paramList.add(vals);
                     }
-
-                    Object[] vals = colNames.stream()
-                            .map(col -> std.getOrDefault(col, null))
-                            .toArray();
-                    paramList.add(vals);
-                }
+                });
 
                 if (!paramList.isEmpty()) {
                     targetJdbc.batchUpdate(insertSql, paramList);
@@ -174,12 +172,7 @@ public class SelectQueryExecModuleHandler extends AbstractEtlModuleHandler {
             return;
         }
 
-        boolean isSuccess = true;
-        String error = null;
-
         try {
-            List<Map<String, Object>> rows = srcJdbc.queryForList(selectQuery);
-
             DbConnectionInfo target = dbRepo.findById(job.getTargetDbId()).orElseThrow();
             String targetPw = decryptPassword(target.getPassword());
             JdbcTemplate targetJdbc = createJdbc(target, targetPw);
@@ -191,27 +184,34 @@ public class SelectQueryExecModuleHandler extends AbstractEtlModuleHandler {
                     .map(col -> (String) col.get("COLUMN_NAME"))
                     .collect(Collectors.toList());
 
-            List<Object[]> paramList = new ArrayList<>();
-            for (Map<String, Object> row : rows) {
-                Map<String, Object> std = new HashMap<>();
-                std.put("COLLECT_TIME", new Timestamp(System.currentTimeMillis()));
-                std.put("DB_TYPE", src.getDbType());
-                std.put("DB_NAME", src.getDbName());
-                std.put("COLLECT_SQL", selectQuery);
-                std.put("STATUS", "SUCCESS");
-                std.put("ERROR_MSG", null);
-
-                for (String key : row.keySet()) {
-                    std.put(key.toUpperCase(), row.get(key));
-                }
-                Object[] vals = colNames.stream()
-                        .map(col -> std.getOrDefault(col, null))
-                        .toArray();
-                paramList.add(vals);
-            }
             String columnsSql = String.join(", ", colNames);
             String bindsSql = colNames.stream().map(c -> "?").collect(Collectors.joining(", "));
             String insertSql = String.format("INSERT INTO %s (%s) VALUES (%s)", targetTable, columnsSql, bindsSql);
+
+            List<Object[]> paramList = new ArrayList<>();
+            Timestamp collectTime = new Timestamp(System.currentTimeMillis());
+
+            srcJdbc.query(selectQuery, rs -> {
+                while (rs.next()) {
+                    Map<String, Object> std = new HashMap<>();
+                    std.put("COLLECT_TIME", collectTime);
+                    std.put("DB_TYPE", src.getDbType());
+                    std.put("DB_NAME", src.getDbName());
+                    std.put("COLLECT_SQL", selectQuery);
+                    std.put("STATUS", "SUCCESS");
+                    std.put("ERROR_MSG", null);
+
+                    ResultSetMetaData meta = rs.getMetaData();
+                    for (int i = 1; i <= meta.getColumnCount(); i++) {
+                        std.put(meta.getColumnName(i).toUpperCase(), rs.getObject(i));
+                    }
+
+                    Object[] vals = colNames.stream()
+                            .map(col -> std.getOrDefault(col, null))
+                            .toArray();
+                    paramList.add(vals);
+                }
+            });
 
             if (!paramList.isEmpty()) {
                 targetJdbc.batchUpdate(insertSql, paramList);
@@ -221,9 +221,7 @@ public class SelectQueryExecModuleHandler extends AbstractEtlModuleHandler {
             }
 
         } catch (Exception e) {
-            isSuccess = false;
-            error = e.getMessage();
-            batchService.saveJobLog(batchId, src.getId(), false, "실패: " + error);
+            batchService.saveJobLog(batchId, src.getId(), false, "실패: " + e.getMessage());
         }
     }
 }

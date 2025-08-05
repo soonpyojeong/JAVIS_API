@@ -1,3 +1,9 @@
+camel:
+  routes:
+    etljob:
+      #enabled: false
+      enabled: true
+
 spring:
   profiles:
     active: prod
