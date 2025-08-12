@@ -89,22 +89,24 @@
           </template>
         </Column>
 
-        <Column field="dayToFull" header="FULL까지일수예측">
+        <!-- ✅ 날짜로 표기 -->
+        <Column field="fullReachDate" header="FULL도달일">
           <template #body="{ data }">
-            <span :style="{ color: data.dayToFull !== null && data.dayToFull <= 10 ? 'red' : 'inherit' }">
-              {{ data.dayToFull != null ? data.dayToFull.toLocaleString() + '일' : '-' }}
+            <span :style="{ color: data.dayToFull != null && data.dayToFull <= 10 ? 'red' : 'inherit' }">
+              {{ data.fullReachDate ?? '-' }}
             </span>
           </template>
         </Column>
 
-        <Column field="dayTo95Percent" header="95% 도달예측">
+        <Column field="reach95Date" header="95% 도달일">
           <template #body="{ data }">
-            <span :style="{ color: data.dayTo95Percent !== null && data.dayTo95Percent <= 10 ? 'red' : 'inherit' }">
-              {{ data.dayTo95Percent != null ? data.dayTo95Percent.toLocaleString() + '일' : '-' }}
+            <span :style="{ color: data.dayTo95Percent != null && data.dayTo95Percent <= 10 ? 'red' : 'inherit' }">
+              {{ data.reach95Date ?? '-' }}
             </span>
           </template>
         </Column>
       </DataTable>
+
     </div>
   </div>
 </template>
