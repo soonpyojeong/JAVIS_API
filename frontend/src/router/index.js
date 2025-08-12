@@ -2,8 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../components/MainPage.vue';
 import DBList from '../components/PrimevueDBList.vue';
 import SmsHistory from '../components/SmsHistory.vue';
-import ThresholdList from '../components/ThresholdList.vue';
 import TablespacesList from '../components/TablespacesList.vue';
+import TablespaceStats from '../components/TablespaceStats.vue';
 import DailyChkView from '../components/PrimevueDailyChk.vue';
 import LoginComponent from '../components/LoginComponent.vue';
 import SysInfoDetail from '../components/PrimevueSysInfoDetail.vue';
@@ -27,8 +27,8 @@ const routes = [
   { path: '/', component: Dashboard, meta: { title: 'JAVIS Dashboard', requiresAuth: true } },
   { path: '/db-list', name: 'DBList', component: DBList, meta: { title: 'DB List', requiresAuth: true } },
   { path: '/sms-history', name: 'SmsHistory', component: SmsHistory, meta: { title: 'SMS History', requiresAuth: true } },
-  { path: '/threshold-list', name: 'ThresholdList', component: ThresholdList, meta: { title: 'Threshold List', requiresAuth: true } },
   { path: '/tablespaces', name: 'TablespacesList', component: TablespacesList, meta: { title: 'Tablespaces List', requiresAuth: true } },
+  { path: '/TablespaceStats', name: 'TablespaceStats', component: TablespaceStats, meta: { title: 'Tablespace Stats', requiresAuth: true } },
   { path: '/dailyChk', name: 'DailyChkView', component: DailyChkView, meta: { title: 'Daily Check View', requiresAuth: true } },
   { path: '/SysInfoDetail', name: 'SysInfoDetail', component: SysInfoDetail, meta: { title: 'SysInfoDetail', requiresAuth: true } },
   { path: '/Manager', name: 'PWMng', component: PWMng, meta: { title: 'Manager', requiresAuth: true } },

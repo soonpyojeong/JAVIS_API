@@ -6,26 +6,25 @@
     <div class="select-container">
       <select v-model="selectedDb" @change="handleDbChange">
         <option value="">임계치만보기</option>
-        <option
-          v-for="db in sortedDbList"
-          :key="db.dbName"
-          :value="db.dbName"
-        >
+        <option v-for="db in sortedDbList" :key="db.dbName" :value="db.dbName">
           {{ db.dbName === 'NIRIS' ? 'IRIS3.0' : db.dbName }} {{ db.sizeChk === 'N' ? ' (미수집)' : '' }}
         </option>
       </select>
-        <div class="refresh-wrapper" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
-          <button class="refresh-btn" :class="{ rotating: isRotating }" @click="handleRefreshClick">
-            <svg class="refresh-icon" viewBox="0 0 24 24">
-              <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.41 3.59 8 8 8s8-3.59 8-8-3.59-8-8-8z" fill="currentColor"/>
-            </svg>
-          </button>
-          <div v-if="showTooltip" class="tooltip-card">
-            DB 정보 새로고침
-            <div class="tooltip-arrow"></div>
-          </div>
+      <div class="refresh-wrapper" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">
+        <button class="refresh-btn" :class="{ rotating: isRotating }" @click="handleRefreshClick">
+          <svg class="refresh-icon" viewBox="0 0 24 24">
+            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.41 3.59 8 8 8s8-3.59 8-8-3.59-8-8-8z" fill="currentColor"/>
+          </svg>
+        </button>
+        <div v-if="showTooltip" class="tooltip-card">
+          DB 정보 새로고침
+          <div class="tooltip-arrow"></div>
         </div>
+      </div>
     </div>
+
+    <!-- 경고 메시지 -->
+    <p v-if="message" class="text-red-500 text-center mb-2">{{ message }}</p>
 
     <!-- 검색 필드 -->
     <div class="mb-4">
@@ -34,9 +33,6 @@
     </div>
 
     <!-- 테이블 -->
-    <!-- 기존 v-if="filteredTablespaces.length" → 조건 제거 -->
-    <!-- 테이블 -->
-    <!-- 기존 v-if="filteredTablespaces.length" → 조건 제거 -->
     <table class="tablespace-table" v-if="filteredTablespaces.length || showAllThresholds">
       <thead>
         <tr>
@@ -67,37 +63,31 @@
           <td>
             <div class="flex justify-end items-center gap-2">
               <div v-show="!ts.isEditing">
-                <span
-                  v-if="ts.thresMb != null"
-                  @click="startEditing(ts)"
-                  class="cursor-pointer text-orange-500 hover:underline"
-                >
+                <span v-if="ts.thresMb != null" @click="startEditing(ts)" class="cursor-pointer text-orange-500 hover:underline">
                   {{ formatNumber(ts.thresMb) }}
                 </span>
-                <button
-                  v-else
-                  class="add-threshold-button"
-                  @click="openAddThresholdModal(ts)"
-                >
-                  +
-                </button>
+                <button v-else class="add-threshold-button" @click="openAddThresholdModal(ts)">+</button>
               </div>
-
               <div v-show="ts.isEditing">
                 <input
-                  :ref="el => thresInputMap.value.set(ts.id.dbName + '_' + ts.id.tsName, el)"
+                  :ref="el => {
+                    if (el && thresInputMap?.value instanceof Map && ts.id?.dbName && ts.id?.tsName) {
+                      thresInputMap.value.set(ts.id.dbName + '_' + ts.id.tsName, el);
+                    }
+                  }"
                   v-model="ts.editedValue"
-                  @keyup.enter="handleEnter(ts)"
+                  @keyup.enter="handleEnter(ts); handleBlur(ts)"
                   @blur="handleBlur(ts)"
                   type="number"
                   class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
-                <button @click="resetToDefault(ts)">기본값</button>
+                <button @click="resetToDefault(ts)" title="기본값으로 설정">
+                  <i class="pi pi-refresh"></i>
+                </button>
                 <button @click="updateThreshold(ts)" class="bg-blue-500 text-white px-2 py-1 rounded">저장</button>
               </div>
             </div>
           </td>
-
           <td>
             <div class="flex justify-end items-center gap-2">
               <span v-show="!ts.editingDefault" @click="startEditingDefault(ts)" class="cursor-pointer text-blue-600 hover:underline">
@@ -113,11 +103,7 @@
             </template>
             <template v-else-if="ts.thresMb != null && ts.defThresMb != null">
               <div class="flex justify-center">
-                <button
-                  @click="releaseThreshold(ts.thresholdId)"
-                >
-                  해제
-                </button>
+                <button @click="releaseThreshold(ts.thresholdId)">해제</button>
               </div>
             </template>
           </td>
@@ -125,14 +111,9 @@
       </tbody>
     </table>
 
-    <!-- 아래처럼 남아있으면 안 됨 -->
-    <p v-if="tablespaces.length === 0 && selectedDb">테이블스페이스 정보가 없습니다.</p>
-
-    <!-- 아래처럼 바꿔야 함 -->
     <p v-if="tablespaces.length === 0">임계치 설정된 테이블스페이스가 없습니다.</p>
 
-
-    <!-- 모달 -->
+    <!-- 메시지 모달 -->
     <div v-if="showMessageModal" class="modal-overlay">
       <div class="modal">
         <p>{{ messageModalText }}</p>
@@ -214,6 +195,10 @@ function handleEnter(ts) {
   updateThreshold(ts);
 }
 
+function handleBlur(ts) {
+  ts.isEditing = false;
+  ts.editedValue = null;
+}
 
 function fetchAllThresholds() {
   api.get('/api/threshold/all').then((res) => {
@@ -263,7 +248,7 @@ const showAllThresholds = ref(true); // 기본값: 전체 표시
 function fetchThresholdsWithUsage() {
   api.get('/api/threshold/with-usage').then((res) => {
     const result = res.data || [];
-    console.log('[임계치 리스트 확인]', result);
+    //console.log('[임계치 리스트 확인]', result);
     tablespaces.value = result.map((item) => ({
       id: {
         dbName: item.dbName,

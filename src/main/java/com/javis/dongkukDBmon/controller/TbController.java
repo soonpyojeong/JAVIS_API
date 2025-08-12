@@ -2,6 +2,8 @@
 
 package com.javis.dongkukDBmon.controller;
 import com.javis.dongkukDBmon.Dto.TablespaceUsageDto;
+import com.javis.dongkukDBmon.Dto.TsSummaryDto;
+import com.javis.dongkukDBmon.Dto.TsSummaryRequestDto;
 import com.javis.dongkukDBmon.model.TiberoCap_Check_Mg;
 import com.javis.dongkukDBmon.service.TbService;
 import lombok.extern.slf4j.Slf4j;
@@ -65,5 +67,22 @@ public class TbController {
     public ResponseEntity<List<TablespaceUsageDto>> getWeeklyIncrease() {
         return ResponseEntity.ok(tbService.getWeeklyTsIncrease());
     }
+
+    @GetMapping("/summary")
+    public List<TsSummaryDto> getTablespaceSummary(
+            @RequestParam String dbName,
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @RequestParam(required = false) String filterType // 선택 사항일 경우
+    ) {
+        TsSummaryRequestDto request = new TsSummaryRequestDto();
+        request.setDbName(dbName);
+        request.setStartDate(startDate);
+        request.setEndDate(endDate);
+        request.setFilterType(filterType); // optional
+
+        return tbService.getTablespaceSummary(request);
+    }
+
 
 }

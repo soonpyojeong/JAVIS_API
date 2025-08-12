@@ -70,7 +70,7 @@ const fetchStatuses = async () => {
   try {
     const { data } = await api.get('/api/dashboard/live-statuses')
     instances.value = data
-    console.log('live Data ',instances.value)
+    //console.log('live Data ',instances.value)
   } catch (e) {
     console.error('[❌ 상태 조회 실패]', e)
   }

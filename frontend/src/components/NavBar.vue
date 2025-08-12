@@ -259,7 +259,7 @@ const menuItems = [
   { name: "첫화면", path: "/", roles: ["ADMIN", "DBA", "EAI", "VIEW"], iconClass: "pi pi-home" },
   { name: "DB 전체 리스트", path: "/db-list", roles: ["ADMIN", "DBA", "EAI"], iconClass: "pi pi-database" },
   { name: "SMS 전송 내역", path: "/sms-history", roles: ["ADMIN", "DBA", "EAI", "VIEW"], iconClass: "pi pi-send" },
-  { name: "테이블스페이스관리", path: "/tablespaces", roles: ["ADMIN", "DBA"], iconClass: "pi pi-align-left" },
+  { name: "테이블스페이스관리", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-align-left", hasSub: true, subMenu: "tbs" },
   { name: "일일점검", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-calendar", hasSub: true, subMenu: "daily" },
   { name: "패스워드관리", path: "/Manager", roles: ["ADMIN", "DBA"], iconClass: "pi pi-key" },
   { name: "ETL DB관리", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-share-alt", hasSub: true, subMenu: "etl" },
@@ -271,6 +271,12 @@ const dailySubMenus = [
   { name: "일일 점검(SYS)", path: "/SysInfoDetail", iconClass: "pi pi-chart-line" },
 ];
 
+const tbsSubMenus = [
+  { name: "테이블스페이스 관리", path: "/tablespaces", iconClass: "pi pi-chart-bar" },
+  { name: "테이블스페이스 통계", path: "/TablespaceStats", iconClass: "pi pi-chart-line" },
+];
+
+
 const etlSubMenus = [
   { name: "DB연결정보관리", path: "/EtlDbConnection", iconClass: "pi pi-database" },
   { name: "관제 모듈 관리", path: "/MonitorModuleManage", iconClass: "pi pi-sitemap" },
@@ -280,7 +286,7 @@ const etlSubMenus = [
 ];
 
 
-const subMenuMap = { daily: dailySubMenus, etl: etlSubMenus };
+const subMenuMap = { daily: dailySubMenus, etl: etlSubMenus, tbs: tbsSubMenus };
 
 
 
