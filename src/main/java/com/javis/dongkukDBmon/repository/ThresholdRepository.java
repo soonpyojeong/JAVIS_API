@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ThresholdRepository extends JpaRepository<Threshold, Long> {
@@ -18,17 +19,60 @@ public interface ThresholdRepository extends JpaRepository<Threshold, Long> {
     int restoreExpiredImsiDel(@Param("expireDate") Date expireDate);
 
     @Query(value = """
-SELECT t.db_name, t.db_type, t.tablespace_name,
-       t.thres_mb, t.def_thres_mb, t.imsi_del,
-       s.total_size, s.used_size, s.free_size, s.used_rate
-FROM VW_DB_CAP_CHECK_MG s, TB_DB_TBS_THRESHOLD t
-WHERE s.CREATE_TIMESTAMP >= TO_DATE(TO_CHAR(TO_DATE(:formattedTime, 'yyyy/mm/dd HH24:MI:SS'), 'yyyy/mm/dd HH24') || ':00:00', 'yyyy/mm/dd HH24:MI:SS')
-  AND t.db_name = s.db_name
-  AND t.db_type = s.db_type
-  AND t.TABLESPACE_NAME = s.TS_NAME
-ORDER BY t.DB_NAME, s.used_rate DESC
+SELECT
+  t.DB_NAME,
+  t.DB_TYPE,
+  t.TABLESPACE_NAME,
+  t.THRES_MB,
+  t.DEF_THRES_MB,
+  t.IMSI_DEL,
+  s.TOTAL_SIZE,
+  s.USED_SIZE,
+  s.FREE_SIZE,
+  s.USED_RATE
+FROM TB_DB_TBS_THRESHOLD t
+JOIN (
+  SELECT DB_NAME,
+         TS_NAME,
+         DB_TYPE,
+         TOTAL_SIZE,
+         USED_SIZE,
+         FREE_SIZE,
+         USED_RATE,
+         CREATE_TIMESTAMP
+  FROM (
+    SELECT
+      DB_NAME,
+      TS_NAME,
+      DB_TYPE,
+      TOTAL_SIZE,
+      USED_SIZE,
+      FREE_SIZE,
+      USED_RATE,
+      CREATE_TIMESTAMP,
+      ROW_NUMBER() OVER (
+        PARTITION BY DB_NAME, TS_NAME
+        ORDER BY CREATE_TIMESTAMP DESC
+      ) AS RN
+    FROM VW_DB_CAP_CHECK_MG
+    WHERE CREATE_TIMESTAMP >= TO_DATE(
+            TO_CHAR(TO_DATE(:formattedTime, 'YYYY/MM/DD HH24:MI:SS'),
+                    'YYYY/MM/DD HH24') || ':00:00',
+            'YYYY/MM/DD HH24:MI:SS'
+          )
+  )
+  WHERE RN = 1
+) s
+  ON s.DB_NAME = t.DB_NAME
+ AND s.DB_TYPE = t.DB_TYPE
+ AND s.TS_NAME  = t.TABLESPACE_NAME
+ORDER BY t.DB_NAME, s.USED_RATE DESC
 """, nativeQuery = true)
     List<ThresholdWithUsageDto> findWithUsage(@Param("formattedTime") String formattedTime);
 
+    // 👉 DB_TYPE + DB_NAME + TABLESPACE_NAME으로 단일 행 조회
+    Optional<Threshold> findByDbTypeAndDbNameAndTablespaceName(String dbType, String dbName, String tablespaceName);
+
 
 }
+

@@ -45,30 +45,42 @@ public class ThresholdController {
     @PutMapping("/{id}")
     public ResponseEntity<Boolean> updateThreshold(@PathVariable Long id, @RequestBody Map<String, Object> requestMap) {
         Optional<Threshold> optionalThreshold = thresholdService.getThresholdById(id);
-
-        if (optionalThreshold.isPresent()) {
-            Threshold threshold = optionalThreshold.get();
-
-            // ✅ 값 꺼내기
-            Integer thresMb = (Integer) requestMap.get("thresMb");
-            String username = (String) requestMap.get("username");
-
-            threshold.setThresMb(thresMb);
-            thresholdService.save(threshold);
-
-            // ✅ 알람 메시지에 username 포함
-            String message = String.format("%s DB의 %s 임계치가 %d MB로  %s에 의해 수정되었습니다.",
-                    threshold.getDbName(), threshold.getTablespaceName(), threshold.getThresMb(), username);
-
-            Alert alert = alertService.createAlert("THRESHOLD_UPDATE", message);
-            List<String> allUserIds = javisLoginUserService.getAllLoginIds();
-            alertService.notifyUsers(alert, allUserIds);
-            alertService.sendAlertToUsers(message);
-
-            return ResponseEntity.ok(true);
+        if (!optionalThreshold.isPresent()) {
+            return ResponseEntity.status(404).body(false);
         }
-        return ResponseEntity.status(404).body(false);
+        Threshold threshold = optionalThreshold.get();
+
+        // 숫자 안전 파싱
+        Object rawThres = requestMap.get("thresMb");
+        Integer thresMb = null;
+        if (rawThres instanceof Number) thresMb = ((Number) rawThres).intValue();
+        else if (rawThres != null) {
+            try { thresMb = Integer.valueOf(rawThres.toString().trim()); } catch (Exception ignored) {}
+        }
+        if (thresMb == null) {
+            log.warn("updateThreshold bad request: id={}, thresMb(raw)={}", id, rawThres);
+            return ResponseEntity.badRequest().body(false);
+        }
+
+        String username = (String) requestMap.get("username");
+        if (username == null || username.trim().isEmpty()) username = "unknown";
+
+        // 값 반영 (기본임계치는 변경하지 않음)
+        threshold.setThresMb(thresMb);
+        thresholdService.save(threshold); // 내부에서 saveOrUpdate 호출하게 되어 있으면 그대로 사용
+
+        // 알림 (로컬 변수 thresMb 사용)
+        String message = String.format("%s DB의 %s 임계치가 %d MB로 %s에 의해 수정되었습니다.",
+                threshold.getDbName(), threshold.getTablespaceName(), thresMb, username);
+
+        Alert alert = alertService.createAlert("THRESHOLD_UPDATE", message);
+        List<String> allUserIds = javisLoginUserService.getAllLoginIds();
+        alertService.notifyUsers(alert, allUserIds);
+        alertService.sendAlertToUsers(message);
+
+        return ResponseEntity.ok(true);
     }
+
 
 
     @PutMapping("/{id}/release")
@@ -109,31 +121,44 @@ public class ThresholdController {
     public ResponseEntity<Threshold> saveThreshold(@RequestBody Map<String, Object> requestMap) {
         log.info("Received request to save threshold: {}", requestMap);
 
-        // ✅ 값 꺼내기
         String dbName = (String) requestMap.get("dbName");
-        String dbType = (String) requestMap.get("dbType"); // ✅ dbType 추가로 꺼내기
+        String dbType = (String) requestMap.get("dbType");
         String tablespaceName = (String) requestMap.get("tablespaceName");
-        Integer thresMb = (Integer) requestMap.get("thresMb");
         String username = (String) requestMap.get("username");
-        String chkFlag = (String) requestMap.get("chkFlag");
+        String chkFlag = (String) requestMap.getOrDefault("chkFlag", "Y");
 
-        // Threshold 객체 생성
+        // 숫자 안전 파싱
+        Object rawThres = requestMap.get("thresMb");
+        Integer thresMb = null;
+        if (rawThres instanceof Number) thresMb = ((Number) rawThres).intValue();
+        else if (rawThres != null) {
+            try { thresMb = Integer.valueOf(rawThres.toString().trim()); } catch (Exception ignored) {}
+        }
+
+        if (dbName == null || dbType == null || tablespaceName == null || thresMb == null) {
+            log.warn("saveThreshold bad request: dbName={}, dbType={}, tablespaceName={}, thresMb(raw)={}",
+                    dbName, dbType, tablespaceName, rawThres);
+            return ResponseEntity.badRequest().build();
+        }
+
+        // 업서트용 엔티티
         Threshold threshold = new Threshold();
         threshold.setDbName(dbName);
-        threshold.setDbType(dbType);  // ✅ dbType도 꼭 세팅해야 함
+        threshold.setDbType(dbType);
         threshold.setTablespaceName(tablespaceName);
         threshold.setThresMb(thresMb);
-        threshold.setDefThresMb(thresMb);
+        threshold.setDefThresMb(thresMb); // ✅ 신규 저장 시 기본임계치 = 임계치
         threshold.setChkFlag(chkFlag);
+        threshold.setCommt(username);
 
-        Threshold savedThreshold = thresholdService.saveThreshold(threshold);
+        Threshold savedThreshold = thresholdService.saveOrUpdate(threshold);
+        log.info("Threshold upserted: {}", savedThreshold);
 
-        log.info("Threshold successfully saved: {}", savedThreshold);
-
-        // ✅ 알람 메시지에 username 포함
-        String message = String.format("%s DB의 %s 임계치가 %s 에 의해 새로 등록되었습니다. (설정 용량: %d MB)",
-        savedThreshold.getDbName(), savedThreshold.getTablespaceName(), username, savedThreshold.getThresMb());
-
+        // 알림
+        String message = String.format(
+                "%s DB의 %s 임계치가 %s 에 의해 새로 등록/갱신되었습니다. (설정 용량: %d MB)",
+                savedThreshold.getDbName(), savedThreshold.getTablespaceName(), username, thresMb
+        );
         Alert alert = alertService.createAlert("THRESHOLD_SAVE", message);
         List<String> allUserIds = javisLoginUserService.getAllLoginIds();
         alertService.notifyUsers(alert, allUserIds);
@@ -141,6 +166,8 @@ public class ThresholdController {
 
         return ResponseEntity.ok(savedThreshold);
     }
+
+
 
 
 

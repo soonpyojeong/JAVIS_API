@@ -38,12 +38,12 @@
       </div>
 
       <div class="filter-block">
-        <Button label="조회" icon="pi pi-search" @click="fetchStats" class="p-button-success" />
+        <Button label="조회" icon="pi pi-search" :disabled="isLoading" @click="fetchStats" class="p-button-success" />
         <ProgressBar v-if="isLoading" mode="indeterminate" style="height: 6px; margin-top: 12px" />
       </div>
 
       <div class="filter-block">
-        <Button label="초기화" icon="pi pi-times" @click="resetFilters" class="p-button-secondary" />
+        <Button label="초기화" icon="pi pi-times" :disabled="isLoading" @click="resetFilters" class="p-button-secondary" />
       </div>
     </div>
 
@@ -52,7 +52,7 @@
       <DataTable
         :value="tsSummaryList"
         class="p-datatable-sm mt-4"
-        responsiveLayout="scroll"
+        scrollable
         :sortField="'realUsedMb'"
         :sortOrder="-1"
       >
@@ -77,7 +77,7 @@
           </template>
         </Column>
 
-        <Column field="realUsedPercent" header="실사용비율(%)">
+        <Column field="realUsedPercent" header="실사용비율(%))">
           <template #body="{ data }">
             {{ data.realUsedPercent != null ? data.realUsedPercent.toFixed(2) + ' %' : '-' }}
           </template>
@@ -106,7 +106,6 @@
           </template>
         </Column>
       </DataTable>
-
     </div>
   </div>
 </template>
@@ -134,16 +133,21 @@ const selectedSingleDate = ref(null);
 const selectedDateRange = ref(null);
 const selectedDb = ref(null);
 const selectedTs = ref(null);
+const selectedDbType = ref(null); // ✅ 선택한 DB의 타입 저장
 
 const tsOptions = ref([]);
 const tsSummaryList = ref([]);
 const dbOptions = ref([]);
 const isLoading = ref(false);
 
-// 유틸
+/* ===== 유틸 ===== */
+// (타임존 안전) 날짜 → YYYYMMDD
 function formatDateYMD(date) {
   const d = new Date(date);
-  return d.toISOString().slice(0, 10).replace(/-/g, "");
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}${m}${day}`;
 }
 
 const getMonthRange = () => {
@@ -174,12 +178,17 @@ const getMonthRange = () => {
   return { startDate, endDate };
 };
 
-// 조회
+/* ===== 조회 ===== */
 const fetchStats = async () => {
   if (!dateFilterType.value || !selectedDb.value) {
     alert("날짜 필터와 DB는 필수 선택입니다.");
     return;
   }
+
+  // ✅ 현재 선택된 DB에서 dbType 찾아서 저장
+  const selectedDbObj = dbOptions.value.find(db => db.value === selectedDb.value);
+  selectedDbType.value = selectedDbObj ? selectedDbObj.type : null;
+
   let startDate = "", endDate = "";
 
   if (dateFilterType.value === "month") {
@@ -211,7 +220,8 @@ const fetchStats = async () => {
 
   isLoading.value = true;
   try {
-    await fetchTablespaceSummary(selectedDb.value, startDate, endDate);
+    // ✅ dbType 같이 넘김
+    await fetchTablespaceSummary(selectedDb.value, selectedDbType.value, startDate, endDate);
   } catch (e) {
     console.error("통계 조회 실패:", e);
     alert("조회 중 오류가 발생했습니다.");
@@ -220,21 +230,9 @@ const fetchStats = async () => {
   }
 };
 
-// 초기화
-const resetFilters = () => {
-  dateFilterType.value = "month";
-  startMonth.value = null;
-  endMonth.value = null;
-  selectedSingleDate.value = null;
-  selectedDateRange.value = null;
-  selectedDb.value = null;
-  selectedTs.value = null;
-  tsSummaryList.value = [];
-};
-
-// API
-const fetchTablespaceSummary = async (dbName, startDate, endDate) => {
-  const res = await api.get(`/api/tb/summary`, { params: { dbName, startDate, endDate } });
+/* ===== API ===== */
+const fetchTablespaceSummary = async (dbName, dbType, startDate, endDate) => {
+  const res = await api.get(`/api/tb/summary`, { params: { dbName, dbType, startDate, endDate } });
   tsSummaryList.value = res.data;
 };
 
@@ -245,11 +243,25 @@ const loadDbList = async () => {
       .map((db) => ({
         label: db.dbName + (db.sizeChk === "N" ? " (미수집)" : ""),
         value: db.dbName,
+        type: db.dbType, // ✅ dbType도 저장 (예: "ORACLE" | "TIBERO")
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   } catch (e) {
     console.error("DB 목록 조회 실패:", e);
   }
+};
+
+/* ===== 초기화 ===== */
+const resetFilters = () => {
+  dateFilterType.value = "month";
+  startMonth.value = null;
+  endMonth.value = null;
+  selectedSingleDate.value = null;
+  selectedDateRange.value = null;
+  selectedDb.value = null;
+  selectedDbType.value = null;
+  selectedTs.value = null;
+  tsSummaryList.value = [];
 };
 
 onMounted(() => {

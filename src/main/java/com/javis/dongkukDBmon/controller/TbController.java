@@ -73,16 +73,18 @@ public class TbController {
             @RequestParam String dbName,
             @RequestParam String startDate,
             @RequestParam String endDate,
-            @RequestParam(required = false) String filterType // 선택 사항일 경우
+            @RequestParam String dbType,                 // ★ 추가
+            @RequestParam(required = false) String filterType
     ) {
         TsSummaryRequestDto request = new TsSummaryRequestDto();
         request.setDbName(dbName);
         request.setStartDate(startDate);
         request.setEndDate(endDate);
-        request.setFilterType(filterType); // optional
-
+        request.setDbType(dbType);                      // ★ 추가
+        request.setFilterType(filterType);
         return tbService.getTablespaceSummary(request);
     }
+
 
 
 }
