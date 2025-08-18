@@ -199,26 +199,32 @@ public class EtlSchedulerManager {
             }
         }
         else if ("INTERVAL".equalsIgnoreCase(sch.getScheduleType())) {
-            String expr = sch.getScheduleExpr(); // "13:05:00|10 minute"
+            // expr 예: "13:05:00|10 minute" 또는 "17:00:00|2 hour"
+            String expr = sch.getScheduleExpr();
             String[] arr = expr.split("\\|");
             if (arr.length == 2) {
                 String[] hms = arr[0].split(":");
                 int hour = Integer.parseInt(hms[0]);
                 int minute = Integer.parseInt(hms[1]);
                 int second = Integer.parseInt(hms[2]);
-                String[] intervalParts = arr[1].trim().split(" ");
+
+                String[] intervalParts = arr[1].trim().split("\\s+");
                 int step = Integer.parseInt(intervalParts[0]);
                 String unit = intervalParts[1].toLowerCase();
 
                 if (unit.startsWith("sec")) {
-                    result.add(String.format("%d/%d %d %d * * ?", second, step, minute, hour));
+                    // 매 step초: "초/주기 * * * * ?"
+                    result.add(String.format("%d/%d * * * * ?", second, step));
                 } else if (unit.startsWith("min")) {
-                    result.add(String.format("%d %d/%d %d * * ?", second, minute, step, hour));
+                    // 매 step분: "초 분/주기 * * * ?"
+                    result.add(String.format("%d %d/%d * * * ?", second, minute, step));
                 } else if (unit.startsWith("hour")) {
-                    result.add(String.format("%d %d %d/%d * * ?", second, minute, hour, step));
+                    // 매 step시간: "초 분 */주기 * * ?"
+                    result.add(String.format("%d %d */%d * * ?", second, minute, step));
                 }
             }
         }
+
 
         return result;
     }
