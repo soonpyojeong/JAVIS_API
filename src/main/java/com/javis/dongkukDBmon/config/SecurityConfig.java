@@ -28,6 +28,16 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .csrf(AbstractHttpConfigurer::disable)
                 // CORS 설정 적용
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .headers(h -> h
+                        // ① 레거시 헤더: 같은 출처에서만 iframe 허용
+                        .frameOptions(fo -> fo.sameOrigin())
+                        // ② 현대 브라우저용: 이 응답을 iframe으로 '누가' 담을 수 있는지 지정
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives(
+                                        "frame-ancestors 'self' http://10.90.4.60:8812 http://172.31.1.176:8813"
+                                )
+                        )
+                )
                 .authorizeHttpRequests(auth -> auth
                         // [공개 경로]
                         .requestMatchers(
@@ -35,6 +45,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 "/favicon.ico",                    // 파비콘
                                 "/static/**", "/assets/**",        // 정적 리소스
                                 "/fonts/**", "/js/**", "/css/**",  // 리소스
+                                "/paper-boot.html",     // paper boot
+                                "/paper/**",
                                 // API 전체 허용(하위 경로 포함)
                                 "/api/**",
                                 // WebSocket

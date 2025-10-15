@@ -48,77 +48,107 @@
           <th @click="setSort('imsiDel')">관제3일조용<span v-if="sortKey === 'imsiDel'">{{ sortOrder === 1 ? '▲' : '▼' }}</span></th>
         </tr>
       </thead>
+
+      <!-- ✅ 한 스코프 안에서 메인행 + 확장행 같이 렌더 -->
       <tbody>
-        <tr
-          v-for="ts in sortedTablespaces"
-          :key="`${ts.id.dbName}-${ts.id.tsName}-${ts.dbType}`"
-        >
-          <td v-if="ts.id.dbName=='NIRIS'">IRIS3.0</td>
-          <td v-else>{{ ts.id.dbName }}</td>
-          <td>{{ ts.id.tsName }}</td>
-          <td>{{ formatNumber(ts.totalSize) }}</td>
-          <td>{{ formatNumber(ts.usedSize) }}</td>
-          <td :class="{ 'text-red-500 font-bold bg-red-100': Number(ts.usedRate) >= 85 }">
-            {{ formatNumber(ts.usedRate) }}%
-          </td>
-          <td>{{ formatNumber(ts.freeSize) }}</td>
-          <td>{{ ts.dbType }}</td>
-          <td>
-            <div class="flex justify-end items-center gap-2">
-              <div v-show="!ts.isEditing">
-                <span v-if="ts.thresMb != null" @click="startEditing(ts)" class="cursor-pointer text-orange-500 hover:underline">
-                  {{ formatNumber(ts.thresMb) }}
+        <template v-for="ts in sortedTablespaces" :key="tsKey(ts)">
+          <!-- 메인 행 (더블클릭으로 확장 토글) -->
+          <tr @dblclick="toggleExpand(ts)">
+            <td v-if="ts.id?.dbName==='NIRIS'">IRIS3.0</td>
+            <td v-else>{{ ts.id?.dbName }}</td>
+            <td>{{ ts.id?.tsName }}</td>
+            <td class="free-size">{{ formatNumber(ts.totalSize) }}</td>
+            <td class="used-size">{{ formatNumber(ts.usedSize) }}</td>
+            <td :class="{ 'text-red-500 font-bold bg-red-100': Number(ts.usedRate) >= 85 }">
+              {{ formatNumber(ts.usedRate) }}%
+            </td>
+            <td class="free-size">{{ formatNumber(ts.freeSize) }}</td>
+            <td>{{ ts.dbType }}</td>
+            <td>
+              <div class="flex justify-end items-center gap-2">
+                <div v-show="!ts.isEditing">
+                  <span v-if="ts.thresMb != null" @click="startEditing(ts)" class="cursor-pointer text-orange-500 hover:underline">
+                    {{ formatNumber(ts.thresMb) }}
+                  </span>
+                  <button v-else class="add-threshold-button" @click="openAddThresholdModal(ts)">+</button>
+                </div>
+                <div v-show="ts.isEditing">
+                  <input
+                    :ref="el => {
+                      const key = (ts.id?.dbName || '') + '_' + (ts.id?.tsName || '');
+                      if (el && thresInputMap?.value instanceof Map && key) thresInputMap.value.set(key, el);
+                      else if (!el && thresInputMap?.value instanceof Map && key) thresInputMap.value.delete(key);
+                    }"
+                    v-model.number="ts.editedValue"
+                    @keyup.enter="updateThreshold(ts)"
+                    @blur="handleBlur(ts)"
+                    type="number"
+                    class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <button @click="resetToDefault(ts)" title="기본값으로 설정">
+                    <i class="pi pi-refresh"></i>
+                  </button>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="flex justify-end items-center gap-2">
+                <span v-show="!ts.editingDefault" @click="startEditingDefault(ts)" class="cursor-pointer text-blue-600 hover:underline">
+                  {{ formatNumber(ts.defThresMb) }}
                 </span>
-                <button v-else class="add-threshold-button" @click="openAddThresholdModal(ts)">+</button>
-              </div>
-              <div v-show="ts.isEditing">
                 <input
-                  :ref="el => {
-                    const key = ts.id?.dbName + '_' + ts.id?.tsName;
-                    if (el && thresInputMap?.value instanceof Map && key) {
-                      thresInputMap.value.set(key, el);
-                    } else if (!el && thresInputMap?.value instanceof Map && key) {
-                      // ✅ 언마운트 시 ref 정리
-                      thresInputMap.value.delete(key);
-                    }
-                  }"
-                  v-model.number="ts.editedValue"
-                  @keyup.enter="updateThreshold(ts)"
-                  @blur="handleBlur(ts)"
+                  v-show="ts.editingDefault"
+                  v-model.number="ts.editedDefault"
+                  @keyup.enter="updateDefaultThreshold(ts)"
+                  @blur="cancelEditingDefault(ts)"
                   type="number"
-                  class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-                <button @click="resetToDefault(ts)" title="기본값으로 설정">
-                  <i class="pi pi-refresh"></i>
-                </button>
+                  class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-            </div>
-          </td>
-          <td>
-            <div class="flex justify-end items-center gap-2">
-              <span v-show="!ts.editingDefault" @click="startEditingDefault(ts)" class="cursor-pointer text-blue-600 hover:underline">
-                {{ formatNumber(ts.defThresMb) }}
-              </span>
-              <input
-                v-show="ts.editingDefault"
-                v-model.number="ts.editedDefault"
-                @keyup.enter="updateDefaultThreshold(ts)"
-                @blur="cancelEditingDefault(ts)"
-                type="number"
-                class="w-20 p-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-          </td>
-          <td>
-            <template v-if="ts.imsiDel">
-              <div>{{ new Date(ts.imsiDel).toLocaleDateString() }}</div>
-            </template>
-            <template v-else-if="ts.thresMb != null && ts.defThresMb != null">
-              <div class="flex justify-center">
-                <button @click="releaseThreshold(ts.thresholdId)">해제</button>
+            </td>
+            <td>
+              <template v-if="ts.imsiDel">
+                <div>{{ new Date(ts.imsiDel).toLocaleDateString() }}</div>
+              </template>
+              <template v-else-if="ts.thresMb != null && ts.defThresMb != null">
+                <div class="flex justify-center">
+                  <button @click="releaseThreshold(ts.thresholdId)">해제</button>
+                </div>
+              </template>
+            </td>
+          </tr>
+
+          <!-- 확장(데이터파일) 행 — 이 블록으로 교체 -->
+          <tr v-if="expandedKeys.includes(tsKey(ts))" :key="`${tsKey(ts)}-files`">
+            <td :colspan="10" class="bg-gray-50 p-0">
+              <div class="p-2">
+                <DataTable
+                  :value="datafileMap[tsKey(ts)] || []"
+                  :loading="!!loadingFlags[tsKey(ts)]"
+                  class="custom-datafile-table"
+                  size="small"
+                  stripedRows
+                  :paginator="true"
+                  :rows="5"
+                >
+                  <Column field="fileName" header="FILE NAME" />
+                  <Column field="status" header="STATUS" />
+                  <Column field="autoExtensible" header="AUTOEXTENSIBLE" />
+                  <Column field="bytes" header="SIZE(MB)">
+                    <template #body="{ data }">{{ (Number(data.bytes)/1024/1024).toFixed(1) }}</template>
+                  </Column>
+                  <Column field="maxBytes" header="MAX(MB)">
+                    <template #body="{ data }">{{ (Number(data.maxBytes)/1024/1024).toFixed(1) }}</template>
+                  </Column>
+                  <Column field="incrementBytes" header="INCREMENT(MB)">
+                    <template #body="{ data }">{{ (Number(data.incrementBytes)/1024/1024).toFixed(1) }}</template>
+                  </Column>
+                  <Column field="createDt" header="생성일" />
+                </DataTable>
               </div>
-            </template>
-          </td>
-        </tr>
+            </td>
+          </tr>
+
+        </template>
       </tbody>
     </table>
 
@@ -175,72 +205,124 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
-import { useStore } from 'vuex';
-import api from '@/api';
-import Chart from 'chart.js/auto';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useStore } from 'vuex'
+import api from '@/api'
+import Chart from 'chart.js/auto'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 
-const store = useStore();
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+const store = useStore()
 
 // 상태
-const selectedDb = ref('');
-const dbList = ref([]);
-const tablespaces = ref([]);
-const searchQuery = ref('');
-const chartInstances = ref({});
-const showTooltip = ref(false);
-const isRotating = ref(false);
-const showMessageModal = ref(false);
-const messageModalText = ref('');
-const message = ref('');
-const isAddModalVisible = ref(false);
-const addModalData = ref({ dbName: '', tablespaceName: '', dbType: '', thresMb: 0, chkFlag: 'Y', commt: '' });
-const sortKey = ref('');
-const sortOrder = ref(1);
+const selectedDb = ref('')
+const dbList = ref([])
+const tablespaces = ref([])
+const searchQuery = ref('')
+const chartInstances = ref({})
+const showTooltip = ref(false)
+const isRotating = ref(false)
+const showMessageModal = ref(false)
+const messageModalText = ref('')
+const message = ref('')
+const isAddModalVisible = ref(false)
+const addModalData = ref({ dbName: '', tablespaceName: '', dbType: '', thresMb: 0, chkFlag: 'Y', commt: '' })
+const sortKey = ref('')
+const sortOrder = ref(1)
+const showAllThresholds = ref(true)
 
-const allThresholds = ref([]);
-const thresInputMap = ref(new Map());
+const allThresholds = ref([])
+const thresInputMap = ref(new Map())
 
-// 중복 제거 유틸 (DB_NAME|TS_NAME|DB_TYPE 기준)
+/* ---------- 데이터파일 확장 상태(반응형 객체) ---------- */
+const datafileMap = ref({})   // { [key:string]: DatafileDto[] }
+const loadingFlags = ref({})  // { [key:string]: boolean }
+const expandedKeys = ref([])  // string[]
+
+// 안전한 key 생성 (id 가드 적용)
+const tsKey = (ts) => {
+  const db = ts?.id?.dbName ?? ts?.dbName ?? ''
+  const t  = ts?.id?.tsName ?? ts?.tsName ?? ''
+  const tp = ts?.dbType ?? ''
+  return `${db}|${t}|${tp}`
+}
+
+// 데이터파일 조회
+async function ensureDatafiles(ts) {
+  const key = tsKey(ts)
+  if (!key) return
+  if (datafileMap.value[key] || loadingFlags.value[key]) return
+  loadingFlags.value = { ...loadingFlags.value, [key]: true }
+  try {
+    const res = await api.get('/api/tb/datafiles', {
+      params: { dbname: ts?.id?.dbName, tablespace_name: ts?.id?.tsName, dbtype: ts?.dbType }
+    })
+    const list = Array.isArray(res.data) ? res.data : []
+    datafileMap.value = { ...datafileMap.value, [key]: list }
+  } catch (err) {
+    console.error('데이터파일 조회 실패:', err)
+    datafileMap.value = { ...datafileMap.value, [key]: [] }
+  } finally {
+    const { [key]: _drop, ...rest } = loadingFlags.value
+    loadingFlags.value = rest
+  }
+}
+
+// 확장 토글
+function toggleExpand(ts) {
+  const key = tsKey(ts)
+  if (!key) return
+  if (expandedKeys.value.includes(key)) {
+    expandedKeys.value = expandedKeys.value.filter(k => k !== key)
+  } else {
+    expandedKeys.value = [...expandedKeys.value, key]
+    ensureDatafiles(ts)
+  }
+}
+
+/* ---------- 공통 유틸 ---------- */
+function handleBlur(ts) {
+  ts.isEditing = false
+  ts.editedValue = null
+}
+function formatNumber(num) {
+  return num != null ? Number(num).toLocaleString() : '-'
+}
+
+/* ---------- 데이터 로딩 ---------- */
+async function fetchDbList() {
+  const res = await api.get('/api/db-list')
+  dbList.value = Array.isArray(res.data) ? res.data : []
+}
+async function fetchAllThresholds() {
+  const res = await api.get('/api/threshold/all')
+  allThresholds.value = res.data || []
+}
 function dedupeByKey(list) {
-  const map = new Map();
+  const map = new Map()
   for (const it of list) {
-    const key = `${it.id?.dbName}|${it.id?.tsName}|${it.dbType}`;
-    if (!it?.id?.dbName || !it?.id?.tsName || !it?.dbType) continue; // 키 결측 방지
-    const prev = map.get(key);
-    if (!prev) { map.set(key, it); continue; }
+    const key = `${it.id?.dbName}|${it.id?.tsName}|${it.dbType}`
+    if (!it?.id?.dbName || !it?.id?.tsName || !it?.dbType) continue
+    const prev = map.get(key)
+    if (!prev) { map.set(key, it); continue }
     const pick =
       (it.thresholdId && !prev.thresholdId) ? it :
       (!it.thresholdId && prev.thresholdId) ? prev :
-      (Number(it.usedSize ?? -1) > Number(prev.usedSize ?? -1)) ? it : prev;
-    map.set(key, pick);
+      (Number(it.usedSize ?? -1) > Number(prev.usedSize ?? -1)) ? it : prev
+    map.set(key, pick)
   }
-  return Array.from(map.values());
+  return Array.from(map.values())
 }
-
-
-function handleBlur(ts) {
-  ts.isEditing = false;
-  ts.editedValue = null;
-}
-
-// 전체 임계치 목록
-async function fetchAllThresholds() {
-  const res = await api.get('/api/threshold/all');
-  allThresholds.value = res.data || [];
-}
-
-// 임계치+사용률 (임계치만보기)
 async function fetchThresholdsWithUsage() {
-  const res = await api.get('/api/threshold/with-usage');
-  const result = res.data || [];
+  const res = await api.get('/api/threshold/with-usage')
+  const result = res.data || []
   const mapped = result.map((item) => {
     const matched = allThresholds.value.find(thr =>
       thr.dbName === item.dbName &&
       thr.tablespaceName === item.tablespaceName &&
       thr.dbType === item.dbType
-    );
+    )
     return {
       id: { dbName: item.dbName, tsName: item.tablespaceName },
       dbType: item.dbType,
@@ -256,45 +338,41 @@ async function fetchThresholdsWithUsage() {
       editingDefault: false,
       editedValue: null,
       editedDefault: null,
-    };
-  });
-  tablespaces.value = dedupeByKey(mapped); // ✅ 중복 제거
-}
-
-onMounted(async () => {
-  await fetchDbList();
-  await fetchAllThresholds();   // 보강 먼저
-  await fetchThresholdsWithUsage();
-});
-
-async function fetchDbList() {
-  const res = await api.get('/api/db-list');
-  dbList.value = Array.isArray(res.data) ? res.data : [];
+    }
+  })
+  tablespaces.value = dedupeByKey(mapped)
 }
 
 async function handleDbChange() {
   if (!selectedDb.value) {
-    await fetchAllThresholds();
-    await fetchThresholdsWithUsage();
-    return;
+    await fetchAllThresholds()
+    await fetchThresholdsWithUsage()
+    // 전체보기로 전환 시 확장/캐시 유지하고 싶으면 아래 초기화 주석 처리
+    expandedKeys.value = []
+    datafileMap.value = {}
+    loadingFlags.value = {}
+    return
   }
 
-  const selected = dbList.value.find((d) => d.dbName === selectedDb.value);
+  const selected = dbList.value.find((d) => d.dbName === selectedDb.value)
   if (!selected || selected.sizeChk === 'N') {
-    message.value = '해당 DB는 테이블스페이스 수집이 되지 않았습니다.';
-    tablespaces.value = [];
-    return;
+    message.value = '해당 DB는 테이블스페이스 수집이 되지 않았습니다.'
+    tablespaces.value = []
+    expandedKeys.value = []
+    datafileMap.value = {}
+    loadingFlags.value = {}
+    return
   }
 
-  message.value = '';
-  const res = await api.get(`/api/tb/${selectedDb.value}/tablespaces`);
+  message.value = ''
+  const res = await api.get(`/api/tb/${selectedDb.value}/tablespaces`)
   const data = (res.data || []).map((ts) => {
     const match = allThresholds.value.find(
       (thr) =>
         thr.dbName === ts.id.dbName &&
         thr.dbType === ts.dbType &&
         thr.tablespaceName === ts.id.tsName
-    );
+    )
     return {
       ...ts,
       thresholdId: match?.id ?? null,
@@ -305,203 +383,169 @@ async function handleDbChange() {
       editingDefault: false,
       editedValue: null,
       editedDefault: null,
-    };
-  });
-  tablespaces.value = dedupeByKey(data); // ✅ 중복 제거
+    }
+  })
+  tablespaces.value = dedupeByKey(data)
+  // DB 변경 시 확장/캐시 초기화
+  expandedKeys.value = []
+  datafileMap.value = {}
+  loadingFlags.value = {}
 }
 
+/* ---------- 검색/정렬 ---------- */
 const filteredTablespaces = computed(() => {
-  const keyword = (searchQuery.value || '').toLowerCase();
+  const keyword = (searchQuery.value || '').toLowerCase()
   return tablespaces.value.filter(ts =>
-    `${ts.id.dbName}.${ts.id.tsName}`.toLowerCase().includes(keyword)
-  );
-});
-
+    `${ts.id?.dbName}.${ts.id?.tsName}`.toLowerCase().includes(keyword)
+  )
+})
 const sortedTablespaces = computed(() => {
-  const list = [...filteredTablespaces.value];
+  const list = [...filteredTablespaces.value]
   if (sortKey.value) {
     list.sort((a, b) => {
-      const aVal = getSortValue(a, sortKey.value);
-      const bVal = getSortValue(b, sortKey.value);
-      if (aVal == null) return 1;
-      if (bVal == null) return -1;
-      if (typeof aVal === 'number') return (aVal - bVal) * sortOrder.value;
-      return String(aVal).localeCompare(String(bVal)) * sortOrder.value;
-    });
+      const aVal = getSortValue(a, sortKey.value)
+      const bVal = getSortValue(b, sortKey.value)
+      if (aVal == null) return 1
+      if (bVal == null) return -1
+      if (typeof aVal === 'number') return (aVal - bVal) * sortOrder.value
+      return String(aVal).localeCompare(String(bVal)) * sortOrder.value
+    })
   }
-  return list;
-});
-
+  return list
+})
 function getSortValue(obj, key) {
-  if (key === 'dbName') return obj.id.dbName;
-  if (key === 'tsName') return obj.id.tsName;
-  return obj[key];
+  if (key === 'dbName') return obj.id?.dbName
+  if (key === 'tsName') return obj.id?.tsName
+  return obj[key]
 }
 function setSort(key) {
-  if (sortKey.value === key) sortOrder.value *= -1;
-  else { sortKey.value = key; sortOrder.value = 1; }
-}
-
-const showAllThresholds = ref(true);
-
-function formatNumber(num) {
-  return num != null ? Number(num).toLocaleString() : '-';
-}
-
-function handleRefreshClick() {
-  isRotating.value = true;
-  api.post('/api/tb/dbList/refresh')
-    .then(() => {
-      openMessageModal('DB 목록이 새로고침되었습니다!');
-      fetchDbList();
-    })
-    .finally(() => setTimeout(() => (isRotating.value = false), 1000));
-}
-
-function openMessageModal(msg) {
-  messageModalText.value = msg;
-  showMessageModal.value = true;
-}
-function closeMessageModal() {
-  showMessageModal.value = false;
+  if (sortKey.value === key) sortOrder.value *= -1
+  else { sortKey.value = key; sortOrder.value = 1 }
 }
 
 const sortedDbList = computed(() => {
-  return [...dbList.value].sort((a, b) => a.dbName.localeCompare(b.dbName));
-});
+  return [...dbList.value].sort((a, b) => a.dbName.localeCompare(b.dbName))
+})
 
+/* ---------- 임계치 편집 ---------- */
 function startEditing(ts) {
-  if (ts.thresMb == null) return openAddThresholdModal(ts);
-  ts.isEditing = true;
-  ts.editedValue = ts.thresMb;
+  if (ts.thresMb == null) return openAddThresholdModal(ts)
+  ts.isEditing = true
+  ts.editedValue = ts.thresMb
   nextTick(() => {
-    const input = thresInputMap.value.get(ts.id.dbName + '_' + ts.id.tsName);
-    if (input) { input.focus(); input.select(); }
-  });
+    const input = thresInputMap.value.get((ts.id?.dbName || '') + '_' + (ts.id?.tsName || ''))
+    if (input) { input.focus(); input.select() }
+  })
 }
-function cancelEditing(ts) {
-  ts.isEditing = false;
-  ts.editedValue = null;
-}
-function resetToDefault(ts) {
-  ts.editedValue = ts.defThresMb;
-}
+function resetToDefault(ts) { ts.editedValue = ts.defThresMb }
+function startEditingDefault(ts) { ts.editingDefault = true; ts.editedDefault = ts.defThresMb }
+function cancelEditingDefault(ts) { ts.editingDefault = false; ts.editedDefault = null }
 
-// 저장 직전 thresholdId 보강
 async function ensureThresholdId(tablespace) {
   if (!tablespace.thresholdId) {
-    if (!allThresholds.value?.length) {
-      await fetchAllThresholds();
-    }
+    if (!allThresholds.value?.length) await fetchAllThresholds()
     const matched = allThresholds.value.find(thr =>
-      thr.dbName === tablespace.id.dbName &&
-      thr.tablespaceName === tablespace.id.tsName &&
+      thr.dbName === tablespace.id?.dbName &&
+      thr.tablespaceName === tablespace.id?.tsName &&
       thr.dbType === tablespace.dbType
-    );
+    )
     if (matched?.id) {
-      tablespace.thresholdId = matched.id;
-      if (tablespace.thresMb == null) tablespace.thresMb = matched.thresMb ?? null;
-      if (tablespace.defThresMb == null) tablespace.defThresMb = matched.defThresMb ?? null;
-      if (tablespace.imsiDel == null) tablespace.imsiDel = matched.imsiDel ?? null;
+      tablespace.thresholdId = matched.id
+      if (tablespace.thresMb == null) tablespace.thresMb = matched.thresMb ?? null
+      if (tablespace.defThresMb == null) tablespace.defThresMb = matched.defThresMb ?? null
+      if (tablespace.imsiDel == null) tablespace.imsiDel = matched.imsiDel ?? null
     }
   }
 }
-
 async function updateThreshold(tablespace) {
-  const username = store.state.user?.username || 'unknown';
+  const username = store.state.user?.username || 'unknown'
   if (tablespace.editedValue == null || isNaN(Number(tablespace.editedValue))) {
-    openMessageModal('숫자를 입력하세요.');
-    return;
+    openMessageModal('숫자를 입력하세요.')
+    return
   }
-  await ensureThresholdId(tablespace);
-  if (!tablespace.thresholdId) return;
+  await ensureThresholdId(tablespace)
+  if (!tablespace.thresholdId) return
   const res = await api.put(`/api/threshold/${tablespace.thresholdId}`, {
     id: tablespace.thresholdId,
     thresMb: Number(tablespace.editedValue),
     username
-  });
+  })
   if (res.data) {
-    tablespace.thresMb = Number(tablespace.editedValue);
-    tablespace.isEditing = false;
+    tablespace.thresMb = Number(tablespace.editedValue)
+    tablespace.isEditing = false
   }
 }
-
-function startEditingDefault(ts) {
-  ts.editingDefault = true;
-  ts.editedDefault = ts.defThresMb;
-}
-function cancelEditingDefault(ts) {
-  ts.editingDefault = false;
-  ts.editedDefault = null;
-}
 async function updateDefaultThreshold(tablespace) {
-  const username = store.state.user?.username || 'unknown';
-  await ensureThresholdId(tablespace);
-  if (!tablespace.thresholdId) return;
-
+  const username = store.state.user?.username || 'unknown'
+  await ensureThresholdId(tablespace)
+  if (!tablespace.thresholdId) return
   const res = await api.put(`/api/threshold/${tablespace.thresholdId}/default`, {
     defThresMb: Number(tablespace.editedDefault),
     commt: username
-  });
+  })
   if (res.data) {
-    tablespace.defThresMb = Number(tablespace.editedDefault);
-    tablespace.editingDefault = false;
+    tablespace.defThresMb = Number(tablespace.editedDefault)
+    tablespace.editingDefault = false
   }
 }
-
 async function releaseThreshold(thresholdId) {
-  if (!thresholdId || typeof thresholdId !== 'number') return;
+  if (!thresholdId || typeof thresholdId !== 'number') return
   try {
-    const res = await api.put(`/api/threshold/${thresholdId}/release`);
-    if (res.data) {
-      alert('임시해제가 완료되었습니다.');
-      await refreshThresholds();
-    }
+    const res = await api.put(`/api/threshold/${thresholdId}/release`)
+    if (res.data) { alert('임시해제가 완료되었습니다.'); await refreshThresholds() }
   } catch (err) {
-    console.error('임시해제 실패:', err);
+    console.error('임시해제 실패:', err)
   }
 }
-
 async function refreshThresholds() {
   try {
-    const res = await api.get('/api/threshold/all');
-    allThresholds.value = res.data || [];
-    if (!selectedDb.value) {
-      await fetchThresholdsWithUsage();
-    } else {
-      await handleDbChange();
-    }
-  } catch (err) {
-    console.error('데이터 로딩 실패:', err);
-  }
+    const res = await api.get('/api/threshold/all')
+    allThresholds.value = res.data || []
+    if (!selectedDb.value) await fetchThresholdsWithUsage()
+    else await handleDbChange()
+  } catch (err) { console.error('데이터 로딩 실패:', err) }
 }
-
 function openAddThresholdModal(ts) {
   addModalData.value = {
-    dbName: ts.id.dbName,
-    tablespaceName: ts.id.tsName,
+    dbName: ts.id?.dbName,
+    tablespaceName: ts.id?.tsName,
     dbType: ts.dbType,
     thresMb: ts.freeSize,
     chkFlag: 'Y',
     commt: '',
-  };
-  isAddModalVisible.value = true;
+  }
+  isAddModalVisible.value = true
 }
 async function saveNewThreshold() {
-  const username = store.state.user?.username || 'unknown';
-  const payload = { ...addModalData.value, thresMb: Number(addModalData.value.thresMb), username };
-  await api.post('/api/threshold/save', payload);
-  isAddModalVisible.value = false;
-  openMessageModal('임계치가 저장되었습니다.');
-  await handleDbChange();
+  const username = store.state.user?.username || 'unknown'
+  const payload = { ...addModalData.value, thresMb: Number(addModalData.value.thresMb), username }
+  await api.post('/api/threshold/save', payload)
+  isAddModalVisible.value = false
+  openMessageModal('임계치가 저장되었습니다.')
+  await handleDbChange()
 }
-function closeAddModal() {
-  isAddModalVisible.value = false;
+function closeAddModal() { isAddModalVisible.value = false }
+
+/* ---------- 메시지/새로고침 ---------- */
+function handleRefreshClick() {
+  isRotating.value = true
+  api.post('/api/tb/dbList/refresh')
+    .then(() => { openMessageModal('DB 목록이 새로고침되었습니다!'); fetchDbList() })
+    .finally(() => setTimeout(() => (isRotating.value = false), 1000))
 }
+function openMessageModal(msg) { messageModalText.value = msg; showMessageModal.value = true }
+function closeMessageModal() { showMessageModal.value = false }
+
+/* ---------- 초기 로드 ---------- */
+onMounted(async () => {
+  await fetchDbList()
+  await fetchAllThresholds()
+  await fetchThresholdsWithUsage()
+})
 </script>
 
 <style scoped>
-/* 스타일은 원본 유지 (생략) — 아래 그대로 사용 */
+/* 스타일은 원본 유지 */
 .container {
   font-family: 'Arial', sans-serif;
   padding: 30px;
@@ -561,4 +605,17 @@ button:hover { opacity: 0.9; }
 .modal-close-btn:hover { background-color: #2980b9; }
 .tooltip-card { position: absolute; top: -38px; left: 50%; transform: translateX(-50%); background: white; color: #333; padding: 5px 10px; font-size: 15px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); white-space: nowrap; z-index: 100; transition: opacity 0.2s ease; }
 .tooltip-arrow { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid white; }
+/* 상태 뱃지 느낌 */
+.custom-datafile-table .p-datatable-tbody > tr > td:nth-child(2) {
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+
+/* 숫자 컬럼 우측정렬 */
+.custom-datafile-table .p-datatable-tbody > tr > td:nth-child(4),
+.custom-datafile-table .p-datatable-tbody > tr > td:nth-child(5),
+.custom-datafile-table .p-datatable-tbody > tr > td:nth-child(6) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 </style>

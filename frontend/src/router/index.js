@@ -19,7 +19,7 @@ import EtlSchedulerLog from '../components/EtlSchedulerLog.vue';
 import EtlSchedulerDialog from '../components/EtlSchedulerDialog.vue';
 import ManagerMenuRole from '../components/ManagerMenuRole.vue';
 import ResetPasswordPage from '../components/ResetPasswordPage.vue';
-
+import Scouter from '../views/ScouterPaper.vue';
 import store from '../store';
 
 const routes = [
@@ -40,6 +40,7 @@ const routes = [
   { path: '/ETLjob-Scheduler', name: 'EtlJobScheduler', component: EtlJobScheduler, meta: { title: 'EtlJobScheduler', requiresAuth: true } },
   { path: '/MonitorModuleManage', name: 'MonitorModuleManage', component: MonitorModuleManage, meta: { title: 'MonitorModuleManage', requiresAuth: true } },
   { path: '/ManagerMenuRole', name: 'ManagerMenuRole', component: ManagerMenuRole, meta: { title: 'ManagerMenuRole', requiresAuth: true } },
+  { path: '/Scouter', name: 'Scouter', component: Scouter, meta: { title: 'Scouter', requiresAuth: true } },
   // 필요 시 :token 파라미터 방식도 추가 가능
   { path: '/reset-password', name: 'ResetPasswordPage', component: ResetPasswordPage, meta: { title: 'ResetPasswordPage', requiresAuth: false, public: true } }
 ];

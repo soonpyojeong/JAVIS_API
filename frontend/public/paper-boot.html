@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Boot · Redirect</title>
+    <style>
+        html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; }
+        .wrap { height: 100%; display: grid; place-items: center; text-align: center; padding: 24px; }
+        .card { max-width: 720px; width: 100%; border: 1px solid #eee; border-radius: 12px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,.05);}
+        .btn  { display: inline-block; padding: 10px 16px; border-radius: 8px; border: 1px solid #ddd; background: #fafafa; cursor: pointer; }
+        code  { background: #f6f8fa; padding: 2px 6px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card">
+        <h2 style="margin-top:0">초기화 중…</h2>
+        <p>저장 정보를 비우고 대상 페이지로 이동합니다.</p>
+        <p id="msg" style="color:#666; word-break:break-all"></p>
+        <div style="margin-top:16px">
+            <button class="btn" id="goBtn" style="display:none">수동으로 이동</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+      const usp = new URLSearchParams(location.search);
+      const target = usp.get('target');    // 필수
+      const nbust = usp.get('nbust') === '1'; // 캐시무력화 쿼리 추가 여부 (옵션)
+      const msgEl = document.getElementById('msg');
+      const goBtn = document.getElementById('goBtn');
+
+      // 1) 스토리지/쿠키 정리 (필요시 키워드만 선별 삭제)
+      try {
+        // 전부 초기화 (안전하게 가려면 특정 prefix만 제거)
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch(e) {
+        // 무시
+      }
+
+      // 2) target 검증
+      if (!target) {
+        msgEl.textContent = 'target 파라미터가 없습니다. 예: /paper-boot.html?target=/paper/index.html#/?address=...';
+        return;
+      }
+
+      let next = target;
+
+      // 상대/절대 모두 허용. 캐시버스트 옵션
+      try {
+        // URL 객체로 한 번 파싱 (상대경로면 현재 origin을 기준으로)
+        const u = new URL(target, location.origin);
+        if (nbust) {
+          // hash 앞에 캐시버스트 쿼리 붙이기
+          const q = u.searchParams;
+          q.set('_ts', Date.now().toString());
+          u.search = q.toString();
+        }
+        next = u.toString();
+      } catch (e) {
+        // URL 파싱 실패 시 원문 그대로 사용
+      }
+
+      // 3) 사용자 안내
+      msgEl.innerHTML = '이동 대상: <code>' + (next) + '</code>';
+
+      // 4) 즉시 이동 (히스토리 남기지 않음)
+      const doReplace = () => location.replace(next);
+
+      // 일부 브라우저/보안정책에서 즉시 이동이 막힐 수도 있어 버튼도 제공
+      setTimeout(doReplace, 30);
+      goBtn.style.display = 'inline-block';
+      goBtn.addEventListener('click', doReplace);
+    })();
+</script>
+</body>
+</html>

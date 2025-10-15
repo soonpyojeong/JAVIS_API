@@ -36,21 +36,6 @@ public class TiberoCap_Check_Mg {
 
 
 
-    @Override
-    public String toString() {
-        return "TiberoCap_Check_Mg{" +
-                "dbName='" + id.getDbName() + '\'' +  // EmbeddedId에서 dbName 출력
-                ", tsName='" + id.getTsName() + '\'' +
-                ", totalSize=" + totalSize +
-                ", usedSize=" + usedSize +
-                ", freeSize=" + freeSize +
-                ", usedRate=" + usedRate +
-                ", dbType=" + dbType +
-                ", thresMb=" + thresMb +
-                ", chkFlag=" + chkFlag +
-                '}';
-    }
-
 }
 
 

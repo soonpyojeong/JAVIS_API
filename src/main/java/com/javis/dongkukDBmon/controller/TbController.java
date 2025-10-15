@@ -1,6 +1,7 @@
 // TbController.java
 
 package com.javis.dongkukDBmon.controller;
+import com.javis.dongkukDBmon.Dto.DatafileDto;
 import com.javis.dongkukDBmon.Dto.TablespaceUsageDto;
 import com.javis.dongkukDBmon.Dto.TsSummaryDto;
 import com.javis.dongkukDBmon.Dto.TsSummaryRequestDto;
@@ -85,6 +86,13 @@ public class TbController {
         return tbService.getTablespaceSummary(request);
     }
 
-
+    @GetMapping("/datafiles")
+    public List<DatafileDto> getDatafilesByParams(
+            @RequestParam("dbname") String dbName,
+            @RequestParam("tablespace_name") String tsName,
+            @RequestParam("dbtype") String dbType
+    ) {
+        return tbService.getLatestDatafiles(dbType, dbName, tsName);
+    }
 
 }
