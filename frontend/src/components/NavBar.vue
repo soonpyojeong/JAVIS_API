@@ -264,7 +264,7 @@ const menuItems = [
   { name: "패스워드관리", path: "/Manager", roles: ["ADMIN", "DBA"], iconClass: "pi pi-key" },
   { name: "ETL DB관리", path: "#", roles: ["ADMIN", "DBA"], iconClass: "pi pi-share-alt", hasSub: true, subMenu: "etl" },
   { name: "Scouter", path: "/Scouter", roles: ["ADMIN", "DBA"], iconClass: "pi pi-compass"},
-  { name: "JAVIS권한관리", path: "/ManagerMenuRole", roles: ["ADMIN"], iconClass: "pi pi-share-alt"},
+  { name: "권한관리", path: "/ManagerMenuRole", roles: ["ADMIN"], iconClass: "pi pi-share-alt"},
 ];
 
 const dailySubMenus = [

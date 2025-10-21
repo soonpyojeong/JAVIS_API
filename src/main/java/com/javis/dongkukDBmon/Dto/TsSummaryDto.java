@@ -27,4 +27,9 @@ public class TsSummaryDto {
 
     private String fullReachDate;
     private String reach95Date;
+
+    private double defThresMb;     // DEF_THRES_MB
+    private double thresMb;        // NVL(THRES_MB, DEF_THRES_MB) - 실제 사용 임계값
+    private double daysToThres;       // DAYS_TO_THRES
+    private String reachThresDate;  // REACH_THRES_DATE
 }

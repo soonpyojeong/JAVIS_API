@@ -157,6 +157,11 @@ public class TbService {
                 ? "JAVIS.TB_TIBERO_DB_CAP_CHECK_MG"
                 : "JAVIS.TB_ORACLE_DB_CAP_CHECK_MG";
         final String dbTypeLiteral = "TIBERO".equalsIgnoreCase(dbType) ? "TIBERO" : "ORACLE";
+
+        // 임계치 테이블(FQN 필요 시 조정)
+        final String thTable = "JAVIS.TB_DB_TBS_THRESHOLD";
+
+        // 세션 GTT (예: JAVIS.GTT_GROWTH2)
         final String gtt = resolveGttFqn();
 
         MapSqlParameterSource p = new MapSqlParameterSource()
@@ -173,12 +178,11 @@ public class TbService {
                 .addValue("gap_days_thresh", 21);
 
         // 1) GTT 정리
-        final String step1Delete = "DELETE FROM " + gtt;
-        jdbcTemplate.update(step1Delete);
+        jdbcTemplate.update("DELETE FROM " + gtt);
 
         // 1-2) GTT 적재
         final String step1InsertTemplate =
-                "INSERT  INTO ${GTT} " +
+                "INSERT INTO ${GTT} " +
                         "( DB_NAME, TS_NAME, DT, CAP_DAY_MB, CAP_CHANGED, SEG_ADD_MB, " +
                         "  DAY_NO, USED_DAY_MB, SEG_START_DT, INC_RAW, INC_MB_FOR_AVG ) " +
                         "WITH  params AS (\n" +
@@ -258,11 +262,10 @@ public class TbService {
                         "FROM growth2";
 
         final String step1Insert = step1InsertTemplate.replace("${GTT}", gtt);
-
         namedJdbcTemplate.update(step1Insert, p);
 
-        // 2) 최종 요약 SELECT
-        final String sql =
+        // 2) 최종 요약 SELECT (95% 유지 + 임계치 추가)
+        final String sqlTemplate =
                 "WITH params AS (\n" +
                         "  SELECT REPLACE(:startDate,'-','') start_date_vc,\n" +
                         "         REPLACE(:endDate,'-','')   end_date_vc,\n" +
@@ -302,57 +305,53 @@ public class TbService {
                         "), win1 AS (\n" +
                         "  SELECT g.DB_NAME, g.TS_NAME, g.DT, g.CAP_DAY_MB, g.USED_DAY_MB, g.INC_MB_FOR_AVG, g.DAY_NO,\n" +
                         "         (SELECT PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY g2.INC_MB_FOR_AVG)\n" +
-                        "            FROM JAVIS.GTT_GROWTH2 g2\n" +
+                        "            FROM ${GTT} g2\n" +
                         "           WHERE g2.DB_NAME=g.DB_NAME\n" +
                         "             AND g2.TS_NAME=g.TS_NAME\n" +
                         "             AND g2.DT>g.DT - NUMTODSINTERVAL(21,'DAY')\n" +
                         "             AND g2.DT<=g.DT\n" +
                         "             AND g2.INC_MB_FOR_AVG IS NOT NULL) p90_win,\n" +
                         "         (SELECT COUNT(g2.INC_MB_FOR_AVG)\n" +
-                        "            FROM JAVIS.GTT_GROWTH2 g2\n" +
+                        "            FROM ${GTT} g2\n" +
                         "           WHERE g2.DB_NAME=g.DB_NAME\n" +
                         "             AND g2.TS_NAME=g.TS_NAME\n" +
                         "             AND g2.DT>g.DT - NUMTODSINTERVAL(21,'DAY')\n" +
                         "             AND g2.DT<=g.DT\n" +
                         "             AND g2.INC_MB_FOR_AVG IS NOT NULL) pos_inc_days_win,\n" +
                         "         (SELECT COUNT(*)\n" +
-                        "            FROM JAVIS.GTT_GROWTH2 g2\n" +
+                        "            FROM ${GTT} g2\n" +
                         "           WHERE g2.DB_NAME=g.DB_NAME\n" +
                         "             AND g2.TS_NAME=g.TS_NAME\n" +
                         "             AND g2.DT>g.DT - NUMTODSINTERVAL(21,'DAY')\n" +
                         "             AND g2.DT<=g.DT) sample_days_win,\n" +
                         "         (SELECT REGR_SLOPE(g2.USED_DAY_MB, g2.DAY_NO)\n" +
-                        "            FROM JAVIS.GTT_GROWTH2 g2\n" +
+                        "            FROM ${GTT} g2\n" +
                         "           WHERE g2.DB_NAME=g.DB_NAME\n" +
                         "             AND g2.TS_NAME=g.TS_NAME\n" +
                         "             AND g2.DT>g.DT - NUMTODSINTERVAL(21,'DAY')\n" +
                         "             AND g2.DT<=g.DT) slope_win,\n" +
                         "         (SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY g2.INC_MB_FOR_AVG)\n" +
-                        "            FROM JAVIS.GTT_GROWTH2 g2\n" +
+                        "            FROM ${GTT} g2\n" +
                         "           WHERE g2.DB_NAME=g.DB_NAME\n" +
                         "             AND g2.TS_NAME=g.TS_NAME\n" +
                         "             AND g2.DT>g.DT - NUMTODSINTERVAL(21,'DAY')\n" +
                         "             AND g2.DT<=g.DT\n" +
                         "             AND g2.INC_MB_FOR_AVG IS NOT NULL) med_pos_inc_win,\n" +
                         "         (SELECT MAX(g2.DT)\n" +
-                        "            FROM JAVIS.GTT_GROWTH2 g2\n" +
+                        "            FROM ${GTT} g2\n" +
                         "           WHERE g2.DB_NAME=g.DB_NAME\n" +
                         "             AND g2.TS_NAME=g.TS_NAME\n" +
                         "             AND g2.DT<=g.DT\n" +
                         "             AND g2.INC_MB_FOR_AVG IS NOT NULL) last_pos_dt_any\n" +
-                        "  FROM JAVIS.GTT_GROWTH2 g\n" +
-                        ")\n" +
-                        "\n" +
-                        ", win2 AS (  -- ✅ 이게 있어야 win_agg 에서 w2 를 참조할 수 있음\n" +
+                        "  FROM ${GTT} g\n" +
+                        "), win2 AS (\n" +
                         "  SELECT w1.*,\n" +
                         "         LEAST(w1.INC_MB_FOR_AVG, w1.p90_win) AS capped_inc\n" +
                         "  FROM win1 w1\n" +
-                        ")\n" +
-                        "\n" +
-                        ", win_agg AS (  -- ✅ 네가 찾던 블록\n" +
+                        "), win_agg AS (\n" +
                         "  SELECT w2.*,\n" +
                         "         (SELECT AVG(LEAST(g3.INC_MB_FOR_AVG, w2.p90_win))\n" +
-                        "            FROM JAVIS.GTT_GROWTH2 g3\n" +
+                        "            FROM ${GTT} g3\n" +
                         "           WHERE g3.DB_NAME=w2.DB_NAME\n" +
                         "             AND g3.TS_NAME=w2.TS_NAME\n" +
                         "             AND g3.DT>w2.DT - NUMTODSINTERVAL(21,'DAY')\n" +
@@ -419,7 +418,7 @@ public class TbService {
                         "  FROM daily d1\n" +
                         "  WHERE d1.dt = (SELECT MAX(d2.dt) FROM daily d2 WHERE d2.DB_NAME=d1.DB_NAME AND d2.TS_NAME=d1.TS_NAME)\n" +
                         "), real_used AS (\n" +
-                        "  SELECT DB_NAME, TS_NAME, SUM(INC_MB_FOR_AVG) real_used_mb FROM " + gtt + " WHERE INC_MB_FOR_AVG IS NOT NULL GROUP BY DB_NAME, TS_NAME\n" +
+                        "  SELECT DB_NAME, TS_NAME, SUM(INC_MB_FOR_AVG) real_used_mb FROM ${GTT} WHERE INC_MB_FOR_AVG IS NOT NULL GROUP BY DB_NAME, TS_NAME\n" +
                         ")\n" +
                         "SELECT f.DB_NAME, f.TS_NAME, lv.db_type AS DB_TYPE,\n" +
                         "       f.cap_asof_mb AS TOTAL_SIZE_MB,\n" +
@@ -427,22 +426,70 @@ public class TbService {
                         "       ROUND(lv.curr_used_mb / NULLIF(f.cap_asof_mb, 0) * 100, 2) AS TOT_USAGE_PERCENT,\n" +
                         "       NVL(lv.curr_max_free_mb, lv.curr_free_mb) AS REMAIN_MB,\n" +
                         "       ROUND(NVL(r.real_used_mb,0) / NULLIF(SUM(NVL(r.real_used_mb,0)) OVER (PARTITION BY f.DB_NAME), 0) * 100, 2) AS REAL_USED_PERCENT,\n" +
+                        "       /* FULL */\n" +
                         "       CASE WHEN NVL(f.speed_final,0) <= 0 THEN NULL\n" +
                         "            WHEN NVL(lv.curr_max_free_mb, lv.curr_free_mb) <= 0 THEN 0\n" +
                         "            ELSE LEAST(CEIL(NVL(lv.curr_max_free_mb, lv.curr_free_mb) / f.speed_final), (SELECT max_days_to_9999 FROM params)) END AS DAYS_TO_FULL,\n" +
-                        "       CASE WHEN lv.curr_used_mb >= (f.cap_asof_mb * 0.95) THEN 0\n" +
-                        "            WHEN NVL(f.speed_final,0) <= 0 THEN NULL\n" +
-                        "            ELSE LEAST(CEIL(GREATEST(ROUND(f.cap_asof_mb*0.95) - lv.curr_used_mb, 0) / f.speed_final), (SELECT max_days_to_9999 FROM params)) END AS DAYS_TO_95PERCENT,\n" +
                         "       TO_CHAR(CASE WHEN NVL(f.speed_final,0) <= 0 THEN NULL\n" +
                         "                    WHEN NVL(lv.curr_max_free_mb, lv.curr_free_mb) <= 0 THEN TRUNC(SYSDATE)\n" +
                         "                    ELSE TRUNC(SYSDATE) + LEAST(CEIL(NVL(lv.curr_max_free_mb, lv.curr_free_mb) / f.speed_final), (SELECT max_days_to_9999 FROM params)) END, 'YYYY-MM-DD') AS FULL_REACH_DATE,\n" +
+                        "\n" +
+                        "       /* 95% 도달 (기존 유지) */\n" +
+                        "       CASE WHEN lv.curr_used_mb >= (f.cap_asof_mb * 0.95) THEN 0\n" +
+                        "            WHEN NVL(f.speed_final,0) <= 0 THEN NULL\n" +
+                        "            ELSE LEAST(CEIL(GREATEST(ROUND(f.cap_asof_mb*0.95) - lv.curr_used_mb, 0) / f.speed_final), (SELECT max_days_to_9999 FROM params)) END AS DAYS_TO_95PERCENT,\n" +
                         "       TO_CHAR(CASE WHEN lv.curr_used_mb >= (f.cap_asof_mb * 0.95) THEN TRUNC(SYSDATE)\n" +
                         "                    WHEN NVL(f.speed_final,0) <= 0 THEN NULL\n" +
-                        "                    ELSE TRUNC(SYSDATE) + LEAST(CEIL(GREATEST(ROUND(f.cap_asof_mb*0.95) - lv.curr_used_mb, 0) / f.speed_final), (SELECT max_days_to_9999 FROM params)) END, 'YYYY-MM-DD') AS REACH_95P_DATE\n" +
-                        "FROM final_speed f\n" +
+                        "                    ELSE TRUNC(SYSDATE) + LEAST(CEIL(GREATEST(ROUND(f.cap_asof_mb*0.95) - lv.curr_used_mb, 0) / f.speed_final), (SELECT max_days_to_9999 FROM params)) END, 'YYYY-MM-DD') AS REACH_95P_DATE,\n" +
+
+                /* 임계치 테이블 조인 값 */
+                "       t.DEF_THRES_MB AS DEF_THRES_MB,\n" +
+                        "       t.THRES_MB     AS THRES_MB_RAW,\n" +
+                        "       NVL(t.THRES_MB, t.DEF_THRES_MB) AS THRES_MB,\n" +
+                        "\n" +
+                        "       /* 임계치(남은공간 기준) 도달: rem_free <= THRES_MB 가 되는 시점 */\n" +
+                        "       CASE\n" +
+                        "         WHEN NVL(t.THRES_MB, t.DEF_THRES_MB) IS NULL THEN NULL\n" +
+                        "         WHEN NVL(lv.curr_max_free_mb, lv.curr_free_mb) <= NVL(t.THRES_MB, t.DEF_THRES_MB) THEN 0\n" +
+                        "         WHEN NVL(f.speed_final,0) <= 0 THEN NULL\n" +
+                        "         ELSE LEAST(\n" +
+                        "                CEIL(\n" +
+                        "                  GREATEST(\n" +
+                        "                    NVL(lv.curr_max_free_mb, lv.curr_free_mb) - NVL(t.THRES_MB, t.DEF_THRES_MB),\n" +
+                        "                    0\n" +
+                        "                  ) / f.speed_final\n" +
+                        "                ),\n" +
+                        "                (SELECT max_days_to_9999 FROM params)\n" +
+                        "              )\n" +
+                        "       END AS DAYS_TO_THRES,\n" +
+                        "       TO_CHAR(\n" +
+                        "         CASE\n" +
+                        "           WHEN NVL(t.THRES_MB, t.DEF_THRES_MB) IS NULL THEN NULL\n" +
+                        "           WHEN NVL(lv.curr_max_free_mb, lv.curr_free_mb) <= NVL(t.THRES_MB, t.DEF_THRES_MB) THEN TRUNC(SYSDATE)\n" +
+                        "           WHEN NVL(f.speed_final,0) <= 0 THEN NULL\n" +
+                        "           ELSE TRUNC(SYSDATE) + LEAST(\n" +
+                        "                  CEIL(\n" +
+                        "                    GREATEST(\n" +
+                        "                      NVL(lv.curr_max_free_mb, lv.curr_free_mb) - NVL(t.THRES_MB, t.DEF_THRES_MB),\n" +
+                        "                      0\n" +
+                        "                    ) / f.speed_final\n" +
+                        "                  ),\n" +
+                        "                  (SELECT max_days_to_9999 FROM params)\n" +
+                        "                )\n" +
+                        "         END,\n" +
+                        "         'YYYY-MM-DD'\n" +
+                        "       ) AS REACH_THRES_DATE\n" +
+
+                "FROM final_speed f\n" +
                         "JOIN last_vals lv ON lv.DB_NAME=f.DB_NAME AND lv.TS_NAME=f.TS_NAME AND lv.last_dt=f.DT\n" +
                         "LEFT JOIN real_used r ON r.DB_NAME=f.DB_NAME AND r.TS_NAME=f.TS_NAME\n" +
+                        "LEFT JOIN " + thTable + " t\n" +
+                        "       ON UPPER(t.DB_TYPE)         = UPPER(lv.db_type)\n" +
+                        "      AND UPPER(t.DB_NAME)         = UPPER(lv.DB_NAME)\n" +
+                        "      AND UPPER(t.TABLESPACE_NAME) = UPPER(lv.TS_NAME)\n" +
                         "ORDER BY f.DB_NAME, f.TS_NAME";
+
+        final String sql = sqlTemplate.replace("${GTT}", gtt);
 
         return namedJdbcTemplate.query(sql, p, (rs, rowNum) -> new TsSummaryDto(
                 rs.getString("DB_NAME"),
@@ -456,9 +503,14 @@ public class TbService {
                 getNullableLong(rs, "DAYS_TO_FULL"),
                 getNullableLong(rs, "DAYS_TO_95PERCENT"),
                 rs.getString("FULL_REACH_DATE"),
-                rs.getString("REACH_95P_DATE")
+                rs.getString("REACH_95P_DATE"),
+                rs.getDouble("DEF_THRES_MB"),
+                rs.getDouble("THRES_MB"),         // NVL(THRES_MB, DEF_THRES_MB)
+                rs.getDouble("DAYS_TO_THRES"),
+                rs.getString("REACH_THRES_DATE")
         ));
     }
+
 
     private Long getNullableLong(ResultSet rs, String col) throws SQLException {
         BigDecimal bd = rs.getBigDecimal(col);

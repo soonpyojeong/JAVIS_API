@@ -57,54 +57,78 @@
         :sortOrder="-1"
       >
         <Column field="dbName" header="DB명" />
-        <Column field="tsName" header="테이블스페이스명" />
+        <!-- 테이블스페이스명: 폭 고정 + 자동 줄바꿈 -->
+        <Column field="tsName"  header="테이블스페이스명"  style="width: 220px"     <!-- 원하는 고정폭 -->
+          headerClass="wrap-col"
+          bodyClass="wrap-col"
+          sortable
+        >
+          <template #body="{ data }">
+            <span class="wrap-text">{{ data.tsName }}</span>
+          </template>
+        </Column>
 
-        <Column field="totalSizeMb" header="TotalSize(MB)">
+
+        <Column   style="text-align:right"  field="totalSizeMb" header="TotalSize(MB)" sortable>
           <template #body="{ data }">
             {{ data.totalSizeMb?.toLocaleString() }} MB
           </template>
         </Column>
 
-        <Column field="totUsagePercent" header="Total대비비율(%)">
+        <Column style="text-align:right;width:120px;"  field="totUsagePercent" header="Total비율" sortable>
           <template #body="{ data }">
             {{ data.totUsagePercent != null ? data.totUsagePercent.toFixed(2) + ' %' : '-' }}
           </template>
         </Column>
 
-        <Column field="realUsedMb" header="실사용량(MB)">
+        <Column  style="text-align:right;width:150px;"  field="realUsedMb" header="실사용량(MB)" sortable>
           <template #body="{ data }">
             {{ data.realUsedMb?.toLocaleString() }} MB
           </template>
         </Column>
 
-        <Column field="realUsedPercent" header="실사용비율(%))">
+        <Column style="text-align:right;width:120px;" headerClass="text-right" field="realUsedPercent" header="실사용비율" sortable>
           <template #body="{ data }">
             {{ data.realUsedPercent != null ? data.realUsedPercent.toFixed(2) + ' %' : '-' }}
           </template>
         </Column>
 
-        <Column field="remainMb" header="남은공간(MB)">
+        <Column  style="text-align:right;width:150px;"  field="remainMb" header="남은공간(MB)" sortable>
           <template #body="{ data }">
             {{ data.remainMb?.toLocaleString() }} MB
           </template>
         </Column>
 
-        <!-- ✅ 날짜로 표기 -->
-        <Column field="fullReachDate" header="FULL도달일">
+        <!-- ✅ 날짜로 표기
+        <Column field="fullReachDate" header="FULL도달일" sortable>
           <template #body="{ data }">
             <span :style="{ color: data.dayToFull != null && data.dayToFull <= 10 ? 'red' : 'inherit' }">
               {{ data.fullReachDate ?? '-' }}
             </span>
           </template>
         </Column>
-
-        <Column field="reach95Date" header="95% 도달일">
+-->
+        <Column style="text-align:right;width:150px;"  field="reach95Date" header="95%도달일" sortable>
           <template #body="{ data }">
             <span :style="{ color: data.dayTo95Percent != null && data.dayTo95Percent <= 10 ? 'red' : 'inherit' }">
               {{ data.reach95Date ?? '-' }}
             </span>
           </template>
         </Column>
+          <!-- 🔻 신규 1: 임계치(MB) -->
+          <Column  style="text-align:right;width:150px;" field="thresMb" header="임계치(MB)" sortable>
+            <template #body="{ data }">
+              {{ data.thresMb != null ? data.thresMb.toLocaleString() + ' MB' : '-' }}
+            </template>
+          </Column>
+          <!-- 🔻 신규 3: 임계치 도달일 -->
+          <Column field="reachThresDate" style="text-align:right;width:150px;" header="임계치도달일" sortable>
+            <template #body="{ data }">
+              <span :style="{ color: data.daysToThres != null && data.daysToThres <= 10 ? 'red' : 'inherit' }">
+                {{ data.reachThresDate ?.toLocaleString()?? '-' }}
+              </span>
+            </template>
+          </Column>
       </DataTable>
     </div>
   </div>
@@ -270,6 +294,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.container { max-width: 1200px; margin: 0 auto; }
+.container { max-width: 1350px; margin: 0 auto; }
 .filter-block { margin-right: 5px; flex-direction: column; }
+
+.text-right {
+  text-align: right !important;
+}
+
+
 </style>

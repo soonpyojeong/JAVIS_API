@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h2 class="text-2xl font-bold text-orange-600 mb-4">DB 테이블스페이스 및 임계치 통합 뷰</h2>
+    <h2 class="text-1xl font-bold text-orange-300 mb-1">DB 테이블스페이스 및 임계치 통합 뷰</h2>
 
     <!-- DB 선택 드롭다운 -->
     <div class="select-container">
