@@ -56,7 +56,7 @@
         :sortField="'realUsedMb'"
         :sortOrder="-1"
       >
-        <Column field="dbName" header="DB명" />
+        <Column style="text-align:center;width: 90px;" field="dbName" header="DB명" />
         <!-- 테이블스페이스명: 폭 고정 + 자동 줄바꿈 -->
         <Column field="tsName"  header="테이블스페이스명"  style="width: 220px"     <!-- 원하는 고정폭 -->
           headerClass="wrap-col"
