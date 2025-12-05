@@ -17,3 +17,8 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
       connection-timeout: 30000
+
+camel:
+  routes:
+    etljob:
+      enabled: true

@@ -1,13 +1,7 @@
-camel:
-  routes:
-    etljob:
-      #enabled: false
-      enabled: true
-
 spring:
   profiles:
-    active: prod
-    #active: dev
+    #active: prod
+    active: dev
 
   application:
     name: dongkukDBmon

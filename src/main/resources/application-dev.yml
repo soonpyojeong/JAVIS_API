@@ -18,3 +18,7 @@ spring:
       max-lifetime: 1800000
       connection-timeout: 30000
 
+camel:
+  routes:
+    etljob:
+      enabled: false
