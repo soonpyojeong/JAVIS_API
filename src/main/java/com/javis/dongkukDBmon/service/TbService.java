@@ -521,69 +521,82 @@ public class TbService {
     // TbService.java (교체본)
     public List<DatafileDto> getLatestDatafiles(String dbType, String dbName, String tsName) {
         final String sql =
-                "WITH hist AS (\n" +
-                        "  SELECT\n" +
-                        "    h.DB_TYPE,\n" +
-                        "    h.DB_NAME,\n" +
-                        "    h.TABLESPACE_NAME,\n" +
-                        "    h.FILE_NAME,\n" +
-                        "    h.STATUS,\n" +
-                        "    h.AUTOEXTENSIBLE,\n" +
-                        "    h.BYTES,\n" +
-                        "    h.MAXBYTES,\n" +
-                        "    h.INCREMENT_BYTES,\n" +
-                        "    REGEXP_REPLACE(NVL(h.CHKDATE, ''), '[^0-9]', '') AS CHKDATE_NUM,\n" +
-                        "    REGEXP_REPLACE(NVL(h.CHKTIME, ''), '[^0-9]', '') AS CHKTIME_NUM,\n" +
-                        "    h.CREATION_TIME\n" +
-                        "  FROM JAVIS.TB_DB_DATAFILE_HIST h\n" +
-                        "  WHERE h.DB_TYPE = ?\n" +                // ← positional bind
-                        "    AND h.DB_NAME = ?\n" +
-                        "    AND h.TABLESPACE_NAME = ?\n" +
-                        "),\n" +
-                        "hist2 AS (\n" +
-                        "  SELECT\n" +
-                        "    DB_TYPE, DB_NAME, TABLESPACE_NAME, FILE_NAME, STATUS, AUTOEXTENSIBLE,\n" +
-                        "    BYTES, MAXBYTES, INCREMENT_BYTES,\n" +
-                        "    CASE\n" +
-                        "      WHEN LENGTH(CHKDATE_NUM) = 8 THEN\n" +
-                        "        TO_DATE(\n" +
-                        "          CHKDATE_NUM || LPAD(SUBSTR(RPAD(NVL(CHKTIme_NUM_FIX, '0'), 6, '0'), 1, 6), 6, '0'),\n" +
-                        "          'YYYYMMDDHH24MISS'\n" +
-                        "        )\n" +
-                        "      ELSE NULL\n" +
-                        "    END AS SNAP_DT,\n" +
-                        "    CREATION_TIME\n" +
-                        "  FROM (\n" +
-                        "    SELECT\n" +
-                        "      DB_TYPE, DB_NAME, TABLESPACE_NAME, FILE_NAME, STATUS, AUTOEXTENSIBLE,\n" +
-                        "      BYTES, MAXBYTES, INCREMENT_BYTES,\n" +
-                        "      CHKDATE_NUM,\n" +
-                        "      CHKTIME_NUM AS CHKTIme_NUM_FIX,\n" + // 오타 방지용 별칭 한 단계 둠
-                        "      CREATION_TIME\n" +
-                        "    FROM hist\n" +
-                        "  )\n" +
-                        "),\n" +
-                        "latest AS (\n" +
-                        "  SELECT\n" +
-                        "    hist2.*,\n" +
-                        "    ROW_NUMBER() OVER (\n" +
-                        "      PARTITION BY DB_TYPE, DB_NAME, TABLESPACE_NAME, FILE_NAME\n" +
-                        "      ORDER BY NVL(SNAP_DT, DATE '1900-01-01') DESC\n" +
-                        "    ) AS RN\n" +
-                        "  FROM hist2\n" +
-                        ")\n" +
-                        "SELECT\n" +
-                        "  FILE_NAME,\n" +
-                        "  STATUS,\n" +
-                        "  AUTOEXTENSIBLE,\n" +
-                        "  BYTES,\n" +
-                        "  MAXBYTES,\n" +
-                        "  INCREMENT_BYTES,\n" +
-                        "  TO_CHAR(SNAP_DT, 'YYYY-MM-DD HH24:MI:SS')       AS SNAP_DT,\n" +
-                        "  TO_CHAR(CREATION_TIME, 'YYYY-MM-DD HH24:MI:SS') AS CREATION_TIME\n" +
-                        "FROM latest\n" +
-                        "WHERE RN = 1\n" +
+                "WITH hist AS ( \n" +
+                        "  SELECT \n" +
+                        "    h.DB_TYPE, \n" +
+                        "    h.DB_NAME, \n" +
+                        "    h.TABLESPACE_NAME, \n" +
+                        "    h.FILE_NAME, \n" +
+                        "    h.STATUS, \n" +
+                        "    h.AUTOEXTENSIBLE, \n" +
+                        "    h.BYTES, \n" +
+                        "    h.MAXBYTES, \n" +
+                        "    h.INCREMENT_BYTES, \n" +
+                        "    REGEXP_REPLACE(NVL(h.CHKDATE, ''), '[^0-9]', '') AS CHKDATE_NUM, \n" +
+                        "    REGEXP_REPLACE(NVL(h.CHKTIME, ''), '[^0-9]', '') AS CHKTIME_NUM, \n" +
+                        "    MAX(h.CREATION_TIME) AS CREATION_TIME \n" +
+                        "  FROM JAVIS.TB_DB_DATAFILE_HIST h \n" +
+                        "  WHERE h.DB_TYPE = ? \n" +
+                        "    AND h.DB_NAME = ? \n" +
+                        "    AND h.TABLESPACE_NAME = ? \n" +
+                        "  GROUP BY \n" +
+                        "    h.DB_TYPE, \n" +
+                        "    h.DB_NAME, \n" +
+                        "    h.TABLESPACE_NAME, \n" +
+                        "    h.FILE_NAME, \n" +
+                        "    h.STATUS, \n" +
+                        "    h.AUTOEXTENSIBLE, \n" +
+                        "    h.BYTES, \n" +
+                        "    h.MAXBYTES, \n" +
+                        "    h.INCREMENT_BYTES, \n" +
+                        "    REGEXP_REPLACE(NVL(h.CHKDATE, ''), '[^0-9]', ''), \n" +
+                        "    REGEXP_REPLACE(NVL(h.CHKTIME, ''), '[^0-9]', '') \n" +
+                        "), \n" +
+                        "hist2 AS ( \n" +
+                        "  SELECT \n" +
+                        "    DB_TYPE, DB_NAME, TABLESPACE_NAME, FILE_NAME, STATUS, AUTOEXTENSIBLE, \n" +
+                        "    BYTES, MAXBYTES, INCREMENT_BYTES, \n" +
+                        "    CASE \n" +
+                        "      WHEN LENGTH(CHKDATE_NUM) = 8 THEN \n" +
+                        "        TO_DATE( \n" +
+                        "          CHKDATE_NUM || LPAD(SUBSTR(RPAD(NVL(CHKTIme_NUM_FIX, '0'), 6, '0'), 1, 6), 6, '0'), \n" +
+                        "          'YYYYMMDDHH24MISS' \n" +
+                        "        ) \n" +
+                        "      ELSE NULL \n" +
+                        "    END AS SNAP_DT, \n" +
+                        "    CREATION_TIME \n" +
+                        "  FROM ( \n" +
+                        "    SELECT \n" +
+                        "      DB_TYPE, DB_NAME, TABLESPACE_NAME, FILE_NAME, STATUS, AUTOEXTENSIBLE, \n" +
+                        "      BYTES, MAXBYTES, INCREMENT_BYTES, \n" +
+                        "      CHKDATE_NUM, \n" +
+                        "      CHKTIME_NUM AS CHKTIme_NUM_FIX, \n" +
+                        "      CREATION_TIME \n" +
+                        "    FROM hist \n" +
+                        "  ) \n" +
+                        "), \n" +
+                        "latest AS ( \n" +
+                        "  SELECT \n" +
+                        "    hist2.*, \n" +
+                        "    ROW_NUMBER() OVER ( \n" +
+                        "      PARTITION BY DB_TYPE, DB_NAME, TABLESPACE_NAME, FILE_NAME \n" +
+                        "      ORDER BY NVL(SNAP_DT, DATE '1900-01-01') DESC \n" +
+                        "    ) AS RN \n" +
+                        "  FROM hist2 \n" +
+                        ") \n" +
+                        "SELECT \n" +
+                        "  FILE_NAME, \n" +
+                        "  STATUS, \n" +
+                        "  AUTOEXTENSIBLE, \n" +
+                        "  BYTES, \n" +
+                        "  MAXBYTES, \n" +
+                        "  INCREMENT_BYTES, \n" +
+                        "  TO_CHAR(SNAP_DT, 'YYYY-MM-DD HH24:MI:SS')       AS SNAP_DT, \n" +
+                        "  TO_CHAR(CREATION_TIME, 'YYYY-MM-DD HH24:MI:SS') AS CREATION_TIME \n" +
+                        "FROM latest \n" +
+                        "WHERE RN = 1 \n" +
                         "ORDER BY FILE_NAME";
+
 
         return jdbcTemplate.query(
                 sql,
